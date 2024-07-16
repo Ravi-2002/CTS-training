@@ -1,0 +1,23 @@
+h4 {
+	color: #000;
+	font-size: 26px;
+	font-weight: 300;
+	text-align: center;
+	text-transform: uppercase;
+	position: relative;
+	letter-spacing: 2px;
+    color: #7ac400;
+    margin-bottom: 40px;
+}
+h4::after {
+	content: "";
+	width: 100px;
+	position: absolute;
+	margin: 0 auto;
+	height: 4px;
+	border-radius: 1px;
+	background: #7ac400;
+	left: 0;
+	right: 0;
+	bottom: -20px;
+}

@@ -1,0 +1,27 @@
+#server:
+#  port: 8090
+#  servlet:
+#   context-path: /authservice
+#management:
+# security:
+#  enabled: false
+# endpoint:
+#  health:
+#   show-details: always   
+#   
+#spring:
+#  application:
+#    name: auth-provider 
+#  cloud:
+#    consul:
+#      host: localhost
+#      discovery:
+#        hostname: localhost
+#      config:
+#        fail-fast: false
+#        enabled: true
+#        prefix: config
+#        defaultContext: application
+#        data-key: data
+#        profileSeparator: '::'
+#        format: YAML

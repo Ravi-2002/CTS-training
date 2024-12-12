@@ -1,0 +1,356 @@
+
+import React, { Component } from 'react';
+import { connect } from "react-redux";
+// import { convertHTML2UTF } from 'src/shared/commonExp';
+import AdvancedControls from '../../home/components/AdvanceControls';
+import * as deviceDetailActions from '../actions';
+// import Loader from 'src/shared/components/Loader/Loader';
+import Alert from '../../alert';
+import { Redirect } from 'react-router-dom';
+import {Title,Body} from '@vds/typography'
+// import ApplePopUp from "./applePopUp";
+// import Modal from './blocksServices/Modal';
+// import { initTagging } from 'src/app/utils/VendorScripts/VendorScripts';
+// import Tooltip from '../../Tooltip/Tooltip';
+import { bindActionCreators } from 'redux'
+import styled from "styled-components";
+import BlockCallsMessages from './blockCallsMessages';
+import BlockServices from './blocksServices/BlockServices';
+import { Button, TextLink } from '@vds/buttons';
+import { Line } from '@vds/lines';
+import { Modal, ModalBody, ModalFooter, ModalTitle } from '@vds/modals';
+import { Toggle } from '@vds/toggles';
+import { Loader } from '@vds/loaders';
+import { DropdownSelect } from '@vds/selects';
+import '../components/blocksServices/style.css';
+import { Tooltip } from '@vds/tooltips';
+
+// import { MDN_ROLE_MESSAGE,MDN_ROLE_NONREG_MESSAGE } from "./../../../constants";
+export const MDN_ROLE_MESSAGE = 'This line isn\'t registered for a My Verizon Account yet. You\'ll need this line to complete the online registration in order to access the features within My Verizon.';
+export const MDN_ROLE_NONREG_MESSAGE = 'Non Registered';
+class DeviceDetail extends Component {
+
+    constructor(props) {
+        super(props);
+        console.log(props,'props')
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+        if (props.location.state != null && props.location.state != undefined) {
+            this.devices = props.location.state.devices
+            this.isSingleDevice = props.location.state.isSingleDevice
+            this.selectedDevice = props.location.state.selectedDevice
+            this.advanceControls = props.location.state.advanceControls
+            this.showAdvanceControls= props.location.state.showAdvanceControls
+        }
+        this.state = {
+            selectedDevice: this.selectedDevice,
+            devices: this.devices,
+            advanceControls: this.advanceControls,
+            applePopUp:false,
+            isSingleDevice: this.isSingleDevice
+        }
+    }
+
+    componentDidMount() {
+        
+            const selectedMdn = this.props.location?.state?.selectedDevice?.encryptedMtn;
+    // const selectedMdn = this.props.location?.state?.selectedDevice?.encryptedMtn;
+    console.log(selectedMdn,'selected')
+    this.props?.actions?.getDeviceDetail(selectedMdn);
+    
+    console.log(this.props,'this.props');
+        // if (this.state.selectedDevice != undefined) {
+        //     let payload = {
+        //         mdn: this.props.location?.state?.selectedDevice?.encryptedMtn
+        //       }
+        //     this.props?.actions?.getSections(payload).then(() => {
+        //     })
+        // }
+        // if(window.vzdl){
+        //     window.vzdl.page["name"] = "Blocks - Device Details";
+        //     window.vzdl.event["value"] = "event117";
+        //     // initTagging("Blocks - Device Details");
+        // }
+    }
+
+    handleOnChangeDevice = (event) => {
+        let newSelectedDevice = this.state.devices.filter(selected => selected.mtn == event.target.value)
+        if (newSelectedDevice.length > 0) {
+            this.props?.actions?.getDeviceDetail(newSelectedDevice[0].encryptedMtn);
+            this.setState({
+                selectedDevice: newSelectedDevice[0],
+                selectedAccordian: ""
+            })
+        }   
+        console.log(selectedDevice,'selected')
+    }
+
+    selectAccordian = (name) => {
+        if (this.state.selectedAccordian === name)
+            name = ''
+        this.setState({
+            selectedAccordian: name
+        });
+    }
+
+    appleModal(e){
+        this.setState({
+            applePopUp: true
+        })
+    }
+    
+    closePupup=(e)=>{
+        this.setState({
+            applePopUp:false,
+        })
+      }
+
+    render() {
+        // const { isFetching, deviceListError } = this.props
+        const revokepopUpStyle = {
+            'top': '10%',
+            'maxHeight': '80%',
+            'width':'auto',
+            'maxWidth':'720px',
+            'margin':'20px'
+        };
+        const {deviceDetails, isFetching} = this.props
+        console.log(deviceDetails,'device details')
+        const {selectedDevice, applePopUp,isSingleDevice} = this.state
+        console.log(this.state)
+        let showServices = this.props.deviceDetails && this.props.deviceDetails.showServices
+        let Message = ""
+        let appleNotice = false
+        let showNotice = false
+        let Showmsg = ""
+        if (this.state.devices == undefined || this.state.devices == null) {
+            return (
+                <Redirect push to={{
+                    pathname: `/`,
+                }} />
+            );
+        }
+        const deviceOptions = this.state.devices.filter(rec=>!rec.isFiveGDevice).map((device) => {
+            return (<option value={device.mtn}>{(device.deviceNickname)} {device.mtn}</option>);
+        })
+        let cons='';
+        const msg = deviceDetails.contents?.[0]?.items.map((item)=>{
+            
+                if(item.itemKey === "appleDeviceMessage"){
+                    cons=item.itemValue;
+                    return(cons)
+                }
+                
+        })
+        console.log(cons,'msg')
+        if(deviceDetails && deviceDetails.data?.isAppleDevice && deviceDetails.data?.isAppleDevice == true){
+            appleNotice = true;
+            Showmsg = deviceDetails.appleDeviceMessage;
+        }
+        
+		if(this.props.deviceDetails && parseInt(this.props.deviceDetails.statusCode) == 0)  {
+		    if (deviceDetails.isDataOnlyPlan == true) {
+		        showNotice = true;
+		        Message = deviceDetails.dataOnlyMessage
+		    }
+		    else if (deviceDetails.isTrackingDevice == true) {
+		        showNotice = true;
+		        Message = deviceDetails.trackingDeviceMessage
+		    }
+		    else if (selectedDevice.isSpotDevice == true) {
+		        showNotice = true;
+		        Message = selectedDevice.spotDeviceMessage
+		    }
+		}
+        
+        return (
+            <div className="oneD">
+            
+            <div> <Loader show={isFetching} /></div>
+            <br/>
+            <br/>
+                <div className="row" tabindex="-1">
+                    
+                    <div className="col-lg-12 visible-lg visible-md" >
+                        <h1 style={{paddingLeft:'10px'}}>Now, let's manage blocks<br></br> for this device.</h1>
+                    </div>
+                    
+                     
+            
+                    {/* <div className="col-lg-12 visible-sm visible-xs" style={{marginBottom:'20px',width:'270px'}}>
+                        <h2>Now, let's manage blocks for this device.</h2>
+                    </div> */}
+                    {!isSingleDevice && <div className="row">
+                    <div style={{paddingLeft:'8px'}}>
+                        <Button use='secondary' surface='light' href="/blocks" role="button" data-track="DeviceDetailsSeeAllDevices">See all devices</Button>
+                    </div>      
+                </div>}
+                <div style={{padding:'5px'}}></div>
+                </div>
+                {!isSingleDevice && <div className="row" style={{display:'flex',justifyContent:'space-between'}}>
+                    <div className="col-lg-3" style={{position:'unset',flex:'0.3',paddingLeft:'10px'}}>
+                        <DropdownSelect
+                            onChange={(event) => this.handleOnChangeDevice(event)}
+                            defaultValue={this.state.selectedDevice.mtn}
+                            width='80%'
+                           
+                        >
+                            {deviceOptions}
+
+                        </DropdownSelect>
+                    </div>
+                </div>}
+                <br/>
+                 <Line></Line>           
+               <br/>
+              {/* <p onClick={(e)=>this.appleModal(e)} className= "anchor-link" tabIndex="0"> click here 11</p> */}
+                    
+                <div className="row " style={{display:'flex',justifyContent:'space-between',paddingLeft:'20px'}}>
+                    <div className="col-lg-4 col-sm-12 col-md-4">
+                    <div className="row " style={{paddingLeft:'10px'}}>
+                    <div className="col-lg-12 col-sm-8 col-xs-8 col-md-8" >
+                        <div style={{display:'flex'}}>
+                        <p className="role">{this.state.selectedDevice.role}
+                     </p>
+                       {this.state.selectedDevice.role==MDN_ROLE_NONREG_MESSAGE ?<div >
+                       <Tooltip outlined={true} style={{ marginLeft:"0.5rem"}}>
+                       {MDN_ROLE_MESSAGE}
+                     </Tooltip>
+                    </div>:""
+                    }
+                    </div>
+                        <h4>{this.state.selectedDevice.deviceNickname}</h4>
+                        <h4>{(this.state.selectedDevice.displayMtn)}</h4>
+                        {appleNotice &&<div className="row visible-sm visible-xs">
+                            {Showmsg}
+                        </div>}
+                        </div>
+                    <div style={{padding:0}}>
+                        <img  src={this.state.selectedDevice.images.mediumImage} alt="" />
+                        </div>
+                        </div>
+                        {/* {appleNotice && <div className="visible-sm visible-xs" style={{fontSize:'13px'}} >  
+                        <span dangerouslySetInnerHTML={{ __html: Showmsg }} /><a onClick={(e)=>this.appleModal(e)} className= "anchor-link" tabIndex="0">click here</a>
+                        </div>}
+
+                        <br/> */}
+                        {appleNotice?
+                        <div className="row visible-lg visible-md"  style={{width:'300px',paddingLeft:'10px'}}>
+                           <Body> <span dangerouslySetInnerHTML={{ __html: cons }} />
+                            
+                                
+                            <TextLink surface="light"> <Modal 
+                                      toggleButton={<TextLink surface="light"> Click here </TextLink>} 
+                                      surface="light"
+                                      fullScreenDialog={false}
+                                      disableAnimation={false}
+                                      disableOutsideClick={false}
+                                      ariaLabel="Testing Modal"
+                                    >
+                                    <ModalTitle>
+                                    Apple® iPhone® - Turn iMessage on/off<br/>
+                                    Before you start:
+                                    </ModalTitle>
+                                      <ModalBody>
+                                     
+                    
+                
+                        <p>Note the steps below apply to the following models:</p><br />
+                        <li>iPhone 16/16 pro/16 pro Max</li>
+                        <li>iPhone 15/15 pro/15 pro Max</li>
+                        <li>iPhone 14/14 pro/14 pro Max</li>
+                        <li>iPhone 13/13 pro/13 pro Max</li>
+                        <li>iPhone 12/12 pro/12 pro Max</li>
+                        <li>iPhone 11/11 pro/11 pro Max</li>
+                        <li>iPhone X/XS Max/XR</li>
+                        <li>iPhone 8/8 Plus</li>
+                        <li>iPhone 7/7 Plus</li>
+                        <li>iPhone SE</li>
+                        <li>iPhone 6/6 Plus/6S/6S Plus</li>
+                        <li>iPhone 5/5C/5S</li>
+                        <li>iPhone 4/4S</li><br/>
+                        <h5 >Steps</h5><br/>
+                        <ol >
+                            <li>From the Home screen, navigate: Settings Messages.</li>
+                            <li ><div style={{display:'flex'}}>Tap iMessage switch to turn <label style={{ "textAlign": "center",paddingLeft:"2px"}}>
+                            
+                            <Toggle 
+                                disabled={false}  
+                                showText={true}
+                                on={true}
+                                />
+                                    
+                                </label> <span style={{paddingLeft:'5px'}}>or</span> <label  style={{ "textAlign": "center",paddingLeft:"2px"}}>
+                                <Toggle 
+                                disabled={false}
+                                on={false} 
+                                showText={true} 
+                                />
+                                    
+                                </label>
+                                </div>
+                                </li>
+
+
+                        </ol>
+
+                
+                                      </ModalBody>
+                                </Modal> </TextLink>
+                        <br/>
+                        </Body>
+                        </div>:null}
+                    </div>
+                    <div className="col-lg-8  col-md-8" style={{position:'unset',flex:'0.8'}}>
+                        <span style={{fontSize:'13px'}}>Select a section below to get started. All changes are automatically saved.</span><br/><br/>
+                        
+                        {deviceDetails.isFamilyBase && <Alert Message={deviceDetails.familyBaseMessage} URL={deviceDetails.familyBaseUrl} Label={deviceDetails.familyBaseUrlMsg} Type={1} familyBaseFlag={deviceDetails.isFamilyBase} closeBanner={false}></Alert>}
+                        {showNotice?<Alert Message={Message} Type={1} closeBanner={true}/>:null}    
+                        <div className="radio-choose--disabled" >
+                        	<BlockCallsMessages selectAccordian={this.selectAccordian} selectedAccordian={this.state.selectedAccordian} selectedDevice={this.state.selectedDevice}/>
+                        </div>
+						<div className={showNotice ? "radio-choose--disabled" : ""}>
+					{<BlockServices selectAccordian={this.selectAccordian} selectedAccordian={this.state.selectedAccordian} selectedDevice={this.state.selectedDevice} />}                        </div>
+                    </div>
+                </div>
+                <br/>
+                <hr className="mb-32"></hr>
+                <AdvancedControls advanceControls={this.state.advanceControls}/>
+                {this.showAdvanceControls &&
+                     <div>
+                    <hr className="mb-32"></hr>
+                     <AdvancedControls advanceControls={this.state.advanceControls}/>
+                     </div>
+                 }
+             </div>
+            
+        )
+    }
+}
+
+
+const mapStateToProps = (store) => {
+    console.log(store,'store')
+    return {
+      isFetching: store.Detail.Details.isFetching,
+      deviceDetails: store.Detail.Details.deviceDetails,
+    }
+  }
+  const mapDispatchToProps = (dispatch) => ({
+    actions: bindActionCreators({ ...deviceDetailActions }, dispatch),
+  })
+  
+const ToolTipWrapper = styled.div`
+display: flex;
+top: 2% !important;
+position: absolute;
+left: 28%;
+`;
+const ToolTipText = styled.div`
+  font-family: NHaasGroteskDSStd-55Rg;
+  font-size: 0.7rem;
+  display: inline-flex;
+`;
+  export default connect(mapStateToProps,mapDispatchToProps)(DeviceDetail);

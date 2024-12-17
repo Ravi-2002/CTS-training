@@ -1,387 +1,190 @@
-TypeError: expect(...).toBeInTheDocument is not a function
-
-      56 |     );
-      57 |
-    > 58 |     expect(screen.getByText("Block services")).toBeInTheDocument();
-         |                                                ^
-      59 |     expect(screen.getByText("Sample Service")).toBeInTheDocument();
-      60 |   });
-      61 |
-
-      at Object.toBeInTheDocument (src/app/blocks/deviceDetail/test/BlockService.test.js:58:48)
-
-  ● BlockServices Component › expands and collapses services accordion on click
-
-    TestingLibraryElementError: Unable to find an element with the text: Sample Service. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
-
-    Ignored nodes: comments, script, style
-    <body>
-      <div>
-        <div
-          class="accordion"
-        >
-          <div
-            class="accordion__item"
-          >
-            <div
-              aria-expanded="false"
-              class="accordion__title"
-              role="button"
-              tabindex="0"
-            >
-              <div
-                class="u-position-relative"
-              >
-                <div
-                  class="accordion-title"
-                >
-                  <div
-                    class="sc-AxiKw coGIfQ"
-                    id="blockservices"
-                  >
-                    Block services
-                  </div>
-                </div>
-                <div
-                  class="accordion__arrow"
-                  id="blockservice"
-                  role="presentation"
-                />
-              </div>
-            </div>
-            <div>
-
-            </div>
-          </div>
-          <br />
-        </div>
-      </div>
-    </body>
-
-      67 |     );
-      68 |
-    > 69 |     const accordionButton = screen.getByText("Sample Service");
-         |                                    ^
-      70 |     fireEvent.click(accordionButton);
-      71 |
-      72 |     expect(accordionButton.closest("div").getAttribute("aria-expanded")).toBe(
-
-      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
-      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
-      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
-      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
-      at Object.getByText (src/app/blocks/deviceDetail/test/BlockService.test.js:69:36)
-
-  ● BlockServices Component › calls getServices action when Block services is clicked
-
-    TypeError: this.props.selectAccordian is not a function
-
-      38 |       //window.scrollTo(0, elmnt.parentElement.parentElement.offsetTop + ((elmnt.parentElement.parentElement.offsetTop*50)/100));
-      39 |       window.scrollTo(0,0);
-    > 40 |       this.props.selectAccordian('BS')
-         |                  ^
-      41 |       this.props.actions.getServices(this.props.selectedDevice.encryptedMtn)
-      42 |       console.log(this.props,'this.props')
-      43 |       
-
-      at BlockServices.selectAccordian [as handleServices] (src/app/blocks/deviceDetail/components/blocksServices/BlockServices.jsx:40:18)
-      at handleServices (src/app/blocks/deviceDetail/components/blocksServices/BlockServices.jsx:186:47)
-      at HTMLUnknownElement.apply (node_modules/react-dom/cjs/react-dom.development.js:4164:14)
-      at HTMLUnknownElement.callTheUserObjectsOperation (node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30)       
-      at innerInvokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:350:25)
-      at invokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)
-      at HTMLUnknownElementImpl._dispatch (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)
-      at HTMLUnknownElementImpl.dispatchEvent (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)
-      at HTMLUnknownElement.dispatchEvent (node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)
-      at Object.dispatchEvent (node_modules/react-dom/cjs/react-dom.development.js:4213:16)
-      at apply (node_modules/react-dom/cjs/react-dom.development.js:4277:31)
-      at apply (node_modules/react-dom/cjs/react-dom.development.js:4291:25)
-      at invokeGuardedCallbackAndCatchFirstError (node_modules/react-dom/cjs/react-dom.development.js:9041:3)
-      at executeDispatch (node_modules/react-dom/cjs/react-dom.development.js:9073:7)
-      at processDispatchQueueItemsInOrder (node_modules/react-dom/cjs/react-dom.development.js:9086:5)
-      at processDispatchQueue (node_modules/react-dom/cjs/react-dom.development.js:9097:3)
-      at dispatchEventsForPlugins (node_modules/react-dom/cjs/react-dom.development.js:9288:12)
-      at fn (node_modules/react-dom/cjs/react-dom.development.js:26140:12)
-      at batchedUpdatesImpl (node_modules/react-dom/cjs/react-dom.development.js:3991:12)
-      at batchedUpdates (node_modules/react-dom/cjs/react-dom.development.js:9287:3)
-      at dispatchEventForPluginEventSystem (node_modules/react-dom/cjs/react-dom.development.js:6465:5)
-      at dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay (node_modules/react-dom/cjs/react-dom.development.js:6457:5)
-      at dispatchEvent (node_modules/react-dom/cjs/react-dom.development.js:6430:5)
-      at HTMLDivElement.callTheUserObjectsOperation (node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30)
-      at innerInvokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:350:25)
-      at invokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)
-      at HTMLDivElementImpl._dispatch (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)
-      at HTMLDivElementImpl.dispatchEvent (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)
-      at HTMLDivElement.dispatchEvent (node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)
-      at dispatchEvent (node_modules/@testing-library/dom/dist/events.js:19:20)
-      at cb (node_modules/@testing-library/react/dist/pure.js:66:16)
-      at callback (node_modules/react/cjs/react.development.js:2512:16)
-      at Object.eventWrapper (node_modules/@testing-library/react/dist/pure.js:65:27)
-      at eventWrapper (node_modules/@testing-library/dom/dist/events.js:12:35)
-      at Function.fireEvent [as click] (node_modules/@testing-library/dom/dist/events.js:110:36)
-      at Function.fireEvent.<computed> [as click] (node_modules/@testing-library/react/dist/fire-event.js:18:52)
-      at Object.click (src/app/blocks/deviceDetail/test/BlockService.test.js:90:15)
-
-  ● BlockServices Component › calls getServices action when Block services is clicked
-
-    expect(jest.fn()).toHaveBeenCalled()
-
-    Expected number of calls: >= 1
-    Received number of calls:    0
-
-      90 |     fireEvent.click(blockServicesButton);
-      91 |
-    > 92 |     expect(mockActions.getServices).toHaveBeenCalled();
-         |                                     ^
-      93 |   });
-      94 |
-      95 |   it("toggles the service on and off", async () => {
-
-      at Object.toHaveBeenCalled (src/app/blocks/deviceDetail/test/BlockService.test.js:92:37)
-
-  ● BlockServices Component › toggles the service on and off
-
-    TestingLibraryElementError: Unable to find a label with the text of: Sample Service 1 Toggle Button On
-
-    Ignored nodes: comments, script, style
-    <body>
-      <div>
-        <div
-          class="accordion"
-        >
-          <div
-            class="accordion__item"
-          >
-            <div
-              aria-expanded="false"
-              class="accordion__title"
-              role="button"
-              tabindex="0"
-            >
-              <div
-                class="u-position-relative"
-              >
-                <div
-                  class="accordion-title"
-                >
-                  <div
-                    class="sc-AxiKw coGIfQ"
-                    id="blockservices"
-                  >
-                    Block services
-                  </div>
-                </div>
-                <div
-                  class="accordion__arrow"
-                  id="blockservice"
-                  role="presentation"
-                />
-              </div>
-            </div>
-            <div>
-
-            </div>
-          </div>
-          <br />
-        </div>
-      </div>
-    </body>
-
-      100 |     );
-      101 |
-    > 102 |     const toggleInput = screen.getByLabelText("Sample Service 1 Toggle Button On");
-          |                                ^
-      103 |     expect(toggleInput).toBeChecked();
-      104 |
-      105 |     fireEvent.click(toggleInput);
-
-      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
-      at getElementError (node_modules/@testing-library/dom/dist/queries/label-text.js:103:38)
-      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
-      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
-      at Object.getByLabelText (src/app/blocks/deviceDetail/test/BlockService.test.js:102:32)
-
-  ● BlockServices Component › displays a success message when confirmServiceFlag is true
-
-    TestingLibraryElementError: Unable to find an element with the text: Success. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
-
-    Ignored nodes: comments, script, style
-    <body>
-      <div>
-        <div
-          class="accordion"
-        >
-          <div
-            class="accordion__item"
-          >
-            <div
-              aria-expanded="false"
-              class="accordion__title"
-              role="button"
-              tabindex="0"
-            >
-              <div
-                class="u-position-relative"
-              >
-                <div
-                  class="accordion-title"
-                >
-                  <div
-                    class="sc-AxiKw coGIfQ"
-                    id="blockservices"
-                  >
-                    Block services
-                  </div>
-                </div>
-                <div
-                  class="accordion__arrow"
-                  id="blockservice"
-                  role="presentation"
-                />
-              </div>
-            </div>
-            <div>
-
-            </div>
-          </div>
-          <br />
-        </div>
-      </div>
-    </body>
-
-      118 |     );
-      119 |
-    > 120 |     expect(screen.getByText("Success")).toBeInTheDocument();
-          |                   ^
-      121 |   });
-      122 |
-      123 |   it("displays error message when serviceErrorFlag is true", () => {
-
-      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
-      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
-      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
-      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
-      at Object.getByText (src/app/blocks/deviceDetail/test/BlockService.test.js:120:19)
-
-  ● BlockServices Component › displays error message when serviceErrorFlag is true
-
-    TestingLibraryElementError: Unable to find an element with the text: Something went wrong!. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.      
-
-    Ignored nodes: comments, script, style
-    <body>
-      <div>
-        <div
-          class="accordion"
-        >
-          <div
-            class="accordion__item"
-          >
-            <div
-              aria-expanded="false"
-              class="accordion__title"
-              role="button"
-              tabindex="0"
-            >
-              <div
-                class="u-position-relative"
-              >
-                <div
-                  class="accordion-title"
-                >
-                  <div
-                    class="sc-AxiKw coGIfQ"
-                    id="blockservices"
-                  >
-                    Block services
-                  </div>
-                </div>
-                <div
-                  class="accordion__arrow"
-                  id="blockservice"
-                  role="presentation"
-                />
-              </div>
-            </div>
-            <div>
-
-            </div>
-          </div>
-          <br />
-        </div>
-      </div>
-    </body>
-
-      141 |     );
-      142 |
-    > 143 |     expect(screen.getByText("Something went wrong!")).toBeInTheDocument();
-          |                   ^
-      144 |   });
-      145 |
-      146 |   it("shows the loader when isFetching is true", () => {
-
-      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
-      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
-      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
-      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
-      at Object.getByText (src/app/blocks/deviceDetail/test/BlockService.test.js:143:19)
-
-  ● BlockServices Component › shows the loader when isFetching is true
-
-    TestingLibraryElementError: Unable to find an element by: [data-testid="loader"]
-
-    Ignored nodes: comments, script, style
-    <body>
-      <div>
-        <div
-          class="accordion"
-        >
-          <div
-            class="accordion__item"
-          >
-            <div
-              aria-expanded="false"
-              class="accordion__title"
-              role="button"
-              tabindex="0"
-            >
-              <div
-                class="u-position-relative"
-              >
-                <div
-                  class="accordion-title"
-                >
-                  <div
-                    class="sc-AxiKw coGIfQ"
-                    id="blockservices"
-                  >
-                    Block services
-                  </div>
-                </div>
-                <div
-                  class="accordion__arrow"
-                  id="blockservice"
-                  role="presentation"
-                />
-              </div>
-            </div>
-            <div>
-
-            </div>
-          </div>
-          <br />
-        </div>
-      </div>
-    </body>
-
-      160 |     );
-      161 |
-    > 162 |     expect(screen.getByTestId("loader")).toBeInTheDocument();
-          |                   ^
-      163 |   });
-      164 | });
-
-      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
-      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
-      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
-      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
-      at Object.getByTestId (src/app/blocks/deviceDetail/test/BlockService.test.js:162:19)
+{
+    "responseInfo": {
+        "timeStamp": "11-10-2024 12:34:40",
+        "correlationId": "Blocks Devices",
+        "responseCode": "00",
+        "responseMessage": "SUCCESS",
+        "sectionErrors": []
+    },
+    "body": {
+        "pageAttributes": [
+            {
+                "itemKey": "pageTitle",
+                "itemValue": "Devices blocks"
+            },
+            {
+                "itemKey": "hashedAccountNumber",
+                "itemValue": "##HASHED_ACCTNO##",
+                "itemType": "text"
+            },
+            {
+                "itemKey": "hashedMdn",
+                "itemValue": "##HASHED_MDN##",
+                "itemType": "text"
+            }
+        ],
+        "sections": [
+            {
+                "sectionIndex": "0",
+                "sectionId": "devicesBlocksMainSection",
+                "sectionType": "devicesBlocksMainSection",
+                "sectionComponentId": "GenericComponent",
+                "sections": [
+                    {
+                        "sectionIndex": "4",
+                        "sectionId": "devicesBlockServicesPageSection",
+                        "sectionType": "blockServicesSection",
+                        "contents": [
+                            {
+                                "contentIndex": "0",
+                                "items": [
+                                    {
+                                        "itemKey": "emailsDomainsHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Emails & Domains",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "dataHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Data & Internet",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "messagingHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Messaging",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "purchasesHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Purchases",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "additionalServicesHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Additional Services",
+                                        "itemAttributes": {}
+                                    }
+                                ]
+                            }
+                        ],
+                        "data": {
+                            "serviceDetailsMap": {
+                                "Additional Services": [
+                                    {
+                                        "longDescription": "<p>If you want to allow your number to display on a per-call basis, you can dial *82 + area code and phone number + SEND.</p>",
+                                        "sfoEnabled": "##SFO_BOOLE##",
+                                        "shortDescription": "Permanently block your number from displaying to others when you call.",
+                                        "serviceName": "Caller ID Blocking",
+                                        "marketingDesc": "Permanently block your number from displaying to others when you call.<br/><br/>If you want to allow your number to display on a per-call basis, you can dial *82 + area code and phone number + SEND.",
+                                        "sfoCode": "48577"
+                                    },
+                                    {
+                                        "longDescription": "Toggle the Video Calling setting on your phone to turn Video Calling on or off.",
+                                        "sfoEnabled": "##SFO_BOOLE##",
+                                        "shortDescription": "Prevents the activation of Video Calling. This allows you to control who may or may not use Video Calling.  Note that Video Calling Block does not control or impact any third-party video calling applications.",
+                                        "serviceName": "Block Video Calling",
+                                        "marketingDesc": "Video Calling Block will prevent the activation of Video Calling on a particular line. This allows you to control who may or may not use Video Calling.  Note that Video Calling Block does not control or impact any third-party video calling applications.",
+                                        "sfoCode": "79614"
+                                    },
+                                    {
+                                        "longDescription": "If you are experiencing issues making international calls, Block International HD Voice can help resolve these problems at no extra cost. This change takes up to 15 minutes. Once you are back in the U.S. you will resume your normal call service.",
+                                        "sfoEnabled": "##SFO_BOOLE##",
+                                        "shortDescription": "Manage your call quality while travelling abroad.",
+                                        "serviceName": "Block International HD Voice",
+                                        "marketingDesc": "If you are experiencing issues making international calls, Block International HD Voice can help resolve these problems at no extra cost. This change takes up to 15 minutes. Once you are back in the U.S. you will resume your normal call service.",
+                                        "sfoCode": "86140"
+                                    }
+                                ],
+                                "Data and Internet": [
+                                    {
+                                        "longDescription": "Instead of Block Mobile Web, consider <b>Content Filtering</b> to manage the type of content your Account Member can view/download. Content Filtering is offered free of charge.<br><br><b>Usage Controls</b> limit when your Account Member has access to the Mobile Web. <b>$4.99/line subscription fee required.</b><br><br><b>Alternative:&nbsp;</b>Use <a href=\"/vzw/accountholder/uc/UCContentFilter.action\" role=\"link\" tabindex=\"0\">Content Filters</a> to manage the rating of available web sites and Usage Controls to limit your Account Member's access to this service.",
+                                        "sfoEnabled": "##SFO_71905_BOOLEAN##",
+                                        "shortDescription": "Block Mobile Web will prevent you from accessing the Mobile Web from your handset. The Block Mobile Web is line specific.",
+                                        "serviceName": "Block Mobile Web",
+                                        "marketingDesc": "Block Mobile Web will prevent you from accessing the Mobile Web from your handset. The Block Mobile Web is line specific.<br/><br/><b>Instead of Block Mobile Web, consider <br/>Content Filtering</b> to manage the type of content your Account Member can view/download. Content Filtering is offered free of charge.<br/><br/><b>Usage Controls</b> limit when your Account Member has access to the Mobile Web. <b>$4.99/line subscription fee required.</b><br/><br/>",
+                                        "sfoCode": "71905"
+                                    }
+                                ],
+                                "Messaging": [
+                                    {
+                                        "longDescription": "<p>If you have a Messaging package on your line, Block All Messaging will remove your Messaging package. Credits or pro-rating will be applied to Messaging allowance and fees already incurred. If you remove this block at a later time, you will be charged for each message sent and received unless you add a new Messaging package or change your plan.</p><p>Instead of Block All Messaging, consider:</p><ul><li>An Unlimited plan which includes unlimited messaging.</li><li>Smart Family which limits access to outgoing and incoming messages, $5.00/mo per account subscription fee required.</li><li>Less restrictive blocks such as Block Premium Messaging, or Call &amp; Message Blocks.</li></ul><p><span style=\"color:red\"> Note  If you select this block you will prevent all outgoing and incoming Text, Multimedia (a.k.a. Picture and Video), Premium and Enhanced Messages. You will continue to receive usage alerts.</span></p>",
+                                        "sfoEnabled": "##SFO_54307_BOOLEAN##",
+                                        "shortDescription": "Prevents incoming and outgoing Text, Multimedia, PSMS (Premium Messages), EMS (Enhanced Messaging) and Mobile Web Alerts/other various alerts.",
+                                        "serviceName": "Block All Messaging",
+                                        "marketingDesc": "This messaging block prevents incoming and outgoing Text, Multimedia, PSMS (Premium Messages), EMS (Enhanced Messaging) and Mobile Web Alerts/other various alerts.<br/><br/>If you have a Messaging package on your line, Block All Messaging will remove your Messaging package. Credits or pro-rating will be applied to Messaging allowance and fees already incurred. If you remove this block at a later time, you will be charged for each message sent and received unless you add a new Messaging package or change your plan.<br/><br/>Instead of Block All Messaging, consider:<ul><li>More Everything plans which includes unlimited messaging.</li><li>Family Base which limits access to outgoing and incoming messages, $5.00/mo per account subscription fee required.</li><li>Less restrictive blocks such as Block Premium Messaging, or <a href = \"/vzw/secure/messageIntercept/messageInterceptHome.action\">Call & Message Blocks</a>.</li></ul><br/><br/>",
+                                        "sfoCode": "54307"
+                                    },
+                                    {
+                                        "longDescription": "Block Picture and Video Messaging (MMS) will prevent you from sending and receiving Picture and Video Messages from your handset. Pictures and Videos downloaded and stored on the handset prior to adding the block are still accessible by anyone in possession of the handset until the content is deleted. Although MMS notifications sent via SMS are still delivered to the handset, content from these messages is blocked and no text message charges are incurred.Block Picture and Video Messaging <span>:</span> <br> <ul><li>Does not block or filter all access to messages and content.</li><li> Should not be used as a child management tool. </li><li> Is not a substitute for adult supervision. </li></ul>Go to 'My Verizon' Family Base for additional blocking and filtering tools, including Text Messaging Block and tools to block access to the Web. The Picture and Video Messaging Block is phone number specific. <br><br><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a>&nbsp; to limit your Account Member's access to this service.",
+                                        "sfoEnabled": "##SFO_75369_BOOLEAN##",
+                                        "shortDescription": "Block Picture and Video Messaging (MMS) will prevent you from sending and receiving Picture and Video Messages from your handset.",
+                                        "serviceName": "Block Picture and Video Messaging",
+                                        "marketingDesc": "Block Picture and Video Messaging (MMS) will prevent you from sending and receiving Picture and Video Messages from your handset. Pictures and Videos downloaded and stored on the handset prior to adding the block are still accessible by anyone in possession of the handset until the content is deleted. Although MMS notifications sent via SMS are still delivered to the handset, content from these messages is blocked and no text message charges are incurred.<br/><br/>Block Picture and Video Messaging:<br/>1) Does not block or filter all access to messages and content.<br/>2) Should not be used as a child management tool.<br/>3) Is not a substitute for adult supervision.<br/><br/> Go to 'My Verizon' Family Base for additional blocking and filtering tools, including Text Messaging Block and tools to block access to the Web. The Picture and Video Messaging Block is phone number specific.<br/><br/>",
+                                        "sfoCode": "75369"
+                                    }
+                                ],
+                                "Purchases": [
+                                    {
+                                        "longDescription": "Does not cancel existing subscriptions. To prevent billing for other subscription applications previously downloaded, please cancel them before proceeding. <br/><br/>This Block only applies to Get It Now/Media Center-capable devices. The Block does not apply to advanced devices, notebooks or PCs (such as BlackBerry, Palm, Windows Mobile and Android device) or to any applications that can be accessed through other methods. Block Application Downloads is mobile number specific.<br/><br/><p><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a> to limit your Account Member's access to this service.</p>",
+                                        "sfoEnabled": "##SFO_66139_BOOLEAN##",
+                                        "shortDescription": "Prevents you from purchasing application downloads via Get It Now/Media Center. Applications previously downloaded are not blocked from use.",
+                                        "serviceName": "Block All Application Downloads",
+                                        "marketingDesc": "Block Application Downloads will prevent you from purchasing application downloads via Get It Now/Media Center. Applications previously downloaded are not blocked from use. Block Application Downloads does not cancel existing subscriptions. To prevent billing for any other subscription applications previously downloaded, please cancel them before proceeding. <br/><br/>This Block only applies to Get It Now/Media Center-capable devices. The Block does not apply to advanced devices, notebooks or PCs (such as BlackBerry, Palm, Windows Mobile and Android device) or to any applications that can be accessed through other methods. Block Application Downloads is mobile number specific.<br/><br/>",
+                                        "sfoCode": "66139"
+                                    },
+                                    {
+                                        "longDescription": "Ringback Tones are line specific. Existing Ringback Tones will still be heard.<br/><br/><b>Instead of Ringback Tones, consider <br/>Usage Controls</b> limit when your Account Member has access to Ringback Tones.<b>$4.99/line subscription fee required.</b><br/><br/><p><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a> to limit your Account Member's access to this service.</p>",
+                                        "sfoEnabled": "##SFO_71804_BOOLEAN##",
+                                        "shortDescription": "Prevents you from accessing the Media store from both your handset and PC.",
+                                        "serviceName": "Block Ringback Tone Purchase",
+                                        "marketingDesc": "Block Ringback Tones Purchase will prevent you from accessing the V CAST Music store from both your handset and PC.The V CAST Ringback Tones is line specific. Existing Ringback Tones will still be heard.<br/><br/><b>Instead of V CAST Ringback Tones, consider <br/>Usage Controls</b> limit when your Account Member has access to V CAST Ringback Tones.<b>$4.99/line subscription fee required.</b><br/><br/>",
+                                        "sfoCode": "71804"
+                                    },
+                                    {
+                                        "longDescription": "Blocking <b>\"Games\"</b> does not cancel existing Application or In-App recurring subscriptions. To prevent billing for Application or <b>In-App</b> subscriptions previously purchased, please cancel them from \"Your Apps\" in the <b>\"Games\"</b> client.<br/><br/> This Block applies only to the mobile number you specify and does not apply to purchases made through <b>Google Play, RIM App World or other third party application stores</b>. To only block purchases for <b>\"Games\" In-App</b> items you must block <b>Games Portal In-App Purchases.</b><p><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCContentFilter.action\">Content Filters</a> to manage the rating of available songs and <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a> to limit your Account Member's access to this service.</p>",
+                                        "sfoEnabled": "##SFO_75144_BOOLEAN##",
+                                        "shortDescription": "Prevents the purchase of Applications from \"Games\" Apps in addition to In-App items from applications downloaded from \"Games\" Apps.",
+                                        "serviceName": "Block \"Games\" Purchases",
+                                        "marketingDesc": "Blocking <b>\"Games\"</b> does not cancel existing Application or In-App recurring subscriptions.  To prevent billing for Application or <b>In-App</b> subscriptions previously purchased, please cancel them from \"Your Apps\" in the <b>\"Games\"</b> client. <br/><br/> This Block applies only to the mobile number you specify and does not apply to purchases made through <b>Google Play, RIM App World or other  third party application stores</b>. To only block purchases for <b>\"Games\" In-App</b> items you must block <b>Games Portal In-App Purchases.</b> <p><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCContentFilter.action\">Content Filters</a> to manage the rating of available songs  and <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a> to limit your Account Member's  access to this service.</p>",
+                                        "sfoCode": "75144"
+                                    },
+                                    {
+                                        "longDescription": "<b>Alternative:&nbsp;</b>Do not block this service and retain option to charge third-party apps, virtual goods, services, donations, gift cards, and PopData to your Verizon Wireless bill.",
+                                        "sfoEnabled": "##SFO_76460_BOOLEAN##",
+                                        "shortDescription": "Prevents you from charging media, apps, and services to your Verizon Wireless bill. Including but not limited to <span>:</span> Verizon and third-party media & app purchases, virtual goods, services, donations, giftcards, and PopData.",
+                                        "serviceName": "Block Purchases and Gifting",
+                                        "marketingDesc": "Blocking purchases and gifting prevents this line on your account from charging new subscriptions and purchases from other vendors, third-party apps, virtual goods, services, donations, gift cards, and PopData to your Verizon Wireless bill. This block may not cancel or remove existing subscriptions from being charged to your Verizon Wireless account.",
+                                        "sfoCode": "75440"
+                                    },
+                                    {
+                                        "serviceName": "Block Visual Voice Mail"
+                                    },
+                                    {
+                                        "longDescription": "Examples of <b>In-App</b> items include virtual goods and content offered through an application, such as<span>:</span>  <ul><li>Credits</li><li>Game levels</li></ul>Blocking <b>\"Games\" In-App Purchases</b> does not cancel existing In-App recurring subscriptions.  To prevent billing for <b>In-App</b> subscriptions previously purchased, please cancel them from within the <b>\"Games\"</b> application.<br/>  <br/>This Block applies only to the mobile number you specify and does not apply to purchases from the <b>\"Games\"</b> application.  To completely block purchases from the <b>\"Games\"</b> application and <b>\"Games\" In-App</b> items you must block <b>\"Games\"</b>.  <br/><br/>This Block does not apply to purchases made through applications downloaded from <b>Google Play, RIM App World or other third  party application stores</b>.<p><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCContentFilter.action\">Content Filters</a>  to manage the rating of available songs and  <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a> to limit your Account Member's access to this service.</p>",
+                                        "sfoEnabled": "##SFO_76982_BOOLEAN##",
+                                        "shortDescription": "Prevents the purchase of In-App items from within \"Games\" application.",
+                                        "serviceName": "Block \"Games\" In-App Purchases",
+                                        "marketingDesc": "<Blocking <b>\"Games\" In-App Purchases</b> prevents the purchase of <b>In-App</b> items from within \"Games\" application.  Examples of <b>In-App</b> items include virtual goods and content offered through an application, such as <ul><li>Credits</li> <li>Game levels</li></ul>Blocking <b>\"Games\" In-App Purchases</b> does not cancel existing In-App recurring subscriptions.  To prevent billing for <b>In-App</b> subscriptions previously purchased, please cancel them from within the <b>\"Games\"</b> application.<br/> <br/>This Block applies only to the mobile number you specify and does not apply to purchases from the <b>\"Games\"</b> application.  To completely block purchases from the <b>\"Games\"</b> application and <b>\"Games\" In-App</b> items you must block <b>\"Games\"</b>. <br/><br/>This Block does not apply to purchases made through applications downloaded from <b>Google Play,  RIM App World or other third party application stores</b>.",
+                                        "sfoCode": "76982"
+                                    },
+                                    {
+                                        "longDescription": "<b>Alternative:&nbsp;</b> Do not block this service and retain the option to add Premium Visual Voice Mail with Voice Mail to Text and accept the Premium Voice Mail Free Trial offer.",
+                                        "sfoEnabled": "##SFO_78762_BOOLEAN##",
+                                        "shortDescription": "Prevents Premium Visual Voice Mail from being added to your account. You can continue to subscribe to Basic Visual Voice Mail or Basic Voice Mail",
+                                        "serviceName": "Block Premium Visual Voice Mail",
+                                        "marketingDesc": "Adding Block Premium Visual Voice Mail will prevent Premium Visual Voice Mail from being added to your account. You can also continue to subscribe to Basic Visual Voice Mail or Basic Voice Mail.<br/><br>",
+                                        "sfoCode": "78762"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

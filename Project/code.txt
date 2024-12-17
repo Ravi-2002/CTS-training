@@ -1,159 +1,794 @@
-import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import configureMockStore from 'redux-mock-store';
-import BlockServices from './blockservices';
-import * as actions from '../../actions/fetchServices';
+● BlockServices Component › shows a loader while fetching services
 
-// Mock Store and Actions
-const mockStore = configureMockStore();
-const mockActions = {
-  getServices: jest.fn(),
-  postServices: jest.fn(() => Promise.resolve()),
-};
+    TestingLibraryElementError: Unable to find an element by: [data-testid="loader"]
 
-// Helper function to render the component with store
-const renderComponent = (store) => {
-  render(
-    <Provider store={store}>
-      <BlockServices actions={mockActions} />
-    </Provider>
-  );
-};
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="accordion"
+        >
+          <div
+            class="accordion__item"
+          >
+            <div
+              aria-expanded="false"
+              class="accordion__title"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="u-position-relative"
+              >
+                <div
+                  class="accordion-title"
+                >
+                  <div
+                    class="sc-AxiKw coGIfQ"
+                    id="blockservices"
+                  >
+                    Block services
+                  </div>
+                </div>
+                <div
+                  class="accordion__arrow"
+                  id="blockservice"
+                  role="presentation"
+                />
+              </div>
+            </div>
+            <div>
 
-describe('BlockServices Component', () => {
-  let store;
+            </div>
+          </div>
+          <br />
+        </div>
+      </div>
+    </body>
 
-  beforeEach(() => {
-    // Initial mock state based on your provided JSON structure
-    store = mockStore({
-      Detail: {
-        serviceCalls: {
-          services: {
-            "Emails & domains": { 
-              isExpand: false, 
-              data: [
-                { 
-                  sfoCode: '123', 
-                  serviceName: 'Service A', 
-                  sfoEnabled: 'Y', 
-                  shortDescription: 'Short A', 
-                  longDescription: 'Long A' 
-                }
-              ] 
-            },
-          },
-          serviceStatus: { responseInfo: { responseCode: '0' } },
-          isFetching: false,
-        },
-      },
-    });
-    store.dispatch = jest.fn(); // Mock the dispatch function
-  });
+      110 |     renderComponent(store);
+      111 |
+    > 112 |     expect(screen.getByTestId('loader')).toBeInTheDocument();
+          |                   ^
+      113 |   });
+      114 |
+      115 |   it('renders an error message on failure', () => {
 
-  it('renders the BlockServices component correctly', () => {
-    renderComponent(store);
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
+      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
+      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.getByTestId (src/app/blocks/deviceDetail/test/BlockService.test.js:112:19)
 
-    // Check if the block services title is present
-    expect(screen.getByText(/Block services/i)).toBeInTheDocument();
-  });
+  ● BlockServices Component › renders an error message on failure
 
-  it('calls getServices when the accordion is clicked', () => {
-    renderComponent(store);
+    TestingLibraryElementError: Unable to find an element with the text: /Something went wrong/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
 
-    const accordionButton = screen.getByRole('button', { name: /block services/i });
-    fireEvent.click(accordionButton);
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="accordion"
+        >
+          <div
+            class="accordion__item"
+          >
+            <div
+              aria-expanded="false"
+              class="accordion__title"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="u-position-relative"
+              >
+                <div
+                  class="accordion-title"
+                >
+                  <div
+                    class="sc-AxiKw coGIfQ"
+                    id="blockservices"
+                  >
+                    Block services
+                  </div>
+                </div>
+                <div
+                  class="accordion__arrow"
+                  id="blockservice"
+                  role="presentation"
+                />
+              </div>
+            </div>
+            <div>
 
-    expect(mockActions.getServices).toHaveBeenCalled();
-  });
+            </div>
+          </div>
+          <br />
+        </div>
+      </div>
+    </body>
 
-  it('expands sub-services when clicked', () => {
-    renderComponent(store);
+      126 |     renderComponent(store);
+      127 |
+    > 128 |     expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
+          |                   ^
+      129 |   });
+      130 |
+      131 |   it('renders a success message on service toggle', () => {
 
-    const accordionButton = screen.getByRole('button', { name: /block services/i });
-    fireEvent.click(accordionButton);
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
+      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
+      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.getByText (src/app/blocks/deviceDetail/test/BlockService.test.js:128:19)
 
-    const subAccordion = screen.getByRole('button', { name: /Emails & domains/i });
-    fireEvent.click(subAccordion);
+  ● BlockServices Component › renders a success message on service toggle
 
-    // Check if sub-accordion is expanded
-    expect(screen.getByText('Service A')).toBeInTheDocument();
-  });
+    TestingLibraryElementError: Unable to find an element with the text: /Service updated successfully/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
 
-  it('toggles a service on and off', async () => {
-    renderComponent(store);
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="accordion"
+        >
+          <div
+            class="accordion__item"
+          >
+            <div
+              aria-expanded="false"
+              class="accordion__title"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="u-position-relative"
+              >
+                <div
+                  class="accordion-title"
+                >
+                  <div
+                    class="sc-AxiKw coGIfQ"
+                    id="blockservices"
+                  >
+                    Block services
+                  </div>
+                </div>
+                <div
+                  class="accordion__arrow"
+                  id="blockservice"
+                  role="presentation"
+                />
+              </div>
+            </div>
+            <div>
 
-    const accordionButton = screen.getByRole('button', { name: /block services/i });
-    fireEvent.click(accordionButton);
+            </div>
+          </div>
+          <br />
+        </div>
+      </div>
+    </body>
 
-    const toggleInput = screen.getByRole('checkbox');
-    expect(toggleInput).toBeChecked(); // Initially 'On'
+      142 |     renderComponent(store);
+      143 |
+    > 144 |     expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
+          |                   ^
+      145 |   });
+      146 |
+      147 |   it('does not call postServices if the service is already in the desired state', async () => {
 
-    await act(async () => {
-      fireEvent.click(toggleInput);
-    });
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
+      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
+      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.getByText (src/app/blocks/deviceDetail/test/BlockService.test.js:144:19)
 
-    expect(mockActions.postServices).toHaveBeenCalledWith({
-      mdn: undefined, // Mock mdn value; pass encryptedMtn from props in real test
-      sfoCode: '123',
-      sfoEnabled: 'N', // Assume 'N' means the service is disabled
-    });
-  });
+  ● BlockServices Component › does not call postServices if the service is already in the desired state
 
-  it('shows a loader while fetching services', () => {
-    // Update store to show fetching state
-    store = mockStore({
-      Detail: {
-        serviceCalls: { isFetching: true },
-      },
-    });
+    TestingLibraryElementError: Unable to find an accessible element with the role "checkbox"
 
-    renderComponent(store);
+    Here are the accessible roles:
 
-    expect(screen.getByTestId('loader')).toBeInTheDocument();
-  });
+      button:
 
-  it('renders an error message on failure', () => {
-    // Mock a service error based on responseInfo errorCode
-    store = mockStore({
-      Detail: {
-        serviceCalls: {
-          serviceFail: true,
-          failServices: { errorMessage: 'Something went wrong' },
-        },
-      },
-    });
+      Name "Block services":
+      <div
+        aria-expanded="false"
+        class="accordion__title"
+        role="button"
+        tabindex="0"
+      />
 
-    renderComponent(store);
+      --------------------------------------------------
+      presentation:
 
-    expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
-  });
+      Name "":
+      <div
+        class="accordion__arrow"
+        id="blockservice"
+        role="presentation"
+      />
 
-  it('renders a success message on service toggle', () => {
-    // Mock success flag based on responseInfo
-    store = mockStore({
-      Detail: {
-        serviceCalls: {
-          confirmServiceFlag: true,
-          confirmServices: { successMsg: 'Service updated successfully' },
-        },
-      },
-    });
+      --------------------------------------------------
 
-    renderComponent(store);
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="accordion"
+        >
+          <div
+            class="accordion__item"
+          >
+            <div
+              aria-expanded="false"
+              class="accordion__title"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="u-position-relative"
+              >
+                <div
+                  class="accordion-title"
+                >
+                  <div
+                    class="sc-AxiKw coGIfQ"
+                    id="blockservices"
+                  >
+                    Block services
+                  </div>
+                </div>
+                <div
+                  class="accordion__arrow"
+                  id="blockservice"
+                  role="presentation"
+                />
+              </div>
+            </div>
+            <div>
 
-    expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
-  });
+            </div>
+          </div>
+          <br />
+        </div>
+      </div>
+    </body>
 
-  it('does not call postServices if the service is already in the desired state', async () => {
-    renderComponent(store);
+      151 |     fireEvent.click(accordionButton);
+      152 |
+    > 153 |     const toggleInput = screen.getByRole('checkbox');
+          |                                ^
+      154 |     // Simulate service is already turned off
+      155 |     fireEvent.click(toggleInput);
+      156 |     expect(mockActions.postServices).not.toHaveBeenCalled(); // No post request if no change
 
-    const accordionButton = screen.getByRole('button', { name: /block services/i });
-    fireEvent.click(accordionButton);
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
+      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
+ FAIL  src/app/blocks/deviceDetail/test/BlockService.test.js (5.891 s)
+  ● BlockServices Component › renders the BlockServices component correctly
 
-    const toggleInput = screen.getByRole('checkbox');
-    // Simulate service is already turned off
-    fireEvent.click(toggleInput);
-    expect(mockActions.postServices).not.toHaveBeenCalled(); // No post request if no change
-  });
-});
+    TypeError: expect(...).toBeInTheDocument is not a function
+
+      55 |
+      56 |     // Check if the block services title is present
+    > 57 |     expect(screen.getByText(/Block services/i)).toBeInTheDocument();
+         |                                                 ^
+      58 |   });
+      59 |
+      60 |   it('calls getServices when the accordion is clicked', () => {
+
+      at Object.toBeInTheDocument (src/app/blocks/deviceDetail/test/BlockService.test.js:57:49)
+
+  ● BlockServices Component › calls getServices when the accordion is clicked
+
+    TypeError: this.props.selectAccordian is not a function
+
+      37 |       //window.scrollTo(0, elmnt.parentElement.parentElement.offsetTop + ((elmnt.parentElement.parentElement.offsetTop*50)/100));
+      38 |       window.scrollTo(0,0);
+    > 39 |       this.props.selectAccordian('BS')
+         |                  ^
+      40 |       this.props.actions.getServices(this.props.selectedDevice.encryptedMtn)
+      41 |       console.log(this.props,'this.props')
+      42 |       
+
+      at BlockServices.selectAccordian [as handleServices] (src/app/blocks/deviceDetail/components/blocksServices/BlockServices.jsx:39:18)
+      at handleServices (src/app/blocks/deviceDetail/components/blocksServices/BlockServices.jsx:185:47)
+      at HTMLUnknownElement.apply (node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+      at HTMLUnknownElement.callTheUserObjectsOperation (node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30)
+      at innerInvokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:350:25)
+      at invokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)
+      at HTMLUnknownElementImpl._dispatch (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)      
+      at HTMLUnknownElementImpl.dispatchEvent (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17) 
+      at HTMLUnknownElement.dispatchEvent (node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)       
+      at Object.dispatchEvent (node_modules/react-dom/cjs/react-dom.development.js:4213:16)
+      at apply (node_modules/react-dom/cjs/react-dom.development.js:4277:31)
+      at apply (node_modules/react-dom/cjs/react-dom.development.js:4291:25)
+      at invokeGuardedCallbackAndCatchFirstError (node_modules/react-dom/cjs/react-dom.development.js:9041:3)
+      at executeDispatch (node_modules/react-dom/cjs/react-dom.development.js:9073:7)
+      at processDispatchQueueItemsInOrder (node_modules/react-dom/cjs/react-dom.development.js:9086:5)
+      at processDispatchQueue (node_modules/react-dom/cjs/react-dom.development.js:9097:3)
+      at dispatchEventsForPlugins (node_modules/react-dom/cjs/react-dom.development.js:9288:12)
+      at fn (node_modules/react-dom/cjs/react-dom.development.js:26140:12)
+      at batchedUpdatesImpl (node_modules/react-dom/cjs/react-dom.development.js:3991:12)
+      at batchedUpdates (node_modules/react-dom/cjs/react-dom.development.js:9287:3)
+      at dispatchEventForPluginEventSystem (node_modules/react-dom/cjs/react-dom.development.js:6465:5)
+      at dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay (node_modules/react-dom/cjs/react-dom.development.js:6457:5)
+      at dispatchEvent (node_modules/react-dom/cjs/react-dom.development.js:6430:5)
+      at HTMLDivElement.callTheUserObjectsOperation (node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30)
+      at innerInvokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:350:25)
+      at invokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)
+      at HTMLDivElementImpl._dispatch (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)
+      at HTMLDivElementImpl.dispatchEvent (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)     
+      at HTMLDivElement.dispatchEvent (node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)
+      at dispatchEvent (node_modules/@testing-library/dom/dist/events.js:19:20)
+      at cb (node_modules/@testing-library/react/dist/pure.js:66:16)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at Object.eventWrapper (node_modules/@testing-library/react/dist/pure.js:65:27)
+      at eventWrapper (node_modules/@testing-library/dom/dist/events.js:12:35)
+      at Function.fireEvent [as click] (node_modules/@testing-library/dom/dist/events.js:110:36)
+      at Function.fireEvent.<computed> [as click] (node_modules/@testing-library/react/dist/fire-event.js:18:52)      
+      at Object.click (src/app/blocks/deviceDetail/test/BlockService.test.js:64:15)
+
+  ● BlockServices Component › calls getServices when the accordion is clicked
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      64 |     fireEvent.click(accordionButton);
+      65 |
+    > 66 |     expect(mockActions.getServices).toHaveBeenCalled();
+         |                                     ^
+      67 |   });
+      68 |
+      69 |   it('expands sub-services when clicked', () => {
+
+      at Object.toHaveBeenCalled (src/app/blocks/deviceDetail/test/BlockService.test.js:66:37)
+
+  ● BlockServices Component › expands sub-services when clicked
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "button" and name `/Emails & domains/i`
+
+    Here are the accessible roles:
+
+      button:
+
+      Name "Block services":
+      <div
+        aria-expanded="false"
+        class="accordion__title"
+        role="button"
+        tabindex="0"
+      />
+
+      --------------------------------------------------
+      presentation:
+
+      Name "":
+      <div
+        class="accordion__arrow"
+        id="blockservice"
+        role="presentation"
+      />
+
+      --------------------------------------------------
+
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="accordion"
+        >
+          <div
+            class="accordion__item"
+          >
+            <div
+              aria-expanded="false"
+              class="accordion__title"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="u-position-relative"
+              >
+                <div
+                  class="accordion-title"
+                >
+                  <div
+                    class="sc-AxiKw coGIfQ"
+                    id="blockservices"
+                  >
+                    Block services
+                  </div>
+                </div>
+                <div
+                  class="accordion__arrow"
+                  id="blockservice"
+                  role="presentation"
+                />
+              </div>
+            </div>
+            <div>
+
+            </div>
+          </div>
+          <br />
+        </div>
+      </div>
+    </body>
+
+      73 |     fireEvent.click(accordionButton);
+      74 |
+    > 75 |     const subAccordion = screen.getByRole('button', { name: /Emails & domains/i });
+         |                                 ^
+      76 |     fireEvent.click(subAccordion);
+      77 |
+      78 |     // Check if sub-accordion is expanded
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
+      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
+      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.getByRole (src/app/blocks/deviceDetail/test/BlockService.test.js:75:33)
+
+  ● BlockServices Component › toggles a service on and off
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "checkbox"
+
+    Here are the accessible roles:
+
+      button:
+
+      Name "Block services":
+      <div
+        aria-expanded="false"
+        class="accordion__title"
+        role="button"
+        tabindex="0"
+      />
+
+      --------------------------------------------------
+      presentation:
+
+      Name "":
+      <div
+        class="accordion__arrow"
+        id="blockservice"
+        role="presentation"
+      />
+
+      --------------------------------------------------
+
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="accordion"
+        >
+          <div
+            class="accordion__item"
+          >
+            <div
+              aria-expanded="false"
+              class="accordion__title"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="u-position-relative"
+              >
+                <div
+                  class="accordion-title"
+                >
+                  <div
+                    class="sc-AxiKw coGIfQ"
+                    id="blockservices"
+                  >
+                    Block services
+                  </div>
+                </div>
+                <div
+                  class="accordion__arrow"
+                  id="blockservice"
+                  role="presentation"
+                />
+              </div>
+            </div>
+            <div>
+
+            </div>
+          </div>
+          <br />
+        </div>
+      </div>
+    </body>
+
+      86 |     fireEvent.click(accordionButton);
+      87 |
+    > 88 |     const toggleInput = screen.getByRole('checkbox');
+         |                                ^
+      89 |     expect(toggleInput).toBeChecked(); // Initially 'On'
+      90 |
+      91 |     await act(async () => {
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
+      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
+      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.getByRole (src/app/blocks/deviceDetail/test/BlockService.test.js:88:32)
+
+  ● BlockServices Component › shows a loader while fetching services
+
+    TestingLibraryElementError: Unable to find an element by: [data-testid="loader"]
+
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="accordion"
+        >
+          <div
+            class="accordion__item"
+          >
+            <div
+              aria-expanded="false"
+              class="accordion__title"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="u-position-relative"
+              >
+                <div
+                  class="accordion-title"
+                >
+                  <div
+                    class="sc-AxiKw coGIfQ"
+                    id="blockservices"
+                  >
+                    Block services
+                  </div>
+                </div>
+                <div
+                  class="accordion__arrow"
+                  id="blockservice"
+                  role="presentation"
+                />
+              </div>
+            </div>
+            <div>
+
+            </div>
+          </div>
+          <br />
+        </div>
+      </div>
+    </body>
+
+      110 |     renderComponent(store);
+      111 |
+    > 112 |     expect(screen.getByTestId('loader')).toBeInTheDocument();
+          |                   ^
+      113 |   });
+      114 |
+      115 |   it('renders an error message on failure', () => {
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
+      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
+      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.getByTestId (src/app/blocks/deviceDetail/test/BlockService.test.js:112:19)
+
+  ● BlockServices Component › renders an error message on failure
+
+    TestingLibraryElementError: Unable to find an element with the text: /Something went wrong/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="accordion"
+        >
+          <div
+            class="accordion__item"
+          >
+            <div
+              aria-expanded="false"
+              class="accordion__title"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="u-position-relative"
+              >
+                <div
+                  class="accordion-title"
+                >
+                  <div
+                    class="sc-AxiKw coGIfQ"
+                    id="blockservices"
+                  >
+                    Block services
+                  </div>
+                </div>
+                <div
+                  class="accordion__arrow"
+                  id="blockservice"
+                  role="presentation"
+                />
+              </div>
+            </div>
+            <div>
+
+            </div>
+          </div>
+          <br />
+        </div>
+      </div>
+    </body>
+
+      126 |     renderComponent(store);
+      127 |
+    > 128 |     expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
+          |                   ^
+      129 |   });
+      130 |
+      131 |   it('renders a success message on service toggle', () => {
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
+      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
+      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.getByText (src/app/blocks/deviceDetail/test/BlockService.test.js:128:19)
+
+  ● BlockServices Component › renders a success message on service toggle
+
+    TestingLibraryElementError: Unable to find an element with the text: /Service updated successfully/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="accordion"
+        >
+          <div
+            class="accordion__item"
+          >
+            <div
+              aria-expanded="false"
+              class="accordion__title"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="u-position-relative"
+              >
+                <div
+                  class="accordion-title"
+                >
+                  <div
+                    class="sc-AxiKw coGIfQ"
+                    id="blockservices"
+                  >
+                    Block services
+                  </div>
+                </div>
+                <div
+                  class="accordion__arrow"
+                  id="blockservice"
+                  role="presentation"
+                />
+              </div>
+            </div>
+            <div>
+
+            </div>
+          </div>
+          <br />
+        </div>
+      </div>
+    </body>
+
+      142 |     renderComponent(store);
+      143 |
+    > 144 |     expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
+          |                   ^
+      145 |   });
+      146 |
+      147 |   it('does not call postServices if the service is already in the desired state', async () => {
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
+      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
+      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.getByText (src/app/blocks/deviceDetail/test/BlockService.test.js:144:19)
+
+  ● BlockServices Component › does not call postServices if the service is already in the desired state
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "checkbox"
+
+    Here are the accessible roles:
+
+      button:
+
+      Name "Block services":
+      <div
+        aria-expanded="false"
+        class="accordion__title"
+        role="button"
+        tabindex="0"
+      />
+
+      --------------------------------------------------
+      presentation:
+
+      Name "":
+      <div
+        class="accordion__arrow"
+        id="blockservice"
+        role="presentation"
+      />
+
+      --------------------------------------------------
+
+    Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="accordion"
+        >
+          <div
+            class="accordion__item"
+          >
+            <div
+              aria-expanded="false"
+              class="accordion__title"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="u-position-relative"
+              >
+                <div
+                  class="accordion-title"
+                >
+                  <div
+                    class="sc-AxiKw coGIfQ"
+                    id="blockservices"
+                  >
+                    Block services
+                  </div>
+                </div>
+                <div
+                  class="accordion__arrow"
+                  id="blockservice"
+                  role="presentation"
+                />
+              </div>
+            </div>
+            <div>
+
+            </div>
+          </div>
+          <br />
+        </div>
+      </div>
+    </body>
+
+      151 |     fireEvent.click(accordionButton);
+      152 |
+    > 153 |     const toggleInput = screen.getByRole('checkbox');
+          |                                ^
+      154 |     // Simulate service is already turned off
+      155 |     fireEvent.click(toggleInput);
+      156 |     expect(mockActions.postServices).not.toHaveBeenCalled(); // No post request if no change
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:76:38)
+      at allQuery (node_modules/@testing-library/dom/dist/query-helpers.js:52:17)
+      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.getByRole (src/app/blocks/deviceDetail/test/BlockService.test.js:153:32)

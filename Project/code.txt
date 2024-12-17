@@ -1,135 +1,199 @@
-<div key={index}
-                  style={{paddingLeft:'210px'}}
-                  className={
-                    this.props.selectedAccordian == 'BS'
-                      ? "accordion__body"
-                      : "accordion__body accordion__body--hidden"
-                  }
-                  aria-hidden={this.props.selectedAccordian == 'BS' ? false : true}
+import React, { Component } from "react";
+import { connect } from "react-redux";
+import * as actions from "../../actions/fetchServices";
+import { bindActionCreators } from "redux";
+import styled from "styled-components";
+
+import "./style.css";
+import Alert from "../../../alert";  // Ensure this is imported
+import BSEmailDomains from "../blocksEmailDomains/BSEmailDomains";
+import { Modal, ModalBody, ModalFooter, ModalTitle } from "@vds/modals";
+import { Button, TextLink } from "@vds/buttons";
+import { Body, Title } from "@vds/typography";
+import { Loader } from "@vds/loaders";
+
+const BLOCK_EMAIL_DOMAIN = "Emails & domains";
+
+class BlockServices extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      services: {},
+      updatedService: null,
+      errorMessage: null,  // To store error messages
+      successMessage: null,  // To store success messages
+    };
+  }
+
+  handleServices = (e, accordion) => {
+    e.preventDefault();
+    if (accordion === "BS") {
+      this.props.selectAccordian("BS");
+      this.props.actions.getServices(this.props.selectedDevice.encryptedMtn);
+      window.scrollTo(0, 0);
+    }
+  };
+
+  componentDidUpdate(prevProps) {
+    const { services, serviceStatus } = this.props;
+
+    if (serviceStatus !== prevProps.serviceStatus && serviceStatus.responseInfo?.responseCode === "0") {
+      const formattedServices = Object.keys(services || {}).reduce(
+        (acc, key) => {
+          acc[key] = {
+            isExpand: false,
+            data: services[key]?.map((item) => ({ ...item, showMore: false })),
+          };
+          return acc;
+        },
+        { [BLOCK_EMAIL_DOMAIN]: { isExpand: false } }
+      );
+
+      this.setState({ services: formattedServices });
+    }
+  }
+
+  handleSubServices = (e, service) => {
+    e.preventDefault();
+    const updatedServices = { ...this.state.services };
+    Object.keys(updatedServices).forEach((key) => {
+      updatedServices[key].isExpand = key === service ? !updatedServices[key].isExpand : false;
+    });
+    this.setState({ services: updatedServices });
+  };
+
+  toggleOn = (e, service, i) => {
+    e.preventDefault();
+    const { selectedDevice, actions } = this.props;
+    const { services } = this.state;
+
+    const payload = {
+      mdn: selectedDevice.encryptedMtn,
+      sfoCode: services[service].data[i].sfoCode,
+      sfoEnabled: services[service].data[i].sfoEnabled === "Y" ? "N" : "Y",
+    };
+
+    actions.postServices(payload)
+      .then(() => {
+        // Update the service in state
+        const updatedServices = { ...services };
+        const currentService = updatedServices[service].data[i];
+        currentService.sfoEnabled = currentService.sfoEnabled === "Y" ? "N" : "Y";
+
+        this.setState({
+          services: updatedServices,
+          updatedService: currentService.sfoCode,
+          successMessage: `Service ${currentService.serviceName} toggled successfully.`,  // Success message
+          errorMessage: null,  // Clear any previous error message
+        });
+      })
+      .catch((error) => {
+        this.setState({
+          errorMessage: "Failed to update the service. Please try again later.",  // Error message
+          successMessage: null,  // Clear any previous success message
+        });
+      });
+  };
+
+  render() {
+    const { services, successMessage, errorMessage } = this.state;
+    const { isFetching } = this.props;
+
+    return (
+      <div className="accordion">
+        {/* Show success or error alerts */}
+        {successMessage && <Alert type="success">{successMessage}</Alert>}
+        {errorMessage && <Alert type="error">{errorMessage}</Alert>}
+
+        <div className="accordion__item">
+          <div
+            className="accordion__title"
+            role="button"
+            tabIndex="0"
+            onClick={(e) => this.handleServices(e, "BS")}
+            aria-expanded={this.props.selectedAccordian === "BS"}
+          >
+            <FAQsHeadSection id="blockservices">Block services</FAQsHeadSection>
+          </div>
+          <Loader show={isFetching} />
+
+          {services &&
+            Object.keys(services).map((service) => (
+              <div key={service}>
+                <div
+                  className="accordion__title"
+                  role="button"
+                  tabIndex="0"
+                  onClick={(e) => this.handleSubServices(e, service)}
+                  aria-expanded={services[service].isExpand}
                 >
-                  <div className="oneD row">
-                    <div className="col-lg-3">
-                    </div>
-                    <div className="col-lg-9 col-md-12 col-xs-12 col-xs-12">
-                      <div className="o-expander o-block-content o-sub-accordion">
-                        <div
-                          role="tablist"
-                          className="o-block-page panel-group ng-isolate-scope"
-                        >
-                          {/* sub accordians */}
-                          <div
-                            onClick={(e) => this.handleSubServices(e, service)} onKeyPress={(e) => this.handleSubServices(e, service)}
-                            aria-expanded={services[service].isExpand ? true : false}
-                            className="accordion__title"
-                            role="button"
-                            tabIndex="0"
-                            aria-label={service}
-                          >
-                            <div className="u-position-relative">
-                              <div className="accordion-title">
-                                <FAQs1HeadSection id={service}>
-                                  {service}
-                                </FAQs1HeadSection>
-                              </div>
-                              <div
-                                id={service}
-                                className="accordion__arrow"
-                                role="presentation"
-                              />
-                            </div>
-                          </div>
-                          <div
-
-                            className={
-                              services[service].isExpand
-                                ? "accordion__body"
-                                : "accordion__body accordion__body--hidden"
-                            }
-                            aria-hidden={services[service].isExpand ? false : true}
-                          >
-                           {service == BLOCK_EMAIL_DOMAIN ?
-                              <div className="o-expander o-block-subcontent ">
-                                <BSEmailDomains selectedDevice={this.props.selectedDevice} />
-                              </div> : null
-                            }
-
-                            <div className="o-expander o-block-subcontent ">
-                              {
-                                services[service].data && services[service].data.length > 0 && services[service].data.map((serviceDetail, i) => {
-                                  return (
-                                    <div key={serviceDetail.sfoCode} className="o-row o-clr " style={{paddingBottom:'0%'}}>
-                                      <div className="col-lg-10 col-md-10 col-sm-10 col-xs-10">
-                                        <Body size='large' bold='true'>
-                                          {serviceDetail.serviceName} 
-                                        </Body>
-                                      </div>
-                                      <div style={{display:'flex',justifyContent:'flex-end'}}>
-                                        <label class="form-switch" onKeyPress={(e) => this.toggleOn(e, service, i)} style={{"textAlign":"center"}}>
-                                          <input type="checkbox" role="checkbox" onChange={(e) => this.toggleOn(e, service, i)} /*onKeyPress={(e) => this.toggleOn(e, service, i)}*/ checked={serviceDetail.sfoEnabled === "Y" ? true : false} data-track={serviceDetail.serviceName.split(' ').join('') + "Toggle"} />
-                                          <i tabIndex="0" aria-label={serviceDetail.sfoEnabled=="Y"?serviceDetail.serviceName+" " +"Toggle Button On": serviceDetail.serviceName+" " +"Toggle Button Off"}></i>
-                                          <span>{serviceDetail.sfoEnabled=="Y"?"On":"Off"}</span>
-                                        </label>
-                                      </div>
-                                      <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                                        <div className="o-short-desc width-100">
-                                          <p className="o-concatText ng-binding" dangerouslySetInnerHTML={{ __html: serviceDetail.shortDescription }} />
-                                          <br />
-                                          {serviceDetail.showMore &&
-                                            <React.Fragment>
-                                              <br />
-                                              <p className="o-concatText ng-binding" dangerouslySetInnerHTML={{ __html: serviceDetail.longDescription }} />
-                                              <br />
-                                            </React.Fragment>
-                                          }
-                                          
-                                      <Modal 
-                                        toggleButton={ <TextLink ><Body size='medium'> View More Details </Body></TextLink>} 
-                                        surface="light"
-                                        fullScreenDialog={false}
-                                        disableAnimation={false}
-                                        disableOutsideClick={false}
-                                        ariaLabel="Testing Modal"
-                                      >
-                                        <ModalTitle>
-                                        <Title size='large' bold='true'>{serviceDetail.serviceName}</Title>
-                                        </ModalTitle>
-                                        <ModalBody>
-                                        <p dangerouslySetInnerHTML={{ __html: serviceDetail.shortDescription }}></p>
-                                        <br></br>
-                                        <Title size='medium' bold='true'>Further details</Title>
-                                        <br></br>
-                                        <p dangerouslySetInnerHTML={{ __html: serviceDetail.longDescription }}></p>
-                                        </ModalBody>
-                                        
-                                      </Modal>
-
-                                       <br/>
-                                          <hr/>
-
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )
-                                })
-                              }
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <FAQs1HeadSection>{service}</FAQs1HeadSection>
                 </div>
-              )
-            })
-          }
-          {this.props.selectedAccordian == 'BS' && this.props.getServices ?
-            <div style={{marginBottom: 15, paddingLeft: "27%"}} >
-              <div><Body> <TextLink onClick={(e)=>{e.preventDefault(); 
-              window.location.href="https://myvpostpay.verizonwireless.com/ui/bill/secure/dcb"}} className="anchor-link" data-track="ViewMediaAppPurchases">View Media &amp; App Purchases</TextLink></Body></div><br/>
-              <div ><Body> <TextLink onClick={(e)=>{e.preventDefault(); 
-              window.location.href="https://www.verizonwireless.com/support/how-to-add-blocks-video/"}} className="anchor-link" data-track="VideoForBlockServices">Video: How to block services</TextLink></Body></div><br/>
-              <div ><Body><TextLink onClick={(e) => {e.preventDefault(); 
-               window.location.href="https://www.verizonwireless.com/support/block-unblock-services-faqs/"}}className="anchor-link" data-track="BlockFAQ">Block and unblock services FAQ</TextLink></Body></div><br/>
-            </div>:null}
-        </div><br/>
+
+                <div className={services[service].isExpand ? "accordion__body" : "accordion__body--hidden"}>
+                  {service === BLOCK_EMAIL_DOMAIN && <BSEmailDomains selectedDevice={this.props.selectedDevice} />}
+
+                  {services[service].data?.map((detail, i) => (
+                    <div key={detail.sfoCode} className="o-row">
+                      <Body size="large" bold>
+                        {detail.serviceName}
+                      </Body>
+                      <label className="form-switch" onClick={(e) => this.toggleOn(e, service, i)}>
+                        <input type="checkbox" checked={detail.sfoEnabled === "Y"} readOnly />
+                        <i />
+                        <span>{detail.sfoEnabled === "Y" ? "On" : "Off"}</span>
+                      </label>
+                      <Modal
+                        toggleButton={
+                          <TextLink>
+                            <Body size="medium">View More Details</Body>
+                          </TextLink>
+                        }
+                      >
+                        <ModalTitle>
+                          <Title size="large">{detail.serviceName}</Title>
+                        </ModalTitle>
+                        <ModalBody>
+                          <p dangerouslySetInnerHTML={{ __html: detail.shortDescription }} />
+                          <p dangerouslySetInnerHTML={{ __html: detail.longDescription }} />
+                        </ModalBody>
+                        <ModalFooter>
+                          <Button onClick={() => {}}>Close</Button>
+                        </ModalFooter>
+                      </Modal>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+        </div>
       </div>
+    );
+  }
+}
+
+const FAQsHeadSection = styled.div`
+  padding: 10px 0;
+  border-bottom: 2px solid #000;
+  font-size: 18px;
+  font-weight: bold;
+`;
+
+const FAQs1HeadSection = styled.div`
+  padding: 10px 0;
+  border-bottom: 1px solid #000;
+  font-size: 18px;
+`;
+
+const mapStateToProps = (state) => ({
+  services: state.Detail.serviceCalls.services,
+  serviceStatus: state.Detail.serviceCalls.serviceStatus,
+  isFetching: state.Detail.serviceCalls.isFetching,
+  confirmServices: state.Detail.serviceCalls.confirmServices,
+});
+
+const mapDispatchToProps = (dispatch) => ({
+  actions: bindActionCreators(actions, dispatch),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(BlockServices);

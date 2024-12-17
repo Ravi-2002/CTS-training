@@ -1,182 +1,305 @@
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import BlockServices from "./BlockServices";
+ ● BlockServices Component › renders all services from JSON data
 
-const jsonResponse = {
-  body: {
-    sections: [
-      {
-        sections: [
-          {
-            data: {
-              serviceDetailsMap: {
-                "Additional Services": [
-                  {
-                    longDescription:
-                      "<p>If you want to allow your number to display on a per-call basis, you can dial *82 + area code and phone number + SEND.</p>",
-                    sfoEnabled: "##SFO_BOOLE##",
-                    shortDescription:
-                      "Permanently block your number from displaying to others when you call.",
-                    serviceName: "Caller ID Blocking",
-                    sfoCode: "48577",
-                  },
-                ],
-                "Data and Internet": [
-                  {
-                    longDescription:
-                      "Instead of Block Mobile Web, consider <b>Content Filtering</b> to manage the type of content your Account Member can view/download.",
-                    sfoEnabled: "##SFO_71905_BOOLEAN##",
-                    shortDescription:
-                      "Block Mobile Web will prevent you from accessing the Mobile Web from your handset.",
-                    serviceName: "Block Mobile Web",
-                    sfoCode: "71905",
-                  },
-                ],
-                Messaging: [
-                  {
-                    longDescription:
-                      "<p>If you have a Messaging package on your line, Block All Messaging will remove your Messaging package.</p>",
-                    sfoEnabled: "##SFO_54307_BOOLEAN##",
-                    shortDescription:
-                      "Prevents incoming and outgoing Text, Multimedia, PSMS (Premium Messages).",
-                    serviceName: "Block All Messaging",
-                    sfoCode: "54307",
-                  },
-                ],
-                Purchases: [
-                  {
-                    longDescription:
-                      "Does not cancel existing subscriptions. To prevent billing for other subscription applications previously downloaded, please cancel them.",
-                    sfoEnabled: "##SFO_66139_BOOLEAN##",
-                    shortDescription:
-                      "Prevents you from purchasing application downloads via Get It Now/Media Center.",
-                    serviceName: "Block All Application Downloads",
-                    sfoCode: "66139",
-                  },
-                ],
-              },
-            },
-          },
-        ],
-      },
-    ],
-  },
-};
+    Could not find "store" in the context of "Connect(BlockServices)". Either wrap the root component in a <Provider>, or pass a custom React context provider to <Provider> and the corresponding React context consumer to Connect(BlockServices) in connect options.
 
-// Extract services array from the JSON
-const extractedServices = Object.entries(
-  jsonResponse.body.sections[0].sections[0].data.serviceDetailsMap
-).flatMap(([category, services]) =>
-  services.map((service) => ({
-    id: service.sfoCode,
-    name: service.serviceName,
-    enabled: service.sfoEnabled.includes("BOOLEAN") ? false : true,
-  }))
-);
+      83 |
+      84 |   test("renders all services from JSON data", () => {
+    > 85 |     render(
+         |           ^
+      86 |       <BlockServices
+      87 |         services={extractedServices}
+      88 |         isFetching={false}
 
-describe("BlockServices Component", () => {
-  const onToggleServiceMock = jest.fn();
+      at ConnectFunction (node_modules/react-redux/lib/components/connectAdvanced.js:261:15)
+      at Component (node_modules/react-dom/cjs/react-dom.development.js:16305:18)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom.development.js:19588:20)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom.development.js:19425:10)
+      at updateSimpleMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:19284:14)
+      at updateMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:21673:16)
+      at HTMLUnknownElement.apply (node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+      at HTMLUnknownElement.callTheUserObjectsOperation (node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30)
+      at innerInvokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:350:25)
+      at invokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)
+      at HTMLUnknownElementImpl._dispatch (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)      
+      at HTMLUnknownElementImpl.dispatchEvent (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17) 
+      at HTMLUnknownElement.dispatchEvent (node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)       
+      at Object.dispatchEvent (node_modules/react-dom/cjs/react-dom.development.js:4213:16)
+      at apply (node_modules/react-dom/cjs/react-dom.development.js:4277:31)
+      at invokeGuardedCallback (node_modules/react-dom/cjs/react-dom.development.js:27451:7)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/BlockService.test.js:85:11)
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  ● BlockServices Component › renders all services from JSON data
 
-  test("renders all services from JSON data", () => {
-    render(
-      <BlockServices
-        services={extractedServices}
-        isFetching={false}
-        onToggleService={onToggleServiceMock}
-      />
-    );
+    Could not find "store" in the context of "Connect(BlockServices)". Either wrap the root component in a <Provider>, or pass a custom React context provider to <Provider> and the corresponding React context consumer to Connect(BlockServices) in connect options.
 
-    extractedServices.forEach((service) => {
-      expect(screen.getByText(service.name)).toBeInTheDocument();
-    });
-  });
+      83 |
+      84 |   test("renders all services from JSON data", () => {
+    > 85 |     render(
+         |           ^
+      86 |       <BlockServices
+      87 |         services={extractedServices}
+      88 |         isFetching={false}
 
-  test("renders correct number of checkboxes", () => {
-    render(
-      <BlockServices
-        services={extractedServices}
-        isFetching={false}
-        onToggleService={onToggleServiceMock}
-      />
-    );
+      at ConnectFunction (node_modules/react-redux/lib/components/connectAdvanced.js:261:15)
+      at Component (node_modules/react-dom/cjs/react-dom.development.js:16305:18)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom.development.js:19588:20)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom.development.js:19425:10)
+      at updateSimpleMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:19284:14)
+      at updateMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:21673:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/BlockService.test.js:85:11)
 
-    const checkboxes = screen.getAllByRole("checkbox");
-    expect(checkboxes.length).toBe(extractedServices.length);
-  });
+  ● BlockServices Component › renders correct number of checkboxes
 
-  test("checkbox states reflect service.enabled", () => {
-    render(
-      <BlockServices
-        services={extractedServices}
-        isFetching={false}
-        onToggleService={onToggleServiceMock}
-      />
-    );
+    Could not find "store" in the context of "Connect(BlockServices)". Either wrap the root component in a <Provider>, or pass a custom React context provider to <Provider> and the corresponding React context consumer to Connect(BlockServices) in connect options.
 
-    extractedServices.forEach((service) => {
-      const checkbox = screen.getByRole("checkbox", {
-        name: `${service.name} Toggle Button`,
-      });
-      if (service.enabled) {
-        expect(checkbox).toBeChecked();
-      } else {
-        expect(checkbox).not.toBeChecked();
-      }
-    });
-  });
+       97 |
+       98 |   test("renders correct number of checkboxes", () => {
+    >  99 |     render(
+          |           ^
+      100 |       <BlockServices
+      101 |         services={extractedServices}
+      102 |         isFetching={false}
 
-  test("calls onToggleService when a checkbox is clicked", () => {
-    render(
-      <BlockServices
-        services={extractedServices}
-        isFetching={false}
-        onToggleService={onToggleServiceMock}
-      />
-    );
+      at ConnectFunction (node_modules/react-redux/lib/components/connectAdvanced.js:261:15)
+      at Component (node_modules/react-dom/cjs/react-dom.development.js:16305:18)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom.development.js:19588:20)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom.development.js:19425:10)
+      at updateSimpleMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:19284:14)
+      at updateMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:21673:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/BlockService.test.js:99:11)
 
-    const checkbox = screen.getByRole("checkbox", {
-      name: `${extractedServices[0].name} Toggle Button`,
-    });
+  ● BlockServices Component › checkbox states reflect service.enabled
 
-    fireEvent.click(checkbox);
-    expect(onToggleServiceMock).toHaveBeenCalledWith(extractedServices[0].id);
-  });
+    Could not find "store" in the context of "Connect(BlockServices)". Either wrap the root component in a <Provider>, or pass a custom React context provider to <Provider> and the corresponding React context consumer to Connect(BlockServices) in connect options.
 
-  test("renders loader when isFetching is true", () => {
-    render(<BlockServices isFetching={true} services={[]} />);
-    expect(screen.getByTestId("loader")).toHaveTextContent("Loading...");
-  });
+      110 |
+      111 |   test("checkbox states reflect service.enabled", () => {
+    > 112 |     render(
+          |           ^
+      113 |       <BlockServices
+      114 |         services={extractedServices}
+      115 |         isFetching={false}
 
-  test("displays success message", () => {
-    const successMessage = "Services updated successfully";
-    render(
-      <BlockServices
-        services={[]}
-        isFetching={false}
-        successMessage={successMessage}
-      />
-    );
-    expect(screen.getByText(successMessage)).toBeInTheDocument();
-  });
+      at ConnectFunction (node_modules/react-redux/lib/components/connectAdvanced.js:261:15)
+      at Component (node_modules/react-dom/cjs/react-dom.development.js:16305:18)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom.development.js:19588:20)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom.development.js:19425:10)
+      at updateSimpleMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:19284:14)
+      at updateMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:21673:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/BlockService.test.js:112:11)
 
-  test("displays error message", () => {
-    const errorMessage = "An error occurred";
-    render(
-      <BlockServices
-        services={[]}
-        isFetching={false}
-        errorMessage={errorMessage}
-      />
-    );
-    expect(screen.getByText(errorMessage)).toBeInTheDocument();
-  });
+  ● BlockServices Component › calls onToggleService when a checkbox is clicked
 
-  test("renders empty services list without errors", () => {
-    render(<BlockServices services={[]} isFetching={false} />);
-    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
-  });
-});
+    Could not find "store" in the context of "Connect(BlockServices)". Either wrap the root component in a <Provider>, or pass a custom React context provider to <Provider> and the corresponding React context consumer to Connect(BlockServices) in connect options.
+
+      131 |
+      132 |   test("calls onToggleService when a checkbox is clicked", () => {
+    > 133 |     render(
+          |           ^
+      134 |       <BlockServices
+      135 |         services={extractedServices}
+      136 |         isFetching={false}
+
+      at ConnectFunction (node_modules/react-redux/lib/components/connectAdvanced.js:261:15)
+      at Component (node_modules/react-dom/cjs/react-dom.development.js:16305:18)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom.development.js:19588:20)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom.development.js:19425:10)
+      at updateSimpleMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:19284:14)
+      at updateMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:21673:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/BlockService.test.js:133:11)
+
+  ● BlockServices Component › renders loader when isFetching is true
+
+    Could not find "store" in the context of "Connect(BlockServices)". Either wrap the root component in a <Provider>, or pass a custom React context provider to <Provider> and the corresponding React context consumer to Connect(BlockServices) in connect options.
+
+      148 |
+      149 |   test("renders loader when isFetching is true", () => {
+    > 150 |     render(<BlockServices isFetching={true} services={[]} />);
+          |           ^
+      151 |     expect(screen.getByTestId("loader")).toHaveTextContent("Loading...");
+      152 |   });
+      153 |
+
+      at ConnectFunction (node_modules/react-redux/lib/components/connectAdvanced.js:261:15)
+      at Component (node_modules/react-dom/cjs/react-dom.development.js:16305:18)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom.development.js:19588:20)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom.development.js:19425:10)
+      at updateSimpleMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:19284:14)
+      at updateMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:21673:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/BlockService.test.js:150:11)
+
+  ● BlockServices Component › displays success message
+
+    Could not find "store" in the context of "Connect(BlockServices)". Either wrap the root component in a <Provider>, or pass a custom React context provider to <Provider> and the corresponding React context consumer to Connect(BlockServices) in connect options.
+
+      154 |   test("displays success message", () => {
+      155 |     const successMessage = "Services updated successfully";
+    > 156 |     render(
+          |           ^
+      157 |       <BlockServices
+      158 |         services={[]}
+      159 |         isFetching={false}
+
+      at ConnectFunction (node_modules/react-redux/lib/components/connectAdvanced.js:261:15)
+      at Component (node_modules/react-dom/cjs/react-dom.development.js:16305:18)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom.development.js:19588:20)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom.development.js:19425:10)
+      at updateSimpleMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:19284:14)
+      at updateMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:21673:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/BlockService.test.js:156:11)
+
+  ● BlockServices Component › displays error message
+
+    Could not find "store" in the context of "Connect(BlockServices)". Either wrap the root component in a <Provider>, or pass a custom React context provider to <Provider> and the corresponding React context consumer to Connect(BlockServices) in connect options.
+
+      166 |   test("displays error message", () => {
+      167 |     const errorMessage = "An error occurred";
+    > 168 |     render(
+          |           ^
+      169 |       <BlockServices
+      170 |         services={[]}
+      171 |         isFetching={false}
+
+      at ConnectFunction (node_modules/react-redux/lib/components/connectAdvanced.js:261:15)
+      at Component (node_modules/react-dom/cjs/react-dom.development.js:16305:18)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom.development.js:19588:20)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom.development.js:19425:10)
+      at updateSimpleMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:19284:14)
+      at updateMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:21673:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/BlockService.test.js:168:11)
+
+  ● BlockServices Component › renders empty services list without errors
+
+    Could not find "store" in the context of "Connect(BlockServices)". Either wrap the root component in a <Provider>, or pass a custom React context provider to <Provider> and the corresponding React context consumer to Connect(BlockServices) in connect options.
+
+      177 |
+      178 |   test("renders empty services list without errors", () => {
+    > 179 |     render(<BlockServices services={[]} isFetching={false} />);
+          |           ^
+      180 |     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+      181 |   });
+      182 | });
+
+      at ConnectFunction (node_modules/react-redux/lib/components/connectAdvanced.js:261:15)
+      at Component (node_modules/react-dom/cjs/react-dom.development.js:16305:18)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom.development.js:19588:20)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom.development.js:19425:10)
+      at updateSimpleMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:19284:14)
+      at updateMemoComponent (node_modules/react-dom/cjs/react-dom.development.js:21673:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/BlockService.test.js:179:11)

@@ -1,129 +1,177 @@
-// BlockServices.test.js
+import React, { Component } from "react";
+import { connect } from "react-redux";
+import * as actions from "../../actions/fetchServices";
+import { bindActionCreators } from "redux";
+import styled from "styled-components";
 
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { Provider } from "react-redux";
-import { createStore, applyMiddleware } from "redux";
-import thunk from "redux-thunk";
-import BlockServices from "./BlockServices"; // Import your BlockServices component
-import rootReducer from "../../reducers"; // Adjust this according to your project
+import "./style.css";
+import Alert from "../../../alert";
+import BSEmailDomains from "../blocksEmailDomains/BSEmailDomains";
+import { Modal, ModalBody, ModalFooter, ModalTitle } from "@vds/modals";
+import { Button, TextLink } from "@vds/buttons";
+import { Body, Title } from "@vds/typography";
+import { Loader } from "@vds/loaders";
 
-// Mock Redux store
-const store = createStore(rootReducer, applyMiddleware(thunk));
+const BLOCK_EMAIL_DOMAIN = "Emails & domains";
 
-jest.mock("../../actions/fetchServices", () => ({
-  getServices: jest.fn(),
-  postServices: jest.fn(),
-}));
+class BlockServices extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      services: {},
+      updatedService: null,
+    };
+  }
 
-jest.mock("../blocksEmailDomains/BSEmailDomains", () => () => <div>Mocked BSEmailDomains Component</div>);
-
-describe("BlockServices Component", () => {
-  const mockProps = {
-    selectedAccordian: "BS",
-    selectedDevice: {
-      encryptedMtn: "1234567890",
-    },
-    services: {
-      "Emails & domains": {
-        isExpand: false,
-        data: [
-          { sfoCode: "001", serviceName: "Email Filtering", sfoEnabled: "Y", shortDescription: "Short description", longDescription: "Long description" },
-        ],
-      },
-    },
-    serviceStatus: {
-      responseInfo: { responseCode: "0" },
-    },
-    isFetching: false,
-    failServices: null,
-    confirmServices: null,
-    actions: {
-      getServices: jest.fn(),
-      postServices: jest.fn(),
-    },
+  handleServices = (e, accordion) => {
+    e.preventDefault();
+    if (accordion === "BS") {
+      this.props.selectAccordian("BS");
+      this.props.actions.getServices(this.props.selectedDevice.encryptedMtn);
+      window.scrollTo(0, 0);
+    }
   };
 
-  it("renders BlockServices component", () => {
-    render(
-      <Provider store={store}>
-        <BlockServices {...mockProps} />
-      </Provider>
-    );
+  componentDidUpdate(prevProps) {
+    const { services, serviceStatus } = this.props;
 
-    // Check if the main header is rendered
-    expect(screen.getByText("Block services")).toBeInTheDocument();
-  });
+    if (serviceStatus !== prevProps.serviceStatus && serviceStatus.responseInfo?.responseCode === "0") {
+      const formattedServices = Object.keys(services || {}).reduce(
+        (acc, key) => {
+          acc[key] = {
+            isExpand: false,
+            data: services[key]?.map((item) => ({ ...item, showMore: false })),
+          };
+          return acc;
+        },
+        { [BLOCK_EMAIL_DOMAIN]: { isExpand: false } }
+      );
 
-  it("toggles service on click", async () => {
-    render(
-      <Provider store={store}>
-        <BlockServices {...mockProps} />
-      </Provider>
-    );
+      this.setState({ services: formattedServices });
+    }
+  }
 
-    const serviceName = screen.getByText("Email Filtering");
-    const checkbox = screen.getByRole("checkbox");
-
-    // Ensure the checkbox is initially checked
-    expect(checkbox).toBeChecked();
-
-    // Simulate checkbox click
-    fireEvent.click(checkbox);
-
-    await waitFor(() => {
-      // Check if postServices action has been called
-      expect(mockProps.actions.postServices).toHaveBeenCalledTimes(1);
-      // Check if the service state is toggled correctly (the checkbox should now be unchecked)
-      expect(checkbox).not.toBeChecked();
+  handleSubServices = (e, service) => {
+    e.preventDefault();
+    const updatedServices = { ...this.state.services };
+    Object.keys(updatedServices).forEach((key) => {
+      updatedServices[key].isExpand = key === service ? !updatedServices[key].isExpand : false;
     });
-  });
+    this.setState({ services: updatedServices });
+  };
 
-  it("displays loader when fetching is true", () => {
-    render(
-      <Provider store={store}>
-        <BlockServices {...{ ...mockProps, isFetching: true }} />
-      </Provider>
-    );
+  toggleOn = (e, service, i) => {
+    e.preventDefault();
+    const { selectedDevice, actions } = this.props;
+    const { services } = this.state;
 
-    // Ensure loader is visible when fetching is true
-    expect(screen.getByRole("loader")).toBeInTheDocument();
-  });
+    const payload = {
+      mdn: selectedDevice.encryptedMtn,
+      sfoCode: services[service].data[i].sfoCode,
+      sfoEnabled: services[service].data[i].sfoEnabled === "Y" ? "N" : "Y",
+    };
 
-  it("renders service details modal", async () => {
-    render(
-      <Provider store={store}>
-        <BlockServices {...mockProps} />
-      </Provider>
-    );
+    actions.postServices(payload).then(() => {
+      const updatedServices = { ...services };
+      const currentService = updatedServices[service].data[i];
+      currentService.sfoEnabled = currentService.sfoEnabled === "Y" ? "N" : "Y";
 
-    const viewDetailsLink = screen.getByText("View More Details");
-
-    // Simulate clicking the 'View More Details' link
-    fireEvent.click(viewDetailsLink);
-
-    // Wait for modal to appear
-    await waitFor(() => {
-      expect(screen.getByText("Email Filtering")).toBeInTheDocument();
-      expect(screen.getByText("Short description")).toBeInTheDocument();
-      expect(screen.getByText("Long description")).toBeInTheDocument();
+      this.setState({ services: updatedServices, updatedService: currentService.sfoCode });
     });
-  });
+  };
 
-  it("expands and collapses sub-services", () => {
-    render(
-      <Provider store={store}>
-        <BlockServices {...mockProps} />
-      </Provider>
+  render() {
+    const { services } = this.state;
+    const { isFetching, failServices, confirmServices } = this.props;
+
+    return (
+      <div className="accordion">
+        <div className="accordion__item">
+          <div
+            className="accordion__title"
+            role="button"
+            tabIndex="0"
+            onClick={(e) => this.handleServices(e, "BS")}
+            aria-expanded={this.props.selectedAccordian === "BS"}
+          >
+            <FAQsHeadSection id="blockservices">Block services</FAQsHeadSection>
+          </div>
+          <Loader show={isFetching} aria-label="Loading..." />
+
+          {services &&
+            Object.keys(services).map((service) => (
+              <div key={service}>
+                <div
+                  className="accordion__title"
+                  role="button"
+                  tabIndex="0"
+                  onClick={(e) => this.handleSubServices(e, service)}
+                  aria-expanded={services[service].isExpand}
+                >
+                  <FAQs1HeadSection>{service}</FAQs1HeadSection>
+                </div>
+
+                <div className={services[service].isExpand ? "accordion__body" : "accordion__body--hidden"}>
+                  {service === BLOCK_EMAIL_DOMAIN && <BSEmailDomains selectedDevice={this.props.selectedDevice} />}
+
+                  {services[service].data?.map((detail, i) => (
+                    <div key={detail.sfoCode} className="o-row">
+                      <Body size="large" bold>
+                        {detail.serviceName}
+                      </Body>
+                      <label className="form-switch" onClick={(e) => this.toggleOn(e, service, i)}>
+                        <input type="checkbox" checked={detail.sfoEnabled === "Y"} readOnly />
+                        <i />
+                        <span>{detail.sfoEnabled === "Y" ? "On" : "Off"}</span>
+                      </label>
+                      <Modal
+                        toggleButton={
+                          <TextLink>
+                            <Body size="medium">View More Details</Body>
+                          </TextLink>
+                        }
+                      >
+                        <ModalTitle>
+                          <Title size="large">{detail.serviceName}</Title>
+                        </ModalTitle>
+                        <ModalBody>
+                          <p dangerouslySetInnerHTML={{ __html: detail.shortDescription }} />
+                          <p dangerouslySetInnerHTML={{ __html: detail.longDescription }} />
+                        </ModalBody>
+                      </Modal>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
     );
+  }
+}
 
-    // Initially, the service should not be expanded
-    expect(screen.queryByText("Email Filtering")).toHaveClass("accordion__body--hidden");
+const FAQsHeadSection = styled.div`
+  padding: 10px 0;
+  border-bottom: 2px solid #000;
+  font-size: 18px;
+  font-weight: bold;
+`;
 
-    // Click to expand the service
-    fireEvent.click(screen.getByText("Emails & domains"));
+const FAQs1HeadSection = styled.div`
+  padding: 10px 0;
+  border-bottom: 1px solid #000;
+  font-size: 18px;
+`;
 
-    // Check if service expanded
-    expect(screen.queryByText("Email Filtering")).not.toHaveClass("accordion__body--hidden");
-  });
+const mapStateToProps = (state) => ({
+  services: state.Detail.serviceCalls.services,
+  serviceStatus: state.Detail.serviceCalls.serviceStatus,
+  isFetching: state.Detail.serviceCalls.isFetching,
+  confirmServices: state.Detail.serviceCalls.confirmServices,
 });
+
+const mapDispatchToProps = (dispatch) => ({
+  actions: bindActionCreators(actions, dispatch),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(BlockServices);

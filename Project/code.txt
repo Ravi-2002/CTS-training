@@ -1,75 +1,257 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import { createStore } from 'redux';
-import DeviceDetail from '../DeviceDetail';
-import { devicedetail } from './mockResponse';  // Assuming mockResponse.js contains the mock data
+ FAIL  src/app/blocks/deviceDetail/test/DeviceDetailIndex.test.js (9.152 s)
+  ● DeviceDetail Component › should render the device detail page with correct headings
 
-// Mock Store
-const mockStore = createStore(() => ({
-  Detail: {
-    Details: {
-      isFetching: false,
-      deviceDetails: devicedetail.body.sections[0].sections[1].contents[0],
-    },
-  },
-}));
+    TypeError: Cannot read properties of undefined (reading 'mediumImage')
 
-// Mock actions if needed
-const mockActions = {
-  getDeviceDetail: jest.fn(),
-};
+      230 |                         </div>
+      231 |                     <div style={{padding:0}}>
+    > 232 |                         <img  src={this.state.selectedDevice.images.mediumImage} alt="" />      
+          |                                                                     ^
+      233 |                         </div>
+      234 |                         </div>
+      235 |                         {/* {appleNotice && <div className="visible-sm visible-xs" style={{fontSize:'13px'}} >  
 
-describe('DeviceDetail Component', () => {
-  beforeEach(() => {
-    render(
-      <Provider store={mockStore}>
-        <DeviceDetail actions={mockActions} location={{ state: { devices: [], selectedDevice: {} } }} />
-      </Provider>
-    );
-  });
+      at DeviceDetail.mediumImage [as render] (src/app/blocks/deviceDetail/components/index.js:232:69)      
+      at render (node_modules/react-dom/cjs/react-dom.development.js:19752:31)
+      at finishClassComponent (node_modules/react-dom/cjs/react-dom.development.js:19698:24)
+      at updateClassComponent (node_modules/react-dom/cjs/react-dom.development.js:21611:16)
+      at HTMLUnknownElement.apply (node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+      at HTMLUnknownElement.callTheUserObjectsOperation (node_modules/jsdom/lib/jsdom/living/generated/EventListener.js:26:30)
+      at innerInvokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:350:25)  
+      at invokeEventListeners (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:286:3)        
+      at HTMLUnknownElementImpl._dispatch (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:233:9)
+      at HTMLUnknownElementImpl.dispatchEvent (node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:104:17)
+      at HTMLUnknownElement.dispatchEvent (node_modules/jsdom/lib/jsdom/living/generated/EventTarget.js:241:34)
+      at Object.dispatchEvent (node_modules/react-dom/cjs/react-dom.development.js:4213:16)
+      at apply (node_modules/react-dom/cjs/react-dom.development.js:4277:31)
+      at invokeGuardedCallback (node_modules/react-dom/cjs/react-dom.development.js:27451:7)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)    
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/DeviceDetailIndex.test.js:24:11)
 
-  it('should render the device detail page with correct headings', () => {
-    // Verify the heading text for the page
-    expect(screen.getByText(/Now, let's manage blocks for this device./i)).toBeInTheDocument();
-    expect(screen.getByText(/Block calls & messages/i)).toBeInTheDocument();
-    expect(screen.getByText(/Block services/i)).toBeInTheDocument();
-  });
+  ● DeviceDetail Component › should render the device detail page with correct headings
 
-  it('should render the advanced controls section', () => {
-    // Test to check if the "Advanced Controls" section is present
-    expect(screen.getByText(/Advanced Controls/i)).toBeInTheDocument();
-  });
+    TypeError: Cannot read properties of undefined (reading 'mediumImage')
 
-  it('should show the device block details', () => {
-    // Check if the device block section is displayed
-    expect(screen.getByText(/This type of device does not receive calls or standard texts/i)).toBeInTheDocument();
-    expect(screen.getByText(/You can block number using your Verizon Smart Family™ product./i)).toBeInTheDocument();
-  });
+      230 |                         </div>
+      231 |                     <div style={{padding:0}}>
+    > 232 |                         <img  src={this.state.selectedDevice.images.mediumImage} alt="" />      
+          |                                                                     ^
+      233 |                         </div>
+      234 |                         </div>
+      235 |                         {/* {appleNotice && <div className="visible-sm visible-xs" style={{fontSize:'13px'}} >  
 
-  it('should handle the "See all devices" button click', async () => {
-    const seeAllDevicesButton = screen.getByText(/See all devices/i);
-    fireEvent.click(seeAllDevicesButton);
-    // Add logic to check if the routing or state change happens after clicking
-    // This can vary based on your routing setup, so assert the expected result here
-    expect(mockActions.getDeviceDetail).toHaveBeenCalledTimes(1);
-  });
+      at DeviceDetail.mediumImage [as render] (src/app/blocks/deviceDetail/components/index.js:232:69)      
+      at render (node_modules/react-dom/cjs/react-dom.development.js:19752:31)
+      at finishClassComponent (node_modules/react-dom/cjs/react-dom.development.js:19698:24)
+      at updateClassComponent (node_modules/react-dom/cjs/react-dom.development.js:21611:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)    
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/DeviceDetailIndex.test.js:24:11)
 
-  it('should show the apple modal link and handle its click', () => {
-    const appleModalLink = screen.getByText(/Click here/i);
-    fireEvent.click(appleModalLink);
-    // Check if modal or new content appears
-    expect(screen.getByText(/Apple iMessage note:/i)).toBeInTheDocument();
-  });
+  ● DeviceDetail Component › should render the advanced controls section
 
-  it('should render family base message if applicable', async () => {
-    // Assert that the family base message appears for supported devices
-    const familyBaseMessage = screen.getByText(/You can block number using your Verizon Smart Family™ product./i);
-    expect(familyBaseMessage).toBeInTheDocument();
-  });
+    TypeError: Cannot read properties of undefined (reading 'mediumImage')
 
-  it('should display data only message if applicable', async () => {
-    // Check if the "data only" message appears for applicable devices
-    const dataOnlyMessage = screen.getByText(/This type of device does not receive calls or standard texts/i);
-    expect(dataOnlyMessage).toBeInTheDocument();
-  });
-});
+      230 |                         </div>
+      231 |                     <div style={{padding:0}}>
+    > 232 |                         <img  src={this.state.selectedDevice.images.mediumImage} alt="" />      
+          |                                                                     ^
+      233 |                         </div>
+      234 |                         </div>
+      235 |                         {/* {appleNotice && <div className="visible-sm visible-xs" style={{fontSize:'13px'}} >  
+
+      at DeviceDetail.mediumImage [as render] (src/app/blocks/deviceDetail/components/index.js:232:69)      
+      at render (node_modules/react-dom/cjs/react-dom.development.js:19752:31)
+      at finishClassComponent (node_modules/react-dom/cjs/react-dom.development.js:19698:24)
+      at updateClassComponent (node_modules/react-dom/cjs/react-dom.development.js:21611:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)    
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/DeviceDetailIndex.test.js:24:11)
+
+  ● DeviceDetail Component › should show the device block details
+
+    TypeError: Cannot read properties of undefined (reading 'mediumImage')
+
+      230 |                         </div>
+      231 |                     <div style={{padding:0}}>
+    > 232 |                         <img  src={this.state.selectedDevice.images.mediumImage} alt="" />      
+          |                                                                     ^
+      233 |                         </div>
+      234 |                         </div>
+      235 |                         {/* {appleNotice && <div className="visible-sm visible-xs" style={{fontSize:'13px'}} >  
+
+      at DeviceDetail.mediumImage [as render] (src/app/blocks/deviceDetail/components/index.js:232:69)      
+      at render (node_modules/react-dom/cjs/react-dom.development.js:19752:31)
+      at finishClassComponent (node_modules/react-dom/cjs/react-dom.development.js:19698:24)
+      at updateClassComponent (node_modules/react-dom/cjs/react-dom.development.js:21611:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)    
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/DeviceDetailIndex.test.js:24:11)
+
+  ● DeviceDetail Component › should handle the "See all devices" button click
+
+    TypeError: Cannot read properties of undefined (reading 'mediumImage')
+
+      230 |                         </div>
+      231 |                     <div style={{padding:0}}>
+    > 232 |                         <img  src={this.state.selectedDevice.images.mediumImage} alt="" />      
+          |                                                                     ^
+      233 |                         </div>
+      234 |                         </div>
+      235 |                         {/* {appleNotice && <div className="visible-sm visible-xs" style={{fontSize:'13px'}} >  
+
+      at DeviceDetail.mediumImage [as render] (src/app/blocks/deviceDetail/components/index.js:232:69)      
+      at render (node_modules/react-dom/cjs/react-dom.development.js:19752:31)
+      at finishClassComponent (node_modules/react-dom/cjs/react-dom.development.js:19698:24)
+      at updateClassComponent (node_modules/react-dom/cjs/react-dom.development.js:21611:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)    
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/DeviceDetailIndex.test.js:24:11)
+
+  ● DeviceDetail Component › should show the apple modal link and handle its click
+
+    TypeError: Cannot read properties of undefined (reading 'mediumImage')
+
+      230 |                         </div>
+      231 |                     <div style={{padding:0}}>
+    > 232 |                         <img  src={this.state.selectedDevice.images.mediumImage} alt="" />      
+          |                                                                     ^
+      233 |                         </div>
+      234 |                         </div>
+      235 |                         {/* {appleNotice && <div className="visible-sm visible-xs" style={{fontSize:'13px'}} >  
+
+      at DeviceDetail.mediumImage [as render] (src/app/blocks/deviceDetail/components/index.js:232:69)      
+      at render (node_modules/react-dom/cjs/react-dom.development.js:19752:31)
+      at finishClassComponent (node_modules/react-dom/cjs/react-dom.development.js:19698:24)
+      at updateClassComponent (node_modules/react-dom/cjs/react-dom.development.js:21611:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)    
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/DeviceDetailIndex.test.js:24:11)
+
+  ● DeviceDetail Component › should render family base message if applicable
+
+    TypeError: Cannot read properties of undefined (reading 'mediumImage')
+
+      230 |                         </div>
+      231 |                     <div style={{padding:0}}>
+    > 232 |                         <img  src={this.state.selectedDevice.images.mediumImage} alt="" />      
+          |                                                                     ^
+      233 |                         </div>
+      234 |                         </div>
+      235 |                         {/* {appleNotice && <div className="visible-sm visible-xs" style={{fontSize:'13px'}} >  
+
+      at DeviceDetail.mediumImage [as render] (src/app/blocks/deviceDetail/components/index.js:232:69)      
+      at render (node_modules/react-dom/cjs/react-dom.development.js:19752:31)
+      at finishClassComponent (node_modules/react-dom/cjs/react-dom.development.js:19698:24)
+      at updateClassComponent (node_modules/react-dom/cjs/react-dom.development.js:21611:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)    
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/DeviceDetailIndex.test.js:24:11)
+
+  ● DeviceDetail Component › should display data only message if applicable
+
+    TypeError: Cannot read properties of undefined (reading 'mediumImage')
+
+      230 |                         </div>
+      231 |                     <div style={{padding:0}}>
+    > 232 |                         <img  src={this.state.selectedDevice.images.mediumImage} alt="" />      
+          |                                                                     ^
+      233 |                         </div>
+      234 |                         </div>
+      235 |                         {/* {appleNotice && <div className="visible-sm visible-xs" style={{fontSize:'13px'}} >  
+
+      at DeviceDetail.mediumImage [as render] (src/app/blocks/deviceDetail/components/index.js:232:69)      
+      at render (node_modules/react-dom/cjs/react-dom.development.js:19752:31)
+      at finishClassComponent (node_modules/react-dom/cjs/react-dom.development.js:19698:24)
+      at updateClassComponent (node_modules/react-dom/cjs/react-dom.development.js:21611:16)
+      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
+      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
+      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
+      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
+      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
+      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)    
+      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10)
+      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
+      at callback (node_modules/react/cjs/react.development.js:2512:16)
+      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
+      at Object.<anonymous> (src/app/blocks/deviceDetail/test/DeviceDetailIndex.test.js:24:11)

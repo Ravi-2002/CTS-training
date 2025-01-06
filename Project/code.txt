@@ -1,175 +1,201 @@
-export const devicedetail = {
-    "responseInfo": {
-        "timeStamp": "11-10-2024 12:23:17",
-        "correlationId": "Blocks Devices",
-        "responseCode": "00",
-        "responseMessage": "SUCCESS",
-        "sectionErrors": []
-    },
-    "body": {
-        "pageAttributes": [
-            {
-                "itemKey": "pageTitle",
-                "itemValue": "Devices blocks"
-            },
-            {
-                "itemKey": "hashedAccountNumber",
-                "itemValue": "##HASHED_ACCTNO##",
-                "itemType": "text"
-            },
-            {
-                "itemKey": "hashedMdn",
-                "itemValue": "##HASHED_MDN##",
-                "itemType": "text"
-            }
-        ],
-        "sections": [
-            {
-                "sectionIndex": "0",
-                "sectionId": "devicesBlocksMainSection",
-                "sectionType": "devicesBlocksMainSection",
-                "sectionComponentId": "GenericComponent",
-                "sections": [
-                    {
-                        "sectionIndex": "1",
-                        "sectionId": "devicesBlocksAdvCtrlsPageSection",
-                        "sectionType": "advancedControlsSection",
-                        "contents": [
-                            {
-                                "contentIndex": "0",
-                                "items": [
-                                    {
-                                        "itemKey": "controlsHeader",
-                                        "itemType": "text",
-                                        "itemValue": "Advanced Controls",
-                                        "itemAttributes": {},
-                                        "actionKey": "advanceControls"
-                                    }
-                                ]
-                            }
-                        ],
-                        "data": {
-                            "advanceControls": [
-                                {
-                                    "caretMsg": "Manage Call Filter",
-                                    "headerText": "Put an end to mystery calls.",
-                                    "titleText": "Call Filter",
-                                    "isFeatureAvailable": "N",
-                                    "description": "Call Filter identifies unknown numbers by name or as spam and automatically blocks unwanted calls based on risk level.",
-                                    "url": "https://vzwqa1.verizonwireless.com/solutions-and-services/call-filter/"
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "sectionIndex": "2",
-                        "sectionId": "devicesBlockDetailsPageSection",
-                        "sectionType": "blockDetailsSection",
-                        "actions": [
-                            {
-                                "actionType": "route",
-                                "actionValue": "/",
-                                "actionKey": "seeAllDevicesAction",
-                                "clickStream": "see-all-devices-cta"
-                            },
-                            {
-                                "actionType": "modal",
-                                "actionValue": "devicesBlocksAppleModalSection",
-                                "actionKey": "appleModalAction",
-                                "clickStream": "see-all-devices-cta"
-                            }
-                        ],
-                        "contents": [
-                            {
-                                "contentIndex": "0",
-                                "items": [
-                                    {
-                                        "itemKey": "headerText",
-                                        "itemType": "text",
-                                        "itemValue": "Now, let's manage blocks for this device.",
-                                        "itemAttributes": {}
-                                    },
-                                    {
-                                        "itemKey": "selectServiceText",
-                                        "itemType": "text",
-                                        "itemValue": "Select a section below to get started. All changes are automatically saved.",
-                                        "dataKey": "devices",
-                                        "itemAttributes": {}
-                                    },
-                                    {
-                                        "itemKey": "deviceDisabledText",
-                                        "itemType": "text",
-                                        "itemValue": "Devices disabled",
-                                        "itemAttributes": {}
-                                    },
-                                    {
-                                        "itemKey": "seeAllDevicesBtn",
-                                        "itemType": "button",
-                                        "itemValue": "See all devices",
-                                        "itemAttributes": {},
-                                        "actionKey": "seeAllDevicesAction"
-                                    },
-                                    {
-                                        "itemKey": "appleModalLink",
-                                        "itemType": "link",
-                                        "itemValue": "Click here",
-                                        "itemAttributes": {},
-                                        "actionKey": "appleModalAction"
-                                    },
-                                    {
-                                        "itemKey": "dataOnlyMessage",
-                                        "itemType": "text",
-                                        "itemValue": "This type of device does not receive calls or standard texts (SMS/MMS). The mobile phone number is for data configuration purposes.",
-                                        "itemAttributes": {}
-                                    },
-                                    {
-                                        "itemKey": "familyBaseMessage",
-                                        "itemType": "text",
-                                        "itemValue": "You can block number using your Verizon Smart Family&#8482; product.",
-                                        "itemAttributes": {
-                                            "baseUrl": "http://localhost:9088/ui/ntwk/fb",
-                                            "baseUrlMsg": "Visit Verizon Smart Family&#8482."
-                                        }
-                                    },
-                                    {
-                                        "itemKey": "appleDeviceMessage",
-                                        "itemType": "html",
-                                        "itemValue": "<strong>Apple iMessage note:</strong> Apple iMessage won't be blocked. To learn how to disable iMessages",
-                                        "itemAttributes": {}
-                                    },
-                                    {
-                                        "itemKey": "trackingDeviceMessage",
-                                        "itemType": "text",
-                                        "itemValue": "This type of device does not receive calls or standard texts (SMS/MMS). The mobile phone number is for data configuration purposes.",
-                                        "itemAttributes": {}
-                                    },
-                                    {
-                                        "itemKey": "callsMessagesHeader",
-                                        "itemType": "text",
-                                        "itemValue": "Block calls & messages",
-                                        "itemAttributes": {}
-                                    },
-                                    {
-                                        "itemKey": "servicesHeader",
-                                        "itemType": "text",
-                                        "itemValue": "Block services",
-                                        "itemAttributes": {}
-                                    }
-                                ]
-                            }
-                        ],
-                        "data": {
-                            "showAdvanceControls": false,
-                            "pendingOrder": false,
-                            "isFamilyBase": true,
-                            "isDataOnlyPlan": true,
-                            "isTrackingDevice": false,
-                            "showServices": false,
-                            "isAppleDevice": false
-                        }
-                    }
-                ]
-            }
-        ]
+import React, { Component } from 'react';
+import { connect } from "react-redux";
+import AdvancedControls from '../../home/components/AdvanceControls';
+import * as deviceDetailActions from '../actions';
+import Alert from '../../alert';
+import { Redirect } from 'react-router-dom';
+import { Title, Body } from '@vds/typography';
+import { bindActionCreators } from 'redux';
+import styled from "styled-components";
+import BlockCallsMessages from './blockCallsMessages';
+import BlockServices from './blocksServices/BlockServices';
+import { Button, TextLink } from '@vds/buttons';
+import { Line } from '@vds/lines';
+import { Modal, ModalBody, ModalFooter, ModalTitle } from '@vds/modals';
+import { Toggle } from '@vds/toggles';
+import { Loader } from '@vds/loaders';
+import { DropdownSelect } from '@vds/selects';
+import '../components/blocksServices/style.css';
+import { Tooltip } from '@vds/tooltips';
+
+export const MDN_ROLE_MESSAGE = 'This line isn\'t registered for a My Verizon Account yet. You’ll need this line to complete the online registration in order to access the features within My Verizon.';
+export const MDN_ROLE_NONREG_MESSAGE = 'Non Registered';
+
+class DeviceDetail extends Component {
+    constructor(props) {
+        super(props);
+        const { devices, selectedDevice, advanceControls, isSingleDevice } = props.location?.state || {};
+
+        this.state = {
+            selectedDevice: selectedDevice || {},
+            devices: devices || [],
+            advanceControls: advanceControls || [],
+            applePopUp: false,
+            isSingleDevice: isSingleDevice || false,
+        };
+    }
+
+    componentDidMount() {
+        const { selectedDevice } = this.state;
+        if (selectedDevice?.encryptedMtn) {
+            this.props.actions.getDeviceDetail(selectedDevice.encryptedMtn);
+        }
+    }
+
+    handleOnChangeDevice = (event) => {
+        const newSelectedDevice = this.state.devices.find(device => device.mtn === event.target.value);
+        if (newSelectedDevice) {
+            this.props.actions.getDeviceDetail(newSelectedDevice.encryptedMtn);
+            this.setState({
+                selectedDevice: newSelectedDevice,
+                selectedAccordian: "",
+            });
+        }
+    }
+
+    selectAccordian = (name) => {
+        this.setState(prevState => ({
+            selectedAccordian: prevState.selectedAccordian === name ? '' : name,
+        }));
+    }
+
+    appleModal = () => {
+        this.setState({ applePopUp: true });
+    }
+
+    closePopup = () => {
+        this.setState({ applePopUp: false });
+    }
+
+    render() {
+        const { deviceDetails, isFetching } = this.props;
+        const { selectedDevice, applePopUp, isSingleDevice, advanceControls } = this.state;
+
+        if (!this.state.devices.length) {
+            return <Redirect to="/" />;
+        }
+
+        const deviceOptions = this.state.devices.filter(device => !device.isFiveGDevice).map((device) => (
+            <option value={device.mtn} key={device.mtn}>{device.deviceNickname} {device.mtn}</option>
+        ));
+
+        // Extract relevant messages from the deviceDetails
+        const appleNotice = deviceDetails?.data?.isAppleDevice === true;
+        const Showmsg = appleNotice ? deviceDetails.appleDeviceMessage : '';
+        const familybasemessage = deviceDetails?.contents?.find(item => item.itemKey === 'familyBaseMessage')?.itemValue || '';
+        const familybaseurl = deviceDetails?.contents?.find(item => item.itemKey === 'familyBaseMessage')?.itemAttributes || {};
+        const callsmessage = deviceDetails?.contents?.find(item => item.itemKey === 'trackingDeviceMessage' || item.itemKey === 'dataOnlyMessage')?.itemValue || '';
+
+        return (
+            <div className="oneD">
+                <Loader show={isFetching} />
+                <div className="row">
+                    <div className="col-lg-12 visible-lg visible-md">
+                        <h1>Now, let's manage blocks<br />for this device.</h1>
+                    </div>
+
+                    {!isSingleDevice && (
+                        <div className="row">
+                            <div style={{ paddingLeft: '8px' }}>
+                                <Button use='secondary' surface='light' href="/blocks" role="button" data-track="DeviceDetailsSeeAllDevices">
+                                    See all devices
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {!isSingleDevice && (
+                    <div className="row" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <div className="col-lg-3">
+                            <DropdownSelect
+                                onChange={this.handleOnChangeDevice}
+                                defaultValue={selectedDevice.mtn}
+                                width='80%'
+                            >
+                                {deviceOptions}
+                            </DropdownSelect>
+                        </div>
+                    </div>
+                )}
+                <Line />
+                
+                <div className="row" style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: '20px' }}>
+                    <div className="col-lg-4 col-sm-12 col-md-4">
+                        <div className="row" style={{ paddingLeft: '10px' }}>
+                            <div className="col-lg-12 col-sm-8 col-xs-8 col-md-8">
+                                <div style={{ display: 'flex' }}>
+                                    <p className="role">{selectedDevice.role}</p>
+                                    {selectedDevice.role === MDN_ROLE_NONREG_MESSAGE && (
+                                        <Tooltip outlined={true} style={{ marginLeft: "0.5rem" }}>
+                                            {MDN_ROLE_MESSAGE}
+                                        </Tooltip>
+                                    )}
+                                </div>
+                                <h4>{selectedDevice.deviceNickname}</h4>
+                                <h4>{selectedDevice.displayMtn}</h4>
+                                {appleNotice && (
+                                    <div className="row visible-sm visible-xs">{Showmsg}</div>
+                                )}
+                            </div>
+                            <div style={{ padding: 0 }}>
+                                <img src={selectedDevice.images?.mediumImage} alt="Device" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="col-lg-8 col-md-8">
+                        <span style={{ fontSize: '13px' }}>Select a section below to get started. All changes are automatically saved.</span>
+                        <br />
+                        {deviceDetails?.data?.isFamilyBase && (
+                            <Alert Message={familybasemessage} URL={familybaseurl.baseUrl} Label={familybaseurl.baseUrlMsg} Type={1} closeBanner={false} />
+                        )}
+                        {deviceDetails?.data?.isDataOnlyPlan && (
+                            <Alert Message={callsmessage} Type={1} closeBanner={true} />
+                        )}
+
+                        <div className="radio-choose--disabled">
+                            <BlockCallsMessages selectAccordian={this.selectAccordian} selectedAccordian={this.state.selectedAccordian} selectedDevice={selectedDevice} />
+                        </div>
+                        <div className={deviceDetails?.data?.isDataOnlyPlan ? "radio-choose--disabled" : ""}>
+                            <BlockServices selectAccordian={this.selectAccordian} selectedAccordian={this.state.selectedAccordian} selectedDevice={selectedDevice} />
+                        </div>
+                    </div>
+                </div>
+
+                <hr className="mb-32" />
+                <AdvancedControls advanceControls={advanceControls} />
+                {this.state.showAdvanceControls && (
+                    <div>
+                        <hr className="mb-32" />
+                        <AdvancedControls advanceControls={advanceControls} />
+                    </div>
+                )}
+            </div>
+        );
     }
 }
+
+const mapStateToProps = (store) => ({
+    isFetching: store.Detail.Details.isFetching,
+    deviceDetails: store.Detail.Details.deviceDetails,
+});
+
+const mapDispatchToProps = (dispatch) => ({
+    actions: bindActionCreators({ ...deviceDetailActions }, dispatch),
+});
+
+const ToolTipWrapper = styled.div`
+    display: flex;
+    top: 2% !important;
+    position: absolute;
+    left: 28%;
+`;
+
+const ToolTipText = styled.div`
+    font-family: NHaasGroteskDSStd-55Rg;
+    font-size: 0.7rem;
+    display: inline-flex;
+`;
+
+export default connect(mapStateToProps, mapDispatchToProps)(DeviceDetail);

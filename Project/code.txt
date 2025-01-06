@@ -1,272 +1,175 @@
-import React from "react";
-import "../../../../../config/jest/test-setup";
-import { act, render, screen, fireEvent } from "@testing-library/react";
-import "@testing-library/jest-dom/extend-expect";
-import { Provider } from "react-redux";
-import httpClient, { getHttpClientRequest, postHttpClientRequest } from "../../../../shared/services/httpClient";
-import configureStore, { history } from "../../../../shared/store/configureStore";
-import rootReducer from "../../reducers";
-import { persistStore } from 'redux-persist';
-import { PersistGate } from 'redux-persist/integration/react';
-import DevicesOverview from "../components/index";
-import { deviceLanding, recommendationMock, proActiveNoti, networkOutageDetail,deviceLanding4, deviceLandingnew} from "./mockResponse";
-import * as getSections from '../actions/getSections';
-import * as pageActions from '../actions/pageActions';
-import { getCaptureResponse } from "../actions/pageActions";
-
-const store = configureStore(rootReducer);
-const persistor = persistStore(store);
-
-jest.mock("../../../../shared/services/httpClient", () => ({
-    ...jest.requireActual("../../../../shared/services/httpClient"),
-    getHttpClientRequest: jest.fn(),
-    postHttpClientRequest: jest.fn()
-}));
-
-
-describe("<DevicesOverviewPearl />", () => {
-    window.VZTAG_IS_READY = 'false';
-    reactGlobals.routeLog = { confirmationShown: 'true' }
-    beforeEach(async () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.resolve({ status: 200, data: { ...deviceLandingnew } });
-        });
-
-        await act(async () => render(
-            <Provider store={store}>
-                <PersistGate loading={null} persistor={persistor}>
-                    <DevicesOverview />
-                </PersistGate>
-            </Provider>
-        ));
-    })
-    test("addALineBtnTestId", () => {
-        const doc = screen.getByTestId('pearlTrialBtn');
-        expect(doc).toBeInTheDocument();
-        fireEvent.click(doc);
-    })
-});
-
-describe("<DevicesOverview />", () => {
-    reactGlobals.routeLog = { confirmationShown: 'true' }
-    beforeEach(async () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.resolve({ status: 200, data: { ...deviceLanding } });
-        });
-
-        await act(async () => render(
-            <Provider store={store}>
-                <PersistGate loading={null} persistor={persistor}>
-                    <DevicesOverview />
-                </PersistGate>
-            </Provider>
-        ));
-
-    })
-
-    test("it should mount", () => {
-        const doc = screen.getByTestId("DevicesOverviewTestId");
-        expect(doc).toBeInTheDocument();
-    });
-
-    test("it should mount", () => {
-        jest.setTimeout('10000');
-        fireEvent.click(screen.getByTestId("managedeviceCtaTestId1"));
-    });
-
-    test("it should mount", () => {
-        jest.setTimeout('10000');
-        //fireEvent.click(screen.getByTestId("upgradeDeviceBtnTestId0"));
-    });
-
-    test("getDeviceLandingError api error", () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.reject({ data: 'error' });
-        });
-
-        store.dispatch(getSections.getDeviceLandingError('getSection'));
-    });
-
-
-    test("recommendation test", () => {
-        jest.setTimeout('10000');
-
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.resolve({ status: 200, data: { ...recommendationMock } });
-        })
-        store.dispatch(pageActions?.getRecommendation('2144707276'));
-    });
-
-    test("CaptureResponse test", () => {
-        httpClient.postHttpClientRequest.mockImplementation((url) => {
-            return Promise.resolve({ status: 200, data: { ...recommendationMock}})
-        })
-        let payload = {
-            "source": "deviceOverviewFeedbackRec",
-            "contextInfo": {
-                "callReason": "LiveTiles",
-                "category": "Support",
-                "subServiceName": "CaptureResponse",
-                "pageContext": "MVO_Device_Overview_Support",
-                "sessionId": "-8713991925375068437"
+export const devicedetail = {
+    "responseInfo": {
+        "timeStamp": "11-10-2024 12:23:17",
+        "correlationId": "Blocks Devices",
+        "responseCode": "00",
+        "responseMessage": "SUCCESS",
+        "sectionErrors": []
+    },
+    "body": {
+        "pageAttributes": [
+            {
+                "itemKey": "pageTitle",
+                "itemValue": "Devices blocks"
             },
-            "customerResponse": {
-                "responseList": [
+            {
+                "itemKey": "hashedAccountNumber",
+                "itemValue": "##HASHED_ACCTNO##",
+                "itemType": "text"
+            },
+            {
+                "itemKey": "hashedMdn",
+                "itemValue": "##HASHED_MDN##",
+                "itemType": "text"
+            }
+        ],
+        "sections": [
+            {
+                "sectionIndex": "0",
+                "sectionId": "devicesBlocksMainSection",
+                "sectionType": "devicesBlocksMainSection",
+                "sectionComponentId": "GenericComponent",
+                "sections": [
                     {
-                        "dispositionOptionId": "82",
-                        "propositionId": "LU_12",
-                        "rank": "1",
-                        "soiEngagementId": "500017832",
-                        "tacticLocation": "MVO_Device_Overview_Support"
+                        "sectionIndex": "1",
+                        "sectionId": "devicesBlocksAdvCtrlsPageSection",
+                        "sectionType": "advancedControlsSection",
+                        "contents": [
+                            {
+                                "contentIndex": "0",
+                                "items": [
+                                    {
+                                        "itemKey": "controlsHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Advanced Controls",
+                                        "itemAttributes": {},
+                                        "actionKey": "advanceControls"
+                                    }
+                                ]
+                            }
+                        ],
+                        "data": {
+                            "advanceControls": [
+                                {
+                                    "caretMsg": "Manage Call Filter",
+                                    "headerText": "Put an end to mystery calls.",
+                                    "titleText": "Call Filter",
+                                    "isFeatureAvailable": "N",
+                                    "description": "Call Filter identifies unknown numbers by name or as spam and automatically blocks unwanted calls based on risk level.",
+                                    "url": "https://vzwqa1.verizonwireless.com/solutions-and-services/call-filter/"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "sectionIndex": "2",
+                        "sectionId": "devicesBlockDetailsPageSection",
+                        "sectionType": "blockDetailsSection",
+                        "actions": [
+                            {
+                                "actionType": "route",
+                                "actionValue": "/",
+                                "actionKey": "seeAllDevicesAction",
+                                "clickStream": "see-all-devices-cta"
+                            },
+                            {
+                                "actionType": "modal",
+                                "actionValue": "devicesBlocksAppleModalSection",
+                                "actionKey": "appleModalAction",
+                                "clickStream": "see-all-devices-cta"
+                            }
+                        ],
+                        "contents": [
+                            {
+                                "contentIndex": "0",
+                                "items": [
+                                    {
+                                        "itemKey": "headerText",
+                                        "itemType": "text",
+                                        "itemValue": "Now, let's manage blocks for this device.",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "selectServiceText",
+                                        "itemType": "text",
+                                        "itemValue": "Select a section below to get started. All changes are automatically saved.",
+                                        "dataKey": "devices",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "deviceDisabledText",
+                                        "itemType": "text",
+                                        "itemValue": "Devices disabled",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "seeAllDevicesBtn",
+                                        "itemType": "button",
+                                        "itemValue": "See all devices",
+                                        "itemAttributes": {},
+                                        "actionKey": "seeAllDevicesAction"
+                                    },
+                                    {
+                                        "itemKey": "appleModalLink",
+                                        "itemType": "link",
+                                        "itemValue": "Click here",
+                                        "itemAttributes": {},
+                                        "actionKey": "appleModalAction"
+                                    },
+                                    {
+                                        "itemKey": "dataOnlyMessage",
+                                        "itemType": "text",
+                                        "itemValue": "This type of device does not receive calls or standard texts (SMS/MMS). The mobile phone number is for data configuration purposes.",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "familyBaseMessage",
+                                        "itemType": "text",
+                                        "itemValue": "You can block number using your Verizon Smart Family&#8482; product.",
+                                        "itemAttributes": {
+                                            "baseUrl": "http://localhost:9088/ui/ntwk/fb",
+                                            "baseUrlMsg": "Visit Verizon Smart Family&#8482."
+                                        }
+                                    },
+                                    {
+                                        "itemKey": "appleDeviceMessage",
+                                        "itemType": "html",
+                                        "itemValue": "<strong>Apple iMessage note:</strong> Apple iMessage won't be blocked. To learn how to disable iMessages",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "trackingDeviceMessage",
+                                        "itemType": "text",
+                                        "itemValue": "This type of device does not receive calls or standard texts (SMS/MMS). The mobile phone number is for data configuration purposes.",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "callsMessagesHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Block calls & messages",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "servicesHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Block services",
+                                        "itemAttributes": {}
+                                    }
+                                ]
+                            }
+                        ],
+                        "data": {
+                            "showAdvanceControls": false,
+                            "pendingOrder": false,
+                            "isFamilyBase": true,
+                            "isDataOnlyPlan": true,
+                            "isTrackingDevice": false,
+                            "showServices": false,
+                            "isAppleDevice": false
+                        }
                     }
                 ]
             }
-        }
-        getCaptureResponse(payload)
-    });
-
-
-    test("getProactiveNotificationSuccess api success", () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.resolve({ status: 200, data: { ...proActiveNoti } });
-        });
-
-        store.dispatch(pageActions.getProactiveNotification({
-            pageContext: "",
-            category: "Alerts",
-        }));
-    });
-
-    test("getNetworkOutageSuccess api success", () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.resolve({ status: 200, data: { ...networkOutageDetail } });
-        });
-
-        store.dispatch(pageActions.getNetworkOutage());
-    });
-
-    test("getProactiveNotificationError api error", () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.reject({ data: 'error' });
-        });
-
-        store.dispatch(pageActions.getProactiveNotificationError('getAction'));
-    });
-
-    test("getProactiveNotificationSuccess api error", () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.reject({ data: 'error' });
-        });
-
-        store.dispatch(pageActions.getProactiveNotificationSuccess('getSection'));
-    });
-
-    test("getNetworkOutageError api error", () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.reject({ data: 'error' });
-        });
-
-        store.dispatch(pageActions.getNetworkOutageError('getAction'));
-    });
-
-    test("getRecommendationError api error", () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.reject({ data: 'error' });
-        });
-
-        store.dispatch(pageActions.getRecommendationError('getAction'));
-    });
-
-    test("setSelectedDevice api error", () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.reject({ data: 'error' });
-        });
-
-        store.dispatch(pageActions.setSelectedDevice('getAction'));
-    });
-
-    test("getSections api error", () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.reject({ data: 'error' });
-        });
-
-        store.dispatch(getSections.getSections('getSection'))
-            // .then((res) => {
-            // }, (error) => {
-            //     expect(error.data).toEqual('error');
-            // });
-
-    });
-});
-
-describe("<DevicesOverview />", () => {
-    reactGlobals.routeLog = { confirmationShown: 'true' }
-    beforeEach(async () => {
-        httpClient.getHttpClientRequest.mockImplementation((url) => {
-            return Promise.resolve({ status: 200, data: { ...deviceLanding4 } });
-        });
-
-        await act(async () => render(
-            <Provider store={store}>
-                <PersistGate loading={null} persistor={persistor}>
-                    <DevicesOverview />
-                </PersistGate>
-            </Provider>
-        ));
-
-    })
-
-    test("it should mount", () => {
-        const doc = screen.getByTestId("DevicesOverviewTestId");
-        expect(doc).toBeInTheDocument();
-    });
-
-    test("it should mount second number", () => {
-        const txt = screen.getAllByTestId("secondNum");
-        expect(txt).toHaveLength(2);
-    });
-
-    
-});
-
-const DeviceOverviewTestSuite = () => {
-    describe("<DevicesOverview />", () => {
-        reactGlobals.routeLog = { confirmationShown: 'true' }
-        test("it should mount", async () => {
-            httpClient.getHttpClientRequest.mockImplementation((url) => {
-                return Promise.resolve({ status: 200, data: { ...deviceLanding4 } });
-            });
-            await act(async () => render(
-                <Provider store={store}>
-                    <PersistGate loading={null} persistor={persistor}>
-                        <DevicesOverview />
-                    </PersistGate>
-                </Provider>
-            ));
-            jest.setTimeout('10000');
-            fireEvent.click(screen.getByTestId("upgradeDeviceBtnTestId0"));
-        });
-        test("it should mount", async () => {
-            const newResp = { ...deviceLanding4 };
-            newResp.body.sections[0].sections[0].data.mobileDeviceList[0] = {
-                ...newResp.body.sections[0].sections[0].data.mobileDeviceList[0],
-                secondMtn: '',
-                encryptedMtnDES: '',
-            };
-            httpClient.getHttpClientRequest.mockImplementation((url) => {
-                return Promise.resolve({ status: 200, data: { ...newResp } });
-            });
-            await act(async () => render(
-                <Provider store={store}>
-                    <PersistGate loading={null} persistor={persistor}>
-                        <DevicesOverview />
-                    </PersistGate>
-                </Provider>
-            ));
-            jest.setTimeout('10000');
-            fireEvent.click(screen.getByTestId("upgradeDeviceBtnTestId0"));
-        });
-    });
-};
-
-DeviceOverviewTestSuite();
+        ]
+    }
+}

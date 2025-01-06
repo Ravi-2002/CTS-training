@@ -1,199 +1,272 @@
-import React, { Component } from "react";
-import { connect } from "react-redux";
-import * as actions from "../../actions/fetchServices";
-import { bindActionCreators } from "redux";
-import styled from "styled-components";
+import React from "react";
+import "../../../../../config/jest/test-setup";
+import { act, render, screen, fireEvent } from "@testing-library/react";
+import "@testing-library/jest-dom/extend-expect";
+import { Provider } from "react-redux";
+import httpClient, { getHttpClientRequest, postHttpClientRequest } from "../../../../shared/services/httpClient";
+import configureStore, { history } from "../../../../shared/store/configureStore";
+import rootReducer from "../../reducers";
+import { persistStore } from 'redux-persist';
+import { PersistGate } from 'redux-persist/integration/react';
+import DevicesOverview from "../components/index";
+import { deviceLanding, recommendationMock, proActiveNoti, networkOutageDetail,deviceLanding4, deviceLandingnew} from "./mockResponse";
+import * as getSections from '../actions/getSections';
+import * as pageActions from '../actions/pageActions';
+import { getCaptureResponse } from "../actions/pageActions";
 
-import "./style.css";
-import Alert from "../../../alert";  // Ensure this is imported
-import BSEmailDomains from "../blocksEmailDomains/BSEmailDomains";
-import { Modal, ModalBody, ModalFooter, ModalTitle } from "@vds/modals";
-import { Button, TextLink } from "@vds/buttons";
-import { Body, Title } from "@vds/typography";
-import { Loader } from "@vds/loaders";
+const store = configureStore(rootReducer);
+const persistor = persistStore(store);
 
-const BLOCK_EMAIL_DOMAIN = "Emails & domains";
+jest.mock("../../../../shared/services/httpClient", () => ({
+    ...jest.requireActual("../../../../shared/services/httpClient"),
+    getHttpClientRequest: jest.fn(),
+    postHttpClientRequest: jest.fn()
+}));
 
-class BlockServices extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      services: {},
-      updatedService: null,
-      errorMessage: null,  // To store error messages
-      successMessage: null,  // To store success messages
-    };
-  }
 
-  handleServices = (e, accordion) => {
-    e.preventDefault();
-    if (accordion === "BS") {
-      this.props.selectAccordian("BS");
-      this.props.actions.getServices(this.props.selectedDevice.encryptedMtn);
-      window.scrollTo(0, 0);
-    }
-  };
+describe("<DevicesOverviewPearl />", () => {
+    window.VZTAG_IS_READY = 'false';
+    reactGlobals.routeLog = { confirmationShown: 'true' }
+    beforeEach(async () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...deviceLandingnew } });
+        });
 
-  componentDidUpdate(prevProps) {
-    const { services, serviceStatus } = this.props;
+        await act(async () => render(
+            <Provider store={store}>
+                <PersistGate loading={null} persistor={persistor}>
+                    <DevicesOverview />
+                </PersistGate>
+            </Provider>
+        ));
+    })
+    test("addALineBtnTestId", () => {
+        const doc = screen.getByTestId('pearlTrialBtn');
+        expect(doc).toBeInTheDocument();
+        fireEvent.click(doc);
+    })
+});
 
-    if (serviceStatus !== prevProps.serviceStatus && serviceStatus.responseInfo?.responseCode === "0") {
-      const formattedServices = Object.keys(services || {}).reduce(
-        (acc, key) => {
-          acc[key] = {
-            isExpand: false,
-            data: services[key]?.map((item) => ({ ...item, showMore: false })),
-          };
-          return acc;
-        },
-        { [BLOCK_EMAIL_DOMAIN]: { isExpand: false } }
-      );
+describe("<DevicesOverview />", () => {
+    reactGlobals.routeLog = { confirmationShown: 'true' }
+    beforeEach(async () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...deviceLanding } });
+        });
 
-      this.setState({ services: formattedServices });
-    }
-  }
+        await act(async () => render(
+            <Provider store={store}>
+                <PersistGate loading={null} persistor={persistor}>
+                    <DevicesOverview />
+                </PersistGate>
+            </Provider>
+        ));
 
-  handleSubServices = (e, service) => {
-    e.preventDefault();
-    const updatedServices = { ...this.state.services };
-    Object.keys(updatedServices).forEach((key) => {
-      updatedServices[key].isExpand = key === service ? !updatedServices[key].isExpand : false;
+    })
+
+    test("it should mount", () => {
+        const doc = screen.getByTestId("DevicesOverviewTestId");
+        expect(doc).toBeInTheDocument();
     });
-    this.setState({ services: updatedServices });
-  };
 
-  toggleOn = (e, service, i) => {
-    e.preventDefault();
-    const { selectedDevice, actions } = this.props;
-    const { services } = this.state;
+    test("it should mount", () => {
+        jest.setTimeout('10000');
+        fireEvent.click(screen.getByTestId("managedeviceCtaTestId1"));
+    });
 
-    const payload = {
-      mdn: selectedDevice.encryptedMtn,
-      sfoCode: services[service].data[i].sfoCode,
-      sfoEnabled: services[service].data[i].sfoEnabled === "Y" ? "N" : "Y",
-    };
+    test("it should mount", () => {
+        jest.setTimeout('10000');
+        //fireEvent.click(screen.getByTestId("upgradeDeviceBtnTestId0"));
+    });
 
-    actions.postServices(payload)
-      .then(() => {
-        // Update the service in state
-        const updatedServices = { ...services };
-        const currentService = updatedServices[service].data[i];
-        currentService.sfoEnabled = currentService.sfoEnabled === "Y" ? "N" : "Y";
-
-        this.setState({
-          services: updatedServices,
-          updatedService: currentService.sfoCode,
-          successMessage: `Service ${currentService.serviceName} toggled successfully.`,  // Success message
-          errorMessage: null,  // Clear any previous error message
+    test("getDeviceLandingError api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
         });
-      })
-      .catch((error) => {
-        this.setState({
-          errorMessage: "Failed to update the service. Please try again later.",  // Error message
-          successMessage: null,  // Clear any previous success message
+
+        store.dispatch(getSections.getDeviceLandingError('getSection'));
+    });
+
+
+    test("recommendation test", () => {
+        jest.setTimeout('10000');
+
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...recommendationMock } });
+        })
+        store.dispatch(pageActions?.getRecommendation('2144707276'));
+    });
+
+    test("CaptureResponse test", () => {
+        httpClient.postHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...recommendationMock}})
+        })
+        let payload = {
+            "source": "deviceOverviewFeedbackRec",
+            "contextInfo": {
+                "callReason": "LiveTiles",
+                "category": "Support",
+                "subServiceName": "CaptureResponse",
+                "pageContext": "MVO_Device_Overview_Support",
+                "sessionId": "-8713991925375068437"
+            },
+            "customerResponse": {
+                "responseList": [
+                    {
+                        "dispositionOptionId": "82",
+                        "propositionId": "LU_12",
+                        "rank": "1",
+                        "soiEngagementId": "500017832",
+                        "tacticLocation": "MVO_Device_Overview_Support"
+                    }
+                ]
+            }
+        }
+        getCaptureResponse(payload)
+    });
+
+
+    test("getProactiveNotificationSuccess api success", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...proActiveNoti } });
         });
-      });
-  };
 
-  render() {
-    const { services, successMessage, errorMessage } = this.state;
-    const { isFetching } = this.props;
+        store.dispatch(pageActions.getProactiveNotification({
+            pageContext: "",
+            category: "Alerts",
+        }));
+    });
 
-    return (
-      <div className="accordion">
-        {/* Show success or error alerts */}
-        {successMessage && <Alert type="success">{successMessage}</Alert>}
-        {errorMessage && <Alert type="error">{errorMessage}</Alert>}
+    test("getNetworkOutageSuccess api success", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...networkOutageDetail } });
+        });
 
-        <div className="accordion__item">
-          <div
-            className="accordion__title"
-            role="button"
-            tabIndex="0"
-            onClick={(e) => this.handleServices(e, "BS")}
-            aria-expanded={this.props.selectedAccordian === "BS"}
-          >
-            <FAQsHeadSection id="blockservices">Block services</FAQsHeadSection>
-          </div>
-          <Loader show={isFetching} />
+        store.dispatch(pageActions.getNetworkOutage());
+    });
 
-          {services &&
-            Object.keys(services).map((service) => (
-              <div key={service}>
-                <div
-                  className="accordion__title"
-                  role="button"
-                  tabIndex="0"
-                  onClick={(e) => this.handleSubServices(e, service)}
-                  aria-expanded={services[service].isExpand}
-                >
-                  <FAQs1HeadSection>{service}</FAQs1HeadSection>
-                </div>
+    test("getProactiveNotificationError api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
 
-                <div className={services[service].isExpand ? "accordion__body" : "accordion__body--hidden"}>
-                  {service === BLOCK_EMAIL_DOMAIN && <BSEmailDomains selectedDevice={this.props.selectedDevice} />}
+        store.dispatch(pageActions.getProactiveNotificationError('getAction'));
+    });
 
-                  {services[service].data?.map((detail, i) => (
-                    <div key={detail.sfoCode} className="o-row">
-                      <Body size="large" bold>
-                        {detail.serviceName}
-                      </Body>
-                      <label className="form-switch" onClick={(e) => this.toggleOn(e, service, i)}>
-                        <input type="checkbox" checked={detail.sfoEnabled === "Y"} readOnly />
-                        <i />
-                        <span>{detail.sfoEnabled === "Y" ? "On" : "Off"}</span>
-                      </label>
-                      <Modal
-                        toggleButton={
-                          <TextLink>
-                            <Body size="medium">View More Details</Body>
-                          </TextLink>
-                        }
-                      >
-                        <ModalTitle>
-                          <Title size="large">{detail.serviceName}</Title>
-                        </ModalTitle>
-                        <ModalBody>
-                          <p dangerouslySetInnerHTML={{ __html: detail.shortDescription }} />
-                          <p dangerouslySetInnerHTML={{ __html: detail.longDescription }} />
-                        </ModalBody>
-                        <ModalFooter>
-                          <Button onClick={() => {}}>Close</Button>
-                        </ModalFooter>
-                      </Modal>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
-    );
-  }
-}
+    test("getProactiveNotificationSuccess api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
 
-const FAQsHeadSection = styled.div`
-  padding: 10px 0;
-  border-bottom: 2px solid #000;
-  font-size: 18px;
-  font-weight: bold;
-`;
+        store.dispatch(pageActions.getProactiveNotificationSuccess('getSection'));
+    });
 
-const FAQs1HeadSection = styled.div`
-  padding: 10px 0;
-  border-bottom: 1px solid #000;
-  font-size: 18px;
-`;
+    test("getNetworkOutageError api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
 
-const mapStateToProps = (state) => ({
-  services: state.Detail.serviceCalls.services,
-  serviceStatus: state.Detail.serviceCalls.serviceStatus,
-  isFetching: state.Detail.serviceCalls.isFetching,
-  confirmServices: state.Detail.serviceCalls.confirmServices,
+        store.dispatch(pageActions.getNetworkOutageError('getAction'));
+    });
+
+    test("getRecommendationError api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
+
+        store.dispatch(pageActions.getRecommendationError('getAction'));
+    });
+
+    test("setSelectedDevice api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
+
+        store.dispatch(pageActions.setSelectedDevice('getAction'));
+    });
+
+    test("getSections api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
+
+        store.dispatch(getSections.getSections('getSection'))
+            // .then((res) => {
+            // }, (error) => {
+            //     expect(error.data).toEqual('error');
+            // });
+
+    });
 });
 
-const mapDispatchToProps = (dispatch) => ({
-  actions: bindActionCreators(actions, dispatch),
+describe("<DevicesOverview />", () => {
+    reactGlobals.routeLog = { confirmationShown: 'true' }
+    beforeEach(async () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...deviceLanding4 } });
+        });
+
+        await act(async () => render(
+            <Provider store={store}>
+                <PersistGate loading={null} persistor={persistor}>
+                    <DevicesOverview />
+                </PersistGate>
+            </Provider>
+        ));
+
+    })
+
+    test("it should mount", () => {
+        const doc = screen.getByTestId("DevicesOverviewTestId");
+        expect(doc).toBeInTheDocument();
+    });
+
+    test("it should mount second number", () => {
+        const txt = screen.getAllByTestId("secondNum");
+        expect(txt).toHaveLength(2);
+    });
+
+    
 });
 
-export default connect(mapStateToProps, mapDispatchToProps)(BlockServices);
+const DeviceOverviewTestSuite = () => {
+    describe("<DevicesOverview />", () => {
+        reactGlobals.routeLog = { confirmationShown: 'true' }
+        test("it should mount", async () => {
+            httpClient.getHttpClientRequest.mockImplementation((url) => {
+                return Promise.resolve({ status: 200, data: { ...deviceLanding4 } });
+            });
+            await act(async () => render(
+                <Provider store={store}>
+                    <PersistGate loading={null} persistor={persistor}>
+                        <DevicesOverview />
+                    </PersistGate>
+                </Provider>
+            ));
+            jest.setTimeout('10000');
+            fireEvent.click(screen.getByTestId("upgradeDeviceBtnTestId0"));
+        });
+        test("it should mount", async () => {
+            const newResp = { ...deviceLanding4 };
+            newResp.body.sections[0].sections[0].data.mobileDeviceList[0] = {
+                ...newResp.body.sections[0].sections[0].data.mobileDeviceList[0],
+                secondMtn: '',
+                encryptedMtnDES: '',
+            };
+            httpClient.getHttpClientRequest.mockImplementation((url) => {
+                return Promise.resolve({ status: 200, data: { ...newResp } });
+            });
+            await act(async () => render(
+                <Provider store={store}>
+                    <PersistGate loading={null} persistor={persistor}>
+                        <DevicesOverview />
+                    </PersistGate>
+                </Provider>
+            ));
+            jest.setTimeout('10000');
+            fireEvent.click(screen.getByTestId("upgradeDeviceBtnTestId0"));
+        });
+    });
+};
+
+DeviceOverviewTestSuite();

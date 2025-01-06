@@ -1,357 +1,272 @@
+import React from "react";
+import "../../../../../config/jest/test-setup";
+import { act, render, screen, fireEvent } from "@testing-library/react";
+import "@testing-library/jest-dom/extend-expect";
+import { Provider } from "react-redux";
+import httpClient, { getHttpClientRequest, postHttpClientRequest } from "../../../../shared/services/httpClient";
+import configureStore, { history } from "../../../../shared/store/configureStore";
+import rootReducer from "../../reducers";
+import { persistStore } from 'redux-persist';
+import { PersistGate } from 'redux-persist/integration/react';
+import DevicesOverview from "../components/index";
+import { deviceLanding, recommendationMock, proActiveNoti, networkOutageDetail,deviceLanding4, deviceLandingnew} from "./mockResponse";
+import * as getSections from '../actions/getSections';
+import * as pageActions from '../actions/pageActions';
+import { getCaptureResponse } from "../actions/pageActions";
 
-import React, { Component } from 'react';
-import { connect } from "react-redux";
-import AdvancedControls from '../../home/components/AdvanceControls';
-import * as deviceDetailActions from '../actions';
-import Alert from '../../alert';
-import { Redirect } from 'react-router-dom';
-import {Title,Body} from '@vds/typography'
-import { bindActionCreators } from 'redux'
-import styled from "styled-components";
-import BlockCallsMessages from './blockCallsMessages';
-import BlockServices from './blocksServices/BlockServices';
-import { Button, TextLink } from '@vds/buttons';
-import { Line } from '@vds/lines';
-import { Modal, ModalBody, ModalFooter, ModalTitle } from '@vds/modals';
-import { Toggle } from '@vds/toggles';
-import { Loader } from '@vds/loaders';
-import { DropdownSelect } from '@vds/selects';
-import '../components/blocksServices/style.css';
-import { Tooltip } from '@vds/tooltips';
+const store = configureStore(rootReducer);
+const persistor = persistStore(store);
 
-export const MDN_ROLE_MESSAGE = 'This line isn\'t registered for a My Verizon Account yet. You\'ll need this line to complete the online registration in order to access the features within My Verizon.';
-export const MDN_ROLE_NONREG_MESSAGE = 'Non Registered';
-class DeviceDetail extends Component {
+jest.mock("../../../../shared/services/httpClient", () => ({
+    ...jest.requireActual("../../../../shared/services/httpClient"),
+    getHttpClientRequest: jest.fn(),
+    postHttpClientRequest: jest.fn()
+}));
 
-    constructor(props) {
-        super(props);
-        console.log(props,'props')
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
+
+describe("<DevicesOverviewPearl />", () => {
+    window.VZTAG_IS_READY = 'false';
+    reactGlobals.routeLog = { confirmationShown: 'true' }
+    beforeEach(async () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...deviceLandingnew } });
         });
-        if (props.location.state != null && props.location.state != undefined) {
-            this.devices = props.location.state.devices
-            this.isSingleDevice = props.location.state.isSingleDevice
-            this.selectedDevice = props.location.state.selectedDevice
-            this.advanceControls = props.location.state.advanceControls
-            this.showAdvanceControls= props.location.state.showAdvanceControls
-        }
-        this.state = {
-            selectedDevice: this.selectedDevice,
-            devices: this.devices,
-            advanceControls: this.advanceControls,
-            applePopUp:false,
-            isSingleDevice: this.isSingleDevice
-        }
-    }
 
-    componentDidMount() {
-        
-            const selectedMdn = this.props.location?.state?.selectedDevice?.encryptedMtn;
-    // const selectedMdn = this.props.location?.state?.selectedDevice?.encryptedMtn;
-    console.log(selectedMdn,'selected')
-    this.props?.actions?.getDeviceDetail(selectedMdn);
-    
-    console.log(this.props,'this.props');
-        
-    }
+        await act(async () => render(
+            <Provider store={store}>
+                <PersistGate loading={null} persistor={persistor}>
+                    <DevicesOverview />
+                </PersistGate>
+            </Provider>
+        ));
+    })
+    test("addALineBtnTestId", () => {
+        const doc = screen.getByTestId('pearlTrialBtn');
+        expect(doc).toBeInTheDocument();
+        fireEvent.click(doc);
+    })
+});
 
-    handleOnChangeDevice = (event) => {
-        let newSelectedDevice = this.state.devices.filter(selected => selected.mtn == event.target.value)
-        if (newSelectedDevice.length > 0) {
-            this.props?.actions?.getDeviceDetail(newSelectedDevice[0].encryptedMtn);
-            this.setState({
-                selectedDevice: newSelectedDevice[0],
-                selectedAccordian: ""
-            })
-        }   
-        console.log(selectedDevice,'selected')
-    }
-
-    selectAccordian = (name) => {
-        if (this.state.selectedAccordian === name)
-            name = ''
-        this.setState({
-            selectedAccordian: name
+describe("<DevicesOverview />", () => {
+    reactGlobals.routeLog = { confirmationShown: 'true' }
+    beforeEach(async () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...deviceLanding } });
         });
-    }
 
-    appleModal(e){
-        this.setState({
-            applePopUp: true
-        })
-    }
-    
-    closePupup=(e)=>{
-        this.setState({
-            applePopUp:false,
-        })
-      }
+        await act(async () => render(
+            <Provider store={store}>
+                <PersistGate loading={null} persistor={persistor}>
+                    <DevicesOverview />
+                </PersistGate>
+            </Provider>
+        ));
 
-    render() {
-        // const { isFetching, deviceListError } = this.props
-        const revokepopUpStyle = {
-            'top': '10%',
-            'maxHeight': '80%',
-            'width':'auto',
-            'maxWidth':'720px',
-            'margin':'20px'
-        };
-        const {deviceDetails, isFetching} = this.props
-        console.log(deviceDetails,'device details')
-        const {selectedDevice, applePopUp,isSingleDevice} = this.state
-        console.log(this.state)
-        let showServices = this.props.deviceDetails && this.props.deviceDetails.showServices
-        let Message = ""
-        let appleNotice = false
-        let showNotice = false
-        let Showmsg = ""
-        if (this.state.devices == undefined || this.state.devices == null) {
-            return (
-                <Redirect push to={{
-                    pathname: `/`,
-                }} />
-            );
-        }
-        const deviceOptions = this.state.devices.filter(rec=>!rec.isFiveGDevice).map((device) => {
-            return (<option value={device.mtn}>{(device.deviceNickname)} {device.mtn}</option>);
-        })
-        let cons='';
-        let familybasemessage='';
-        let callsmessage='';
-        let familybaseurl='';
-        const msg = deviceDetails.contents?.[0]?.items.map((item)=>{
-            
-                if(item.itemKey === "appleDeviceMessage"){
-                    cons=item.itemValue;
-                    return(cons)
-                }
-                if(item.itemKey === "familyBaseMessage"){
-                    familybasemessage = item.itemValue;
-                    familybaseurl = item.itemAttributes;
-                    return(familybasemessage)
-                }
-                if(item.itemKey ==="trackingDeviceMessage"){
-                    callsmessage = item.itemValue;
-                    return(callsmessage)
-                }
-                if(item.itemKey ==="dataOnlyMessage"){
-                    callsmessage = item.itemValue;
-                    return(callsmessage)
-                }
-                
-        })
+    })
 
-        console.log(familybaseurl,'family')
-        console.log(deviceDetails?.data?.isDataOnlyPlan,'callsmess')
-        
-        if(deviceDetails && deviceDetails.data?.isAppleDevice && deviceDetails.data?.isAppleDevice == true){
-            appleNotice = true;
-            Showmsg = deviceDetails.appleDeviceMessage;
-        }
-        
-		if(this.props.deviceDetails && this.props.isFetching)  {
-		    if (deviceDetails?.data?.isDataOnlyPlan == true) {
-		        showNotice = true;
-		        Message = callsmessage;
-		    }
-            
-		    else if (deviceDetails?.data?.isTrackingDevice == true) {
-		        showNotice = true;
-		        Message = callsmessage
-		    }
-		    
-		}
-        console.log(showNotice,'show');
-        console.log(deviceDetails,'mess')
-        
-        return (
-            <div className="oneD">
-            
-            <div> <Loader show={isFetching} /></div>
-            <br/>
-            <br/>
-                <div className="row" tabindex="-1">
-                    
-                    <div className="col-lg-12 visible-lg visible-md" >
-                        <h1 style={{paddingLeft:'10px'}}>Now, let's manage blocks<br></br> for this device.</h1>
-                    </div>
-                    
-                     
-            
-                    {/* <div className="col-lg-12 visible-sm visible-xs" style={{marginBottom:'20px',width:'270px'}}>
-                        <h2>Now, let's manage blocks for this device.</h2>
-                    </div> */}
-                    {!isSingleDevice && <div className="row">
-                    <div style={{paddingLeft:'8px'}}>
-                        <Button use='secondary' surface='light' href="/blocks" role="button" data-track="DeviceDetailsSeeAllDevices">See all devices</Button>
-                    </div>      
-                </div>}
-                <div style={{padding:'5px'}}></div>
-                </div>
-                {!isSingleDevice && <div className="row" style={{display:'flex',justifyContent:'space-between'}}>
-                    <div className="col-lg-3" style={{position:'unset',flex:'0.3',paddingLeft:'10px'}}>
-                        <DropdownSelect
-                            onChange={(event) => this.handleOnChangeDevice(event)}
-                            defaultValue={this.state.selectedDevice.mtn}
-                            width='80%'
-                           
-                        >
-                            {deviceOptions}
+    test("it should mount", () => {
+        const doc = screen.getByTestId("DevicesOverviewTestId");
+        expect(doc).toBeInTheDocument();
+    });
 
-                        </DropdownSelect>
-                    </div>
-                </div>}
-                <br/>
-                 <Line></Line>           
-               <br/>
-              {/* <p onClick={(e)=>this.appleModal(e)} className= "anchor-link" tabIndex="0"> click here 11</p> */}
-                    
-                <div className="row " style={{display:'flex',justifyContent:'space-between',paddingLeft:'20px'}}>
-                    <div className="col-lg-4 col-sm-12 col-md-4">
-                    <div className="row " style={{paddingLeft:'10px'}}>
-                    <div className="col-lg-12 col-sm-8 col-xs-8 col-md-8" >
-                        <div style={{display:'flex'}}>
-                        <p className="role">{this.state.selectedDevice.role}
-                     </p>
-                       {this.state.selectedDevice.role==MDN_ROLE_NONREG_MESSAGE ?<div >
-                       <Tooltip outlined={true} style={{ marginLeft:"0.5rem"}}>
-                       {MDN_ROLE_MESSAGE}
-                     </Tooltip>
-                    </div>:""
+    test("it should mount", () => {
+        jest.setTimeout('10000');
+        fireEvent.click(screen.getByTestId("managedeviceCtaTestId1"));
+    });
+
+    test("it should mount", () => {
+        jest.setTimeout('10000');
+        //fireEvent.click(screen.getByTestId("upgradeDeviceBtnTestId0"));
+    });
+
+    test("getDeviceLandingError api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
+
+        store.dispatch(getSections.getDeviceLandingError('getSection'));
+    });
+
+
+    test("recommendation test", () => {
+        jest.setTimeout('10000');
+
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...recommendationMock } });
+        })
+        store.dispatch(pageActions?.getRecommendation('2144707276'));
+    });
+
+    test("CaptureResponse test", () => {
+        httpClient.postHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...recommendationMock}})
+        })
+        let payload = {
+            "source": "deviceOverviewFeedbackRec",
+            "contextInfo": {
+                "callReason": "LiveTiles",
+                "category": "Support",
+                "subServiceName": "CaptureResponse",
+                "pageContext": "MVO_Device_Overview_Support",
+                "sessionId": "-8713991925375068437"
+            },
+            "customerResponse": {
+                "responseList": [
+                    {
+                        "dispositionOptionId": "82",
+                        "propositionId": "LU_12",
+                        "rank": "1",
+                        "soiEngagementId": "500017832",
+                        "tacticLocation": "MVO_Device_Overview_Support"
                     }
-                    </div>
-                        <h4>{this.state.selectedDevice.deviceNickname}</h4>
-                        <h4>{(this.state.selectedDevice.displayMtn)}</h4>
-                        {appleNotice &&<div className="row visible-sm visible-xs">
-                            {Showmsg}
-                        </div>}
-                        </div>
-                    <div style={{padding:0}}>
-                        <img  src={this.state.selectedDevice.images.mediumImage} alt="" />
-                        </div>
-                        </div>
-                        {/* {appleNotice && <div className="visible-sm visible-xs" style={{fontSize:'13px'}} >  
-                        <span dangerouslySetInnerHTML={{ __html: Showmsg }} /><a onClick={(e)=>this.appleModal(e)} className= "anchor-link" tabIndex="0">click here</a>
-                        </div>}
-
-                        <br/> */}
-                        {appleNotice?
-                        <div className="row visible-lg visible-md"  style={{width:'300px',paddingLeft:'10px'}}>
-                           <Body> <span dangerouslySetInnerHTML={{ __html: cons }} />
-                            
-                                
-                            <TextLink surface="light"> <Modal 
-                                      toggleButton={<TextLink surface="light"> Click here </TextLink>} 
-                                      surface="light"
-                                      fullScreenDialog={false}
-                                      disableAnimation={false}
-                                      disableOutsideClick={false}
-                                      ariaLabel="Testing Modal"
-                                    >
-                                    <ModalTitle>
-                                    Apple® iPhone® - Turn iMessage on/off<br/>
-                                    Before you start:
-                                    </ModalTitle>
-                                      <ModalBody>
-                                     
-                    
-                
-                        <p>Note the steps below apply to the following models:</p><br />
-                        <li>iPhone 16/16 pro/16 pro Max</li>
-                        <li>iPhone 15/15 pro/15 pro Max</li>
-                        <li>iPhone 14/14 pro/14 pro Max</li>
-                        <li>iPhone 13/13 pro/13 pro Max</li>
-                        <li>iPhone 12/12 pro/12 pro Max</li>
-                        <li>iPhone 11/11 pro/11 pro Max</li>
-                        <li>iPhone X/XS Max/XR</li>
-                        <li>iPhone 8/8 Plus</li>
-                        <li>iPhone 7/7 Plus</li>
-                        <li>iPhone SE</li>
-                        <li>iPhone 6/6 Plus/6S/6S Plus</li>
-                        <li>iPhone 5/5C/5S</li>
-                        <li>iPhone 4/4S</li><br/>
-                        <h5 >Steps</h5><br/>
-                        <ol >
-                            <li>From the Home screen, navigate: Settings Messages.</li>
-                            <li ><div style={{display:'flex'}}>Tap iMessage switch to turn <label style={{ "textAlign": "center",paddingLeft:"2px"}}>
-                            
-                            <Toggle 
-                                disabled={false}  
-                                showText={true}
-                                on={true}
-                                />
-                                    
-                                </label> <span style={{paddingLeft:'5px'}}>or</span> <label  style={{ "textAlign": "center",paddingLeft:"2px"}}>
-                                <Toggle 
-                                disabled={false}
-                                on={false} 
-                                showText={true} 
-                                />
-                                    
-                                </label>
-                                </div>
-                                </li>
+                ]
+            }
+        }
+        getCaptureResponse(payload)
+    });
 
 
-                        </ol>
+    test("getProactiveNotificationSuccess api success", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...proActiveNoti } });
+        });
 
-                
-                                      </ModalBody>
-                                </Modal> </TextLink>
-                        <br/>
-                        </Body>
-                        </div>:null}
-                    </div>
-                    <div className="col-lg-8  col-md-8" style={{position:'unset',flex:'0.8'}}>
-                        <span style={{fontSize:'13px'}}>Select a section below to get started. All changes are automatically saved.</span><br/><br/>
-                        
-                        {deviceDetails?.data?.isFamilyBase && <Alert Message={familybasemessage} URL={familybaseurl.baseUrl} Label={familybaseurl.baseUrlMsg} Type={1} familyBaseFlag={deviceDetails.isFamilyBase} closeBanner={false}></Alert>}
-                        {showNotice?<Alert Message={Message} Type={1} closeBanner={true}/>:null}    
-                        <div className="radio-choose--disabled" >
-                        	<BlockCallsMessages selectAccordian={this.selectAccordian} selectedAccordian={this.state.selectedAccordian} selectedDevice={this.state.selectedDevice}/>
-                        </div>
-						<div className={showNotice ? "radio-choose--disabled" : ""}>
-					{<BlockServices selectAccordian={this.selectAccordian} selectedAccordian={this.state.selectedAccordian} selectedDevice={this.state.selectedDevice} />}                        </div>
-                    </div>
-                </div>
-                <br/>
-                <hr className="mb-32"></hr>
-                <AdvancedControls advanceControls={this.state.advanceControls}/>
-                {this.showAdvanceControls &&
-                     <div>
-                    <hr className="mb-32"></hr>
-                     <AdvancedControls advanceControls={this.state.advanceControls}/>
-                     </div>
-                 }
-             </div>
-            
-        )
-    }
-}
+        store.dispatch(pageActions.getProactiveNotification({
+            pageContext: "",
+            category: "Alerts",
+        }));
+    });
 
+    test("getNetworkOutageSuccess api success", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...networkOutageDetail } });
+        });
 
-const mapStateToProps = (store) => {
-    console.log(store,'store')
-    return {
-      isFetching: store.Detail.Details.isFetching,
-      deviceDetails: store.Detail.Details.deviceDetails,
-    }
-  }
-  const mapDispatchToProps = (dispatch) => ({
-    actions: bindActionCreators({ ...deviceDetailActions }, dispatch),
-  })
-  
-const ToolTipWrapper = styled.div`
-display: flex;
-top: 2% !important;
-position: absolute;
-left: 28%;
-`;
-const ToolTipText = styled.div`
-  font-family: NHaasGroteskDSStd-55Rg;
-  font-size: 0.7rem;
-  display: inline-flex;
-`;
-  export default connect(mapStateToProps,mapDispatchToProps)(DeviceDetail);
+        store.dispatch(pageActions.getNetworkOutage());
+    });
+
+    test("getProactiveNotificationError api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
+
+        store.dispatch(pageActions.getProactiveNotificationError('getAction'));
+    });
+
+    test("getProactiveNotificationSuccess api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
+
+        store.dispatch(pageActions.getProactiveNotificationSuccess('getSection'));
+    });
+
+    test("getNetworkOutageError api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
+
+        store.dispatch(pageActions.getNetworkOutageError('getAction'));
+    });
+
+    test("getRecommendationError api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
+
+        store.dispatch(pageActions.getRecommendationError('getAction'));
+    });
+
+    test("setSelectedDevice api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
+
+        store.dispatch(pageActions.setSelectedDevice('getAction'));
+    });
+
+    test("getSections api error", () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.reject({ data: 'error' });
+        });
+
+        store.dispatch(getSections.getSections('getSection'))
+            // .then((res) => {
+            // }, (error) => {
+            //     expect(error.data).toEqual('error');
+            // });
+
+    });
+});
+
+describe("<DevicesOverview />", () => {
+    reactGlobals.routeLog = { confirmationShown: 'true' }
+    beforeEach(async () => {
+        httpClient.getHttpClientRequest.mockImplementation((url) => {
+            return Promise.resolve({ status: 200, data: { ...deviceLanding4 } });
+        });
+
+        await act(async () => render(
+            <Provider store={store}>
+                <PersistGate loading={null} persistor={persistor}>
+                    <DevicesOverview />
+                </PersistGate>
+            </Provider>
+        ));
+
+    })
+
+    test("it should mount", () => {
+        const doc = screen.getByTestId("DevicesOverviewTestId");
+        expect(doc).toBeInTheDocument();
+    });
+
+    test("it should mount second number", () => {
+        const txt = screen.getAllByTestId("secondNum");
+        expect(txt).toHaveLength(2);
+    });
+
+    
+});
+
+const DeviceOverviewTestSuite = () => {
+    describe("<DevicesOverview />", () => {
+        reactGlobals.routeLog = { confirmationShown: 'true' }
+        test("it should mount", async () => {
+            httpClient.getHttpClientRequest.mockImplementation((url) => {
+                return Promise.resolve({ status: 200, data: { ...deviceLanding4 } });
+            });
+            await act(async () => render(
+                <Provider store={store}>
+                    <PersistGate loading={null} persistor={persistor}>
+                        <DevicesOverview />
+                    </PersistGate>
+                </Provider>
+            ));
+            jest.setTimeout('10000');
+            fireEvent.click(screen.getByTestId("upgradeDeviceBtnTestId0"));
+        });
+        test("it should mount", async () => {
+            const newResp = { ...deviceLanding4 };
+            newResp.body.sections[0].sections[0].data.mobileDeviceList[0] = {
+                ...newResp.body.sections[0].sections[0].data.mobileDeviceList[0],
+                secondMtn: '',
+                encryptedMtnDES: '',
+            };
+            httpClient.getHttpClientRequest.mockImplementation((url) => {
+                return Promise.resolve({ status: 200, data: { ...newResp } });
+            });
+            await act(async () => render(
+                <Provider store={store}>
+                    <PersistGate loading={null} persistor={persistor}>
+                        <DevicesOverview />
+                    </PersistGate>
+                </Provider>
+            ));
+            jest.setTimeout('10000');
+            fireEvent.click(screen.getByTestId("upgradeDeviceBtnTestId0"));
+        });
+    });
+};
+
+DeviceOverviewTestSuite();

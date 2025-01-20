@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { createStore } from 'redux';
-import BlockServices from './BlockServices'; // Import the component
+import BlockServices from './BlockServices';
 import '@testing-library/jest-dom/extend-expect';
 
 // Mocking necessary Redux store
@@ -17,7 +17,7 @@ const mockState = {
             shortDescription: 'Short description of the email filtering service.',
             longDescription: 'Long description of the email filtering service.',
             sfoEnabled: 'Y',
-            showMore: false,
+            showMore: true, // Set to true for the modal to show more content
           }
         ],
       },
@@ -36,7 +36,7 @@ const mockState = {
 
 const mockStore = createStore((state) => state, mockState);
 
-// Mocking the Modal component as it might be imported from external library
+// Mocking the Modal component as it might be imported from an external library
 jest.mock('@vds/modals', () => ({
   Modal: ({ toggleButton, children }) => (
     <div>
@@ -52,7 +52,6 @@ jest.mock('@vds/buttons', () => ({
   TextLink: ({ children }) => <a href="#">{children}</a>,
 }));
 
-// Test case
 describe('BlockServices Component', () => {
   test('should open modal and display service details on "View More Details" click', async () => {
     render(
@@ -68,9 +67,12 @@ describe('BlockServices Component', () => {
     // Click on the "View More Details" button to open the modal
     fireEvent.click(viewMoreButton);
 
-    // Wait for the modal content to appear
+    // Wait for modal content to appear
     await waitFor(() => {
+      // Check if modal title appears
       expect(screen.getByText('Email Filtering')).toBeInTheDocument();
+      
+      // Check if short and long descriptions are in the modal
       expect(screen.getByText('Short description of the email filtering service.')).toBeInTheDocument();
       expect(screen.getByText('Long description of the email filtering service.')).toBeInTheDocument();
     });
@@ -93,7 +95,7 @@ describe('BlockServices Component', () => {
     // Click on the "View More Details" button to open the modal
     fireEvent.click(viewMoreButton);
 
-    // Wait for the modal content and ensure it's not visible (since showMore is false)
+    // Wait for modal content and ensure it's not visible (since showMore is false)
     await waitFor(() => {
       expect(screen.queryByText('Short description of the email filtering service.')).toBeNull();
       expect(screen.queryByText('Long description of the email filtering service.')).toBeNull();

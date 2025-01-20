@@ -1,9 +1,3 @@
-Your existing test file initializes a Redux store and renders the <BlockServices> component. It includes a basic test to check if the component mounts properly. Below, I’ll help enhance the file by adding test cases for other functionalities like handling services, toggling switches, and rendering modals.
-
-Here’s the updated and expanded test file:
-
-Updated Test File
-
 import React from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
@@ -160,40 +154,3 @@ describe("<BlockServices/>", () => {
     expect(screen.getByText(/Service failed./i)).toBeInTheDocument();
   });
 });
-
-Key Additions in the Enhanced Test File
-
-1. Loader Test: Checks if the loader displays during a service fetch.
-
-
-2. Service List Render: Confirms services are rendered based on mock data.
-
-
-3. Toggle Test: Simulates toggling a service and verifies the action is called.
-
-
-4. Modal Test: Validates modal functionality when "View More Details" is clicked.
-
-
-5. Alert Test: Ensures an alert is displayed on service failure.
-
-
-
-Steps to Run the Tests
-
-1. Save the updated file.
-
-
-2. Run the test suite:
-
-npm test
-
-
-3. Check for code coverage:
-
-npm test -- --coverage
-
-
-
-This should give you comprehensive test coverage for the BlockServices component. Let me know if you need further assistance!
-

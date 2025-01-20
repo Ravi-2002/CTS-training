@@ -1,104 +1,46 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import { createStore } from 'redux';
-import BlockServices from './BlockServices';
-import '@testing-library/jest-dom/extend-expect';
+Ignored nodes: comments, script, style
+    <body>
+      <div>
+        <div
+          class="accordion"
+          data-testid="BlockServicesTestId"
+        >
+          <div
+            class="accordion__item"
+          >
+            <div
+              aria-expanded="false"
+              class="accordion__title"
+              role="button"
+              tabindex="0"
+            >
+              <div
+                class="u-position-relative"
+              >
+                <div
+                  class="accordion-title"
+                >
+                  <div
+                    class="sc-AxiKw coGIfQ"
+                    id="blockservices"
+                  >
+                    Block services
+                  </div>
+                </div>
+                <div
+                  class="accordion__arrow"
+                  id="blockservice"
+                  role="presentation"
+                />
+              </div>
+            </div>
+            <div
+              data-testid="loader"
+            >
 
-// Mocking necessary Redux store
-const mockState = {
-  Detail: {
-    serviceCalls: {
-      services: {
-        "Emails & domains": [
-          {
-            sfoCode: '123',
-            serviceName: 'Email Filtering',
-            shortDescription: 'Short description of the email filtering service.',
-            longDescription: 'Long description of the email filtering service.',
-            sfoEnabled: 'Y',
-            showMore: true, // Set to true for the modal to show more content
-          }
-        ],
-      },
-      serviceStatus: { responseInfo: { responseCode: 0 } },
-      getServices: true,
-      failServices: null,
-      serviceFail: false,
-      confirmServices: null,
-      serviceErrorFlag: false,
-      confirmServiceFlag: false,
-      servicesError: null,
-      isFetching: false,
-    },
-  },
-};
-
-const mockStore = createStore((state) => state, mockState);
-
-// Mocking the Modal component as it might be imported from an external library
-jest.mock('@vds/modals', () => ({
-  Modal: ({ toggleButton, children }) => (
-    <div>
-      {toggleButton}
-      {children}
-    </div>
-  ),
-  ModalBody: ({ children }) => <div>{children}</div>,
-  ModalTitle: ({ children }) => <div>{children}</div>,
-}));
-
-jest.mock('@vds/buttons', () => ({
-  TextLink: ({ children }) => <a href="#">{children}</a>,
-}));
-
-describe('BlockServices Component', () => {
-  test('should open modal and display service details on "View More Details" click', async () => {
-    render(
-      <Provider store={mockStore}>
-        <BlockServices />
-      </Provider>
-    );
-
-    // Ensure the "View More Details" link is in the document
-    const viewMoreButton = screen.getByText('View More Details');
-    expect(viewMoreButton).toBeInTheDocument();
-
-    // Click on the "View More Details" button to open the modal
-    fireEvent.click(viewMoreButton);
-
-    // Wait for modal content to appear
-    await waitFor(() => {
-      // Check if modal title appears
-      expect(screen.getByText('Email Filtering')).toBeInTheDocument();
-      
-      // Check if short and long descriptions are in the modal
-      expect(screen.getByText('Short description of the email filtering service.')).toBeInTheDocument();
-      expect(screen.getByText('Long description of the email filtering service.')).toBeInTheDocument();
-    });
-  });
-
-  test('should not show modal content if "showMore" is false', async () => {
-    // Modify the service detail to ensure showMore is false
-    mockState.Detail.serviceCalls.services["Emails & domains"][0].showMore = false;
-
-    render(
-      <Provider store={mockStore}>
-        <BlockServices />
-      </Provider>
-    );
-
-    // Ensure the "View More Details" link is in the document
-    const viewMoreButton = screen.getByText('View More Details');
-    expect(viewMoreButton).toBeInTheDocument();
-
-    // Click on the "View More Details" button to open the modal
-    fireEvent.click(viewMoreButton);
-
-    // Wait for modal content and ensure it's not visible (since showMore is false)
-    await waitFor(() => {
-      expect(screen.queryByText('Short description of the email filtering service.')).toBeNull();
-      expect(screen.queryByText('Long description of the email filtering service.')).toBeNull();
-    });
-  });
-});
+            </div>
+          </div>
+          <br />
+        </div>
+      </div>
+    </body>

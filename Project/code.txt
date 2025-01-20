@@ -1,46 +1,113 @@
-Ignored nodes: comments, script, style
-    <body>
-      <div>
-        <div
-          class="accordion"
-          data-testid="BlockServicesTestId"
-        >
-          <div
-            class="accordion__item"
-          >
-            <div
-              aria-expanded="false"
-              class="accordion__title"
-              role="button"
-              tabindex="0"
-            >
-              <div
-                class="u-position-relative"
-              >
-                <div
-                  class="accordion-title"
-                >
-                  <div
-                    class="sc-AxiKw coGIfQ"
-                    id="blockservices"
-                  >
-                    Block services
-                  </div>
-                </div>
-                <div
-                  class="accordion__arrow"
-                  id="blockservice"
-                  role="presentation"
-                />
-              </div>
-            </div>
-            <div
-              data-testid="loader"
-            >
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import BlockServices from './BlockServices';
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
+import rootReducer from '../../reducers';
 
-            </div>
-          </div>
-          <br />
-        </div>
-      </div>
-    </body>
+// Mocked state for testing
+const store = createStore(rootReducer, {
+  Detail: {
+    serviceCalls: {
+      services: {
+        "Emails & domains": {
+          isExpand: false,
+          data: [
+            {
+              sfoCode: "1",
+              serviceName: "Email Service 1",
+              shortDescription: "Short description for Email Service 1",
+              longDescription: "Long description for Email Service 1",
+              sfoEnabled: "Y",
+              showMore: false
+            },
+            {
+              sfoCode: "2",
+              serviceName: "Email Service 2",
+              shortDescription: "Short description for Email Service 2",
+              longDescription: "Long description for Email Service 2",
+              sfoEnabled: "N",
+              showMore: false
+            }
+          ]
+        }
+      },
+      serviceStatus: { responseInfo: { responseCode: 0 } },
+      getServices: true,
+      confirmServices: null,
+      failServices: null,
+      serviceErrorFlag: false,
+      confirmServiceFlag: false,
+      isFetching: false
+    }
+  }
+});
+
+describe('BlockServices Component', () => {
+  it('should render Block Services correctly', async () => {
+    render(
+      <Provider store={store}>
+        <BlockServices />
+      </Provider>
+    );
+
+    // Ensure the block services accordion exists
+    const blockServicesAccordion = screen.getByTestId('BlockServicesTestId');
+    expect(blockServicesAccordion).toBeInTheDocument();
+  });
+
+  it('should display "View More Details" button when clicked', async () => {
+    render(
+      <Provider store={store}>
+        <BlockServices />
+      </Provider>
+    );
+
+    // Click on the accordion to open it
+    const accordionTitle = screen.getByText('Block services');
+    fireEvent.click(accordionTitle);
+
+    // Wait for the "View More Details" button to appear
+    const viewMoreDetailsButton = await screen.findByText('View More Details');
+    expect(viewMoreDetailsButton).toBeInTheDocument();
+
+    // Simulate clicking the "View More Details" button
+    fireEvent.click(viewMoreDetailsButton);
+
+    // Check if modal content appears after the click
+    const modalTitle = await screen.findByText('Further details');
+    expect(modalTitle).toBeInTheDocument();
+
+    const modalContent = await screen.findByText('Long description for Email Service 1');
+    expect(modalContent).toBeInTheDocument();
+  });
+
+  it('should toggle the checkbox on and off', async () => {
+    render(
+      <Provider store={store}>
+        <BlockServices />
+      </Provider>
+    );
+
+    // Click on the accordion to open it
+    const accordionTitle = screen.getByText('Block services');
+    fireEvent.click(accordionTitle);
+
+    // Click the checkbox to toggle the service state
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toBeInTheDocument();
+
+    // Initially, the service should be enabled
+    expect(checkbox).toBeChecked();
+
+    // Simulate a click to toggle the checkbox off
+    fireEvent.click(checkbox);
+
+    // After clicking, the checkbox should be unchecked
+    expect(checkbox).not.toBeChecked();
+
+    // Simulate a click to toggle the checkbox back on
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+  });
+});

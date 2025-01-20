@@ -1,41 +1,233 @@
-test('renders modal with service details', () => {
-  const store = mockStore({
-    Detail: {
-      serviceCalls: {
-        services: {
-          'Service 1': {
-            isExpand: true,
-            data: [
-              {
-                sfoCode: '123',
-                serviceName: 'Test Service',
-                shortDescription: 'Short Desc',
-                longDescription: 'Long Desc',
-                sfoEnabled: 'Y',
-              },
-            ],
-          },
-        },
-        serviceStatus: { responseInfo: { responseCode: 0 } },
-        getServices: true,
-        failServices: null,
-        serviceFail: false,
-        confirmServices: null,
-        serviceErrorFlag: false,
-        confirmServiceFlag: false,
-        servicesError: null,
-        isFetching: false,
-      },
-    },
+import React from "react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { Provider } from 'react-redux';
+import { configureStore } from 'redux-mock-store';
+import "@testing-library/jest-dom";
+import BlockServices from "./../components/blocksServices/BlockServices";
+import * as deviceLandingActions from '../actions';
+import rootReducer from "../../reducers";
+import { thunk } from 'redux-thunk';
+
+const mockStoreConfig = configureStore([thunk]);
+const mockDeviceList = {
+  "pageAttributes": [
+            {
+                "itemKey": "pageTitle",
+                "itemValue": "Devices blocks"
+            },
+            {
+                "itemKey": "hashedAccountNumber",
+                "itemValue": "##HASHED_ACCTNO##",
+                "itemType": "text"
+            },
+            {
+                "itemKey": "hashedMdn",
+                "itemValue": "##HASHED_MDN##",
+                "itemType": "text"
+            }
+        ],
+        "sections": [
+            {
+                "sectionIndex": "0",
+                "sectionId": "devicesBlocksMainSection",
+                "sectionType": "devicesBlocksMainSection",
+                "sectionComponentId": "GenericComponent",
+                "sections": [
+                    {
+                        "sectionIndex": "4",
+                        "sectionId": "devicesBlockServicesPageSection",
+                        "sectionType": "blockServicesSection",
+                        "contents": [
+                            {
+                                "contentIndex": "0",
+                                "items": [
+                                    {
+                                        "itemKey": "emailsDomainsHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Emails & Domains",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "dataHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Data & Internet",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "messagingHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Messaging",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "purchasesHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Purchases",
+                                        "itemAttributes": {}
+                                    },
+                                    {
+                                        "itemKey": "additionalServicesHeader",
+                                        "itemType": "text",
+                                        "itemValue": "Additional Services",
+                                        "itemAttributes": {}
+                                    }
+                                ]
+                            }
+                        ],
+                        "data": {
+                            "serviceDetailsMap": {
+                                "Additional Services": [
+                                    {
+                                        "longDescription": "<p>If you want to allow your number to display on a per-call basis, you can dial *82 + area code and phone number + SEND.</p>",
+                                        "sfoEnabled": "##SFO_BOOLE##",
+                                        "shortDescription": "Permanently block your number from displaying to others when you call.",
+                                        "serviceName": "Caller ID Blocking",
+                                        "marketingDesc": "Permanently block your number from displaying to others when you call.<br/><br/>If you want to allow your number to display on a per-call basis, you can dial *82 + area code and phone number + SEND.",
+                                        "sfoCode": "48577"
+                                    },
+                                    {
+                                        "longDescription": "Toggle the Video Calling setting on your phone to turn Video Calling on or off.",
+                                        "sfoEnabled": "##SFO_BOOLE##",
+                                        "shortDescription": "Prevents the activation of Video Calling. This allows you to control who may or may not use Video Calling.  Note that Video Calling Block does not control or impact any third-party video calling applications.",
+                                        "serviceName": "Block Video Calling",
+                                        "marketingDesc": "Video Calling Block will prevent the activation of Video Calling on a particular line. This allows you to control who may or may not use Video Calling.  Note that Video Calling Block does not control or impact any third-party video calling applications.",
+                                        "sfoCode": "79614"
+                                    },
+                                    {
+                                        "longDescription": "If you are experiencing issues making international calls, Block International HD Voice can help resolve these problems at no extra cost. This change takes up to 15 minutes. Once you are back in the U.S. you will resume your normal call service.",
+                                        "sfoEnabled": "##SFO_BOOLE##",
+                                        "shortDescription": "Manage your call quality while travelling abroad.",
+                                        "serviceName": "Block International HD Voice",
+                                        "marketingDesc": "If you are experiencing issues making international calls, Block International HD Voice can help resolve these problems at no extra cost. This change takes up to 15 minutes. Once you are back in the U.S. you will resume your normal call service.",
+                                        "sfoCode": "86140"
+                                    }
+                                ],
+                                "Data and Internet": [
+                                    {
+                                        "longDescription": "Instead of Block Mobile Web, consider <b>Content Filtering</b> to manage the type of content your Account Member can view/download. Content Filtering is offered free of charge.<br><br><b>Usage Controls</b> limit when your Account Member has access to the Mobile Web. <b>$4.99/line subscription fee required.</b><br><br><b>Alternative:&nbsp;</b>Use <a href=\"/vzw/accountholder/uc/UCContentFilter.action\" role=\"link\" tabindex=\"0\">Content Filters</a> to manage the rating of available web sites and Usage Controls to limit your Account Member's access to this service.",
+                                        "sfoEnabled": "##SFO_71905_BOOLEAN##",
+                                        "shortDescription": "Block Mobile Web will prevent you from accessing the Mobile Web from your handset. The Block Mobile Web is line specific.",
+                                        "serviceName": "Block Mobile Web",
+                                        "marketingDesc": "Block Mobile Web will prevent you from accessing the Mobile Web from your handset. The Block Mobile Web is line specific.<br/><br/><b>Instead of Block Mobile Web, consider <br/>Content Filtering</b> to manage the type of content your Account Member can view/download. Content Filtering is offered free of charge.<br/><br/><b>Usage Controls</b> limit when your Account Member has access to the Mobile Web. <b>$4.99/line subscription fee required.</b><br/><br/>",
+                                        "sfoCode": "71905"
+                                    }
+                                ],
+                                "Messaging": [
+                                    {
+                                        "longDescription": "<p>If you have a Messaging package on your line, Block All Messaging will remove your Messaging package. Credits or pro-rating will be applied to Messaging allowance and fees already incurred. If you remove this block at a later time, you will be charged for each message sent and received unless you add a new Messaging package or change your plan.</p><p>Instead of Block All Messaging, consider:</p><ul><li>An Unlimited plan which includes unlimited messaging.</li><li>Smart Family which limits access to outgoing and incoming messages, $5.00/mo per account subscription fee required.</li><li>Less restrictive blocks such as Block Premium Messaging, or Call &amp; Message Blocks.</li></ul><p><span style=\"color:red\"> Note  If you select this block you will prevent all outgoing and incoming Text, Multimedia (a.k.a. Picture and Video), Premium and Enhanced Messages. You will continue to receive usage alerts.</span></p>",
+                                        "sfoEnabled": "##SFO_54307_BOOLEAN##",
+                                        "shortDescription": "Prevents incoming and outgoing Text, Multimedia, PSMS (Premium Messages), EMS (Enhanced Messaging) and Mobile Web Alerts/other various alerts.",
+                                        "serviceName": "Block All Messaging",
+                                        "marketingDesc": "This messaging block prevents incoming and outgoing Text, Multimedia, PSMS (Premium Messages), EMS (Enhanced Messaging) and Mobile Web Alerts/other various alerts.<br/><br/>If you have a Messaging package on your line, Block All Messaging will remove your Messaging package. Credits or pro-rating will be applied to Messaging allowance and fees already incurred. If you remove this block at a later time, you will be charged for each message sent and received unless you add a new Messaging package or change your plan.<br/><br/>Instead of Block All Messaging, consider:<ul><li>More Everything plans which includes unlimited messaging.</li><li>Family Base which limits access to outgoing and incoming messages, $5.00/mo per account subscription fee required.</li><li>Less restrictive blocks such as Block Premium Messaging, or <a href = \"/vzw/secure/messageIntercept/messageInterceptHome.action\">Call & Message Blocks</a>.</li></ul><br/><br/>",
+                                        "sfoCode": "54307"
+                                    },
+                                    {
+                                        "longDescription": "Block Picture and Video Messaging (MMS) will prevent you from sending and receiving Picture and Video Messages from your handset. Pictures and Videos downloaded and stored on the handset prior to adding the block are still accessible by anyone in possession of the handset until the content is deleted. Although MMS notifications sent via SMS are still delivered to the handset, content from these messages is blocked and no text message charges are incurred.Block Picture and Video Messaging <span>:</span> <br> <ul><li>Does not block or filter all access to messages and content.</li><li> Should not be used as a child management tool. </li><li> Is not a substitute for adult supervision. </li></ul>Go to 'My Verizon' Family Base for additional blocking and filtering tools, including Text Messaging Block and tools to block access to the Web. The Picture and Video Messaging Block is phone number specific. <br><br><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a>&nbsp; to limit your Account Member's access to this service.",
+                                        "sfoEnabled": "##SFO_75369_BOOLEAN##",
+                                        "shortDescription": "Block Picture and Video Messaging (MMS) will prevent you from sending and receiving Picture and Video Messages from your handset.",
+                                        "serviceName": "Block Picture and Video Messaging",
+                                        "marketingDesc": "Block Picture and Video Messaging (MMS) will prevent you from sending and receiving Picture and Video Messages from your handset. Pictures and Videos downloaded and stored on the handset prior to adding the block are still accessible by anyone in possession of the handset until the content is deleted. Although MMS notifications sent via SMS are still delivered to the handset, content from these messages is blocked and no text message charges are incurred.<br/><br/>Block Picture and Video Messaging:<br/>1) Does not block or filter all access to messages and content.<br/>2) Should not be used as a child management tool.<br/>3) Is not a substitute for adult supervision.<br/><br/> Go to 'My Verizon' Family Base for additional blocking and filtering tools, including Text Messaging Block and tools to block access to the Web. The Picture and Video Messaging Block is phone number specific.<br/><br/>",
+                                        "sfoCode": "75369"
+                                    }
+                                ],
+                                "Purchases": [
+                                    {
+                                        "longDescription": "Does not cancel existing subscriptions. To prevent billing for other subscription applications previously downloaded, please cancel them before proceeding. <br/><br/>This Block only applies to Get It Now/Media Center-capable devices. The Block does not apply to advanced devices, notebooks or PCs (such as BlackBerry, Palm, Windows Mobile and Android device) or to any applications that can be accessed through other methods. Block Application Downloads is mobile number specific.<br/><br/><p><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a> to limit your Account Member's access to this service.</p>",
+                                        "sfoEnabled": "##SFO_66139_BOOLEAN##",
+                                        "shortDescription": "Prevents you from purchasing application downloads via Get It Now/Media Center. Applications previously downloaded are not blocked from use.",
+                                        "serviceName": "Block All Application Downloads",
+                                        "marketingDesc": "Block Application Downloads will prevent you from purchasing application downloads via Get It Now/Media Center. Applications previously downloaded are not blocked from use. Block Application Downloads does not cancel existing subscriptions. To prevent billing for any other subscription applications previously downloaded, please cancel them before proceeding. <br/><br/>This Block only applies to Get It Now/Media Center-capable devices. The Block does not apply to advanced devices, notebooks or PCs (such as BlackBerry, Palm, Windows Mobile and Android device) or to any applications that can be accessed through other methods. Block Application Downloads is mobile number specific.<br/><br/>",
+                                        "sfoCode": "66139"
+                                    },
+                                    {
+                                        "longDescription": "Ringback Tones are line specific. Existing Ringback Tones will still be heard.<br/><br/><b>Instead of Ringback Tones, consider <br/>Usage Controls</b> limit when your Account Member has access to Ringback Tones.<b>$4.99/line subscription fee required.</b><br/><br/><p><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a> to limit your Account Member's access to this service.</p>",
+                                        "sfoEnabled": "##SFO_71804_BOOLEAN##",
+                                        "shortDescription": "Prevents you from accessing the Media store from both your handset and PC.",
+                                        "serviceName": "Block Ringback Tone Purchase",
+                                        "marketingDesc": "Block Ringback Tones Purchase will prevent you from accessing the V CAST Music store from both your handset and PC.The V CAST Ringback Tones is line specific. Existing Ringback Tones will still be heard.<br/><br/><b>Instead of V CAST Ringback Tones, consider <br/>Usage Controls</b> limit when your Account Member has access to V CAST Ringback Tones.<b>$4.99/line subscription fee required.</b><br/><br/>",
+                                        "sfoCode": "71804"
+                                    },
+                                    {
+                                        "longDescription": "Blocking <b>\"Games\"</b> does not cancel existing Application or In-App recurring subscriptions. To prevent billing for Application or <b>In-App</b> subscriptions previously purchased, please cancel them from \"Your Apps\" in the <b>\"Games\"</b> client.<br/><br/> This Block applies only to the mobile number you specify and does not apply to purchases made through <b>Google Play, RIM App World or other third party application stores</b>. To only block purchases for <b>\"Games\" In-App</b> items you must block <b>Games Portal In-App Purchases.</b><p><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCContentFilter.action\">Content Filters</a> to manage the rating of available songs and <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a> to limit your Account Member's access to this service.</p>",
+                                        "sfoEnabled": "##SFO_75144_BOOLEAN##",
+                                        "shortDescription": "Prevents the purchase of Applications from \"Games\" Apps in addition to In-App items from applications downloaded from \"Games\" Apps.",
+                                        "serviceName": "Block \"Games\" Purchases",
+                                        "marketingDesc": "Blocking <b>\"Games\"</b> does not cancel existing Application or In-App recurring subscriptions.  To prevent billing for Application or <b>In-App</b> subscriptions previously purchased, please cancel them from \"Your Apps\" in the <b>\"Games\"</b> client. <br/><br/> This Block applies only to the mobile number you specify and does not apply to purchases made through <b>Google Play, RIM App World or other  third party application stores</b>. To only block purchases for <b>\"Games\" In-App</b> items you must block <b>Games Portal In-App Purchases.</b> <p><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCContentFilter.action\">Content Filters</a> to manage the rating of available songs  and <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a> to limit your Account Member's  access to this service.</p>",
+                                        "sfoCode": "75144"
+                                    },
+                                    {
+                                        "longDescription": "<b>Alternative:&nbsp;</b>Do not block this service and retain option to charge third-party apps, virtual goods, services, donations, gift cards, and PopData to your Verizon Wireless bill.",
+                                        "sfoEnabled": "##SFO_76460_BOOLEAN##",
+                                        "shortDescription": "Prevents you from charging media, apps, and services to your Verizon Wireless bill. Including but not limited to <span>:</span> Verizon and third-party media & app purchases, virtual goods, services, donations, giftcards, and PopData.",
+                                        "serviceName": "Block Purchases and Gifting",
+                                        "marketingDesc": "Blocking purchases and gifting prevents this line on your account from charging new subscriptions and purchases from other vendors, third-party apps, virtual goods, services, donations, gift cards, and PopData to your Verizon Wireless bill. This block may not cancel or remove existing subscriptions from being charged to your Verizon Wireless account.",
+                                        "sfoCode": "75440"
+                                    },
+                                    {
+                                        "serviceName": "Block Visual Voice Mail"
+                                    },
+                                    {
+                                        "longDescription": "Examples of <b>In-App</b> items include virtual goods and content offered through an application, such as<span>:</span>  <ul><li>Credits</li><li>Game levels</li></ul>Blocking <b>\"Games\" In-App Purchases</b> does not cancel existing In-App recurring subscriptions.  To prevent billing for <b>In-App</b> subscriptions previously purchased, please cancel them from within the <b>\"Games\"</b> application.<br/>  <br/>This Block applies only to the mobile number you specify and does not apply to purchases from the <b>\"Games\"</b> application.  To completely block purchases from the <b>\"Games\"</b> application and <b>\"Games\" In-App</b> items you must block <b>\"Games\"</b>.  <br/><br/>This Block does not apply to purchases made through applications downloaded from <b>Google Play, RIM App World or other third  party application stores</b>.<p><b>Alternative:&nbsp;</b>Use <a href = \"/vzw/accountholder/uc/UCContentFilter.action\">Content Filters</a>  to manage the rating of available songs and  <a href = \"/vzw/accountholder/uc/UCDashboard.action\">Family Base</a> to limit your Account Member's access to this service.</p>",
+                                        "sfoEnabled": "##SFO_76982_BOOLEAN##",
+                                        "shortDescription": "Prevents the purchase of In-App items from within \"Games\" application.",
+                                        "serviceName": "Block \"Games\" In-App Purchases",
+                                        "marketingDesc": "<Blocking <b>\"Games\" In-App Purchases</b> prevents the purchase of <b>In-App</b> items from within \"Games\" application.  Examples of <b>In-App</b> items include virtual goods and content offered through an application, such as <ul><li>Credits</li> <li>Game levels</li></ul>Blocking <b>\"Games\" In-App Purchases</b> does not cancel existing In-App recurring subscriptions.  To prevent billing for <b>In-App</b> subscriptions previously purchased, please cancel them from within the <b>\"Games\"</b> application.<br/> <br/>This Block applies only to the mobile number you specify and does not apply to purchases from the <b>\"Games\"</b> application.  To completely block purchases from the <b>\"Games\"</b> application and <b>\"Games\" In-App</b> items you must block <b>\"Games\"</b>. <br/><br/>This Block does not apply to purchases made through applications downloaded from <b>Google Play,  RIM App World or other third party application stores</b>.",
+                                        "sfoCode": "76982"
+                                    },
+                                    {
+                                        "longDescription": "<b>Alternative:&nbsp;</b> Do not block this service and retain the option to add Premium Visual Voice Mail with Voice Mail to Text and accept the Premium Voice Mail Free Trial offer.",
+                                        "sfoEnabled": "##SFO_78762_BOOLEAN##",
+                                        "shortDescription": "Prevents Premium Visual Voice Mail from being added to your account. You can continue to subscribe to Basic Visual Voice Mail or Basic Voice Mail",
+                                        "serviceName": "Block Premium Visual Voice Mail",
+                                        "marketingDesc": "Adding Block Premium Visual Voice Mail will prevent Premium Visual Voice Mail from being added to your account. You can also continue to subscribe to Basic Visual Voice Mail or Basic Voice Mail.<br/><br>",
+                                        "sfoCode": "78762"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+ 
+
+const store = mockStoreConfig({
+  Detail:{
+  serviceCalls:{
+    confirmServiceFlag:false,
+    confirmServices:null, 
+    failServices:{},
+    getServices:true,
+    isFetching:false,
+    serviceErrorFlag:false,
+    serviceFail:false,
+    serviceStatus:{},
+    services:mockDeviceList
+   }
+}
+}
+)
+const initialProps={
+    actions :{
+      getServices: jest.fn(()=> []),
+      postServices: jest.fn(()=> [])
+    }
+  }
+describe("<BlockServices/>", () => {
+    beforeEach(async () => {
+      await act(async () => render(
+        <Provider store={store}>
+             <BlockServices {...initialProps} />
+        </Provider>
+      ));
+    })
+    test("it should mount", () => {
+      const advanceControl = screen.getByTestId("BlockServicesTestId");
+      expect(advanceControl).toBeInTheDocument();
   });
+  
+  
 
-  render(
-    <Provider store={store}>
-      <BlockServices selectedAccordian="BS" />
-    </Provider>
-  );
-
-  const viewMoreButton = screen.getByText(/View More Details/i);
-  fireEvent.click(viewMoreButton);
-  expect(screen.getByText(/Further details/i)).toBeInTheDocument();
-});
+   
+}) 

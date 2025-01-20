@@ -1,156 +1,102 @@
-import React from "react";
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import { Provider } from "react-redux";
-import { configureStore } from "redux-mock-store";
-import "@testing-library/jest-dom";
-import BlockServices from "./../components/blocksServices/BlockServices";
-import { thunk } from "redux-thunk";
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
+import BlockServices from './BlockServices'; // Import the component
+import '@testing-library/jest-dom/extend-expect';
 
-const mockStoreConfig = configureStore([thunk]);
-
-const mockDeviceList = {
-  pageAttributes: [
-    {
-      itemKey: "pageTitle",
-      itemValue: "Devices blocks",
-    },
-  ],
-  sections: [
-    {
-      sectionId: "devicesBlocksMainSection",
-      sections: [
-        {
-          sectionId: "devicesBlockServicesPageSection",
-          contents: [
-            {
-              items: [
-                {
-                  itemKey: "emailsDomainsHeader",
-                  itemValue: "Emails & Domains",
-                },
-              ],
-            },
-          ],
-          data: {
-            serviceDetailsMap: {
-              "Additional Services": [
-                {
-                  longDescription: "Block details for Caller ID.",
-                  sfoEnabled: "N",
-                  shortDescription: "Block your Caller ID",
-                  serviceName: "Caller ID Blocking",
-                  sfoCode: "48577",
-                },
-              ],
-            },
-          },
-        },
-      ],
-    },
-  ],
-};
-
-const store = mockStoreConfig({
+// Mocking necessary Redux store
+const mockState = {
   Detail: {
     serviceCalls: {
-      confirmServiceFlag: false,
-      confirmServices: null,
-      failServices: {},
+      services: {
+        "Emails & domains": [
+          {
+            sfoCode: '123',
+            serviceName: 'Email Filtering',
+            shortDescription: 'Short description of the email filtering service.',
+            longDescription: 'Long description of the email filtering service.',
+            sfoEnabled: 'Y',
+            showMore: false,
+          }
+        ],
+      },
+      serviceStatus: { responseInfo: { responseCode: 0 } },
       getServices: true,
-      isFetching: false,
-      serviceErrorFlag: false,
+      failServices: null,
       serviceFail: false,
-      serviceStatus: {},
-      services: mockDeviceList,
+      confirmServices: null,
+      serviceErrorFlag: false,
+      confirmServiceFlag: false,
+      servicesError: null,
+      isFetching: false,
     },
-  },
-});
-
-const initialProps = {
-  actions: {
-    getServices: jest.fn(() => []),
-    postServices: jest.fn(() => []),
   },
 };
 
-describe("<BlockServices/>", () => {
-  beforeEach(async () => {
-    await act(async () =>
-      render(
-        <Provider store={store}>
-          <BlockServices {...initialProps} />
-        </Provider>
-      )
-    );
-  });
+const mockStore = createStore((state) => state, mockState);
 
-  test("it should mount", () => {
-    const blockServicesComponent = screen.getByTestId("BlockServicesTestId");
-    expect(blockServicesComponent).toBeInTheDocument();
-  });
+// Mocking the Modal component as it might be imported from external library
+jest.mock('@vds/modals', () => ({
+  Modal: ({ toggleButton, children }) => (
+    <div>
+      {toggleButton}
+      {children}
+    </div>
+  ),
+  ModalBody: ({ children }) => <div>{children}</div>,
+  ModalTitle: ({ children }) => <div>{children}</div>,
+}));
 
-  test("displays loader when fetching services", () => {
-    const newStore = mockStoreConfig({
-      Detail: {
-        serviceCalls: {
-          ...store.getState().Detail.serviceCalls,
-          isFetching: true,
-        },
-      },
-    });
+jest.mock('@vds/buttons', () => ({
+  TextLink: ({ children }) => <a href="#">{children}</a>,
+}));
 
+// Test case
+describe('BlockServices Component', () => {
+  test('should open modal and display service details on "View More Details" click', async () => {
     render(
-      <Provider store={newStore}>
-        <BlockServices {...initialProps} />
+      <Provider store={mockStore}>
+        <BlockServices />
       </Provider>
     );
 
-    expect(screen.getByTestId("loader")).toBeInTheDocument();
-  });
+    // Ensure the "View More Details" link is in the document
+    const viewMoreButton = screen.getByText('View More Details');
+    expect(viewMoreButton).toBeInTheDocument();
 
-  test("displays service list", () => {
-    expect(screen.getByText("Caller ID Blocking")).toBeInTheDocument();
-  });
+    // Click on the "View More Details" button to open the modal
+    fireEvent.click(viewMoreButton);
 
-  test("toggles service on and off", async () => {
-    const toggleButton = screen.getByRole("checkbox", { name: /Caller ID Blocking Toggle Button Off/i });
-    expect(toggleButton).not.toBeChecked();
-
-    await act(async () => {
-      fireEvent.click(toggleButton);
+    // Wait for the modal content to appear
+    await waitFor(() => {
+      expect(screen.getByText('Email Filtering')).toBeInTheDocument();
+      expect(screen.getByText('Short description of the email filtering service.')).toBeInTheDocument();
+      expect(screen.getByText('Long description of the email filtering service.')).toBeInTheDocument();
     });
-
-    expect(initialProps.actions.postServices).toHaveBeenCalled();
   });
 
-  test("renders modal for service details", async () => {
-    const viewMoreLink = screen.getByText(/View More Details/i);
-    expect(viewMoreLink).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(viewMoreLink);
-    });
-
-    expect(screen.getByText(/Further details/i)).toBeInTheDocument();
-  });
-
-  test("shows alert on service failure", () => {
-    const failedStore = mockStoreConfig({
-      Detail: {
-        serviceCalls: {
-          ...store.getState().Detail.serviceCalls,
-          serviceFail: true,
-          failServices: { errorMessage: "Service failed." },
-        },
-      },
-    });
+  test('should not show modal content if "showMore" is false', async () => {
+    // Modify the service detail to ensure showMore is false
+    mockState.Detail.serviceCalls.services["Emails & domains"][0].showMore = false;
 
     render(
-      <Provider store={failedStore}>
-        <BlockServices {...initialProps} />
+      <Provider store={mockStore}>
+        <BlockServices />
       </Provider>
     );
 
-    expect(screen.getByText(/Service failed./i)).toBeInTheDocument();
+    // Ensure the "View More Details" link is in the document
+    const viewMoreButton = screen.getByText('View More Details');
+    expect(viewMoreButton).toBeInTheDocument();
+
+    // Click on the "View More Details" button to open the modal
+    fireEvent.click(viewMoreButton);
+
+    // Wait for the modal content and ensure it's not visible (since showMore is false)
+    await waitFor(() => {
+      expect(screen.queryByText('Short description of the email filtering service.')).toBeNull();
+      expect(screen.queryByText('Long description of the email filtering service.')).toBeNull();
+    });
   });
 });

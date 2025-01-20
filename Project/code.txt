@@ -1,28 +1,95 @@
-TypeError: Cannot read properties of undefined (reading 'state')
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import BlockServices from './BlockServices';
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
+import rootReducer from '../../reducers';
+import { MemoryRouter } from 'react-router-dom';
 
-      31 |             behavior: "smooth"
-      32 |         });
-    > 33 |         if (props.location.state != null && props.location.state != undefined) {
-         |                            ^
-      34 |             this.devices = props.location.state.devices
-      35 |             this.isSingleDevice = props.location.state.isSingleDevice
-      36 |             this.selectedDevice = props.location.state.selectedDevice
+// Mocked state for testing
+const store = createStore(rootReducer, {
+  Detail: {
+    serviceCalls: {
+      services: {
+        "Emails & domains": {
+          isExpand: false,
+          data: [
+            {
+              sfoCode: "1",
+              serviceName: "Email Service 1",
+              shortDescription: "Short description for Email Service 1",
+              longDescription: "Long description for Email Service 1",
+              sfoEnabled: "Y",
+              showMore: false
+            },
+            {
+              sfoCode: "2",
+              serviceName: "Email Service 2",
+              shortDescription: "Short description for Email Service 2",
+              longDescription: "Long description for Email Service 2",
+              sfoEnabled: "N",
+              showMore: false
+            }
+          ]
+        }
+      },
+      serviceStatus: { responseInfo: { responseCode: 0 } },
+      getServices: true,
+      confirmServices: null,
+      failServices: null,
+      serviceErrorFlag: false,
+      confirmServiceFlag: false,
+      isFetching: false
+    }
+  }
+});
 
-      at new state (src/app/blocks/deviceDetail/components/index.js:33:28)
-      at constructClassInstance (node_modules/react-dom/cjs/react-dom.development.js:14323:18)
-      at constructClassInstance (node_modules/react-dom/cjs/react-dom.development.js:19688:5)
-      at updateClassComponent (node_modules/react-dom/cjs/react-dom.development.js:21611:16)
-      at beginWork (node_modules/react-dom/cjs/react-dom.development.js:27426:14)
-      at beginWork$1 (node_modules/react-dom/cjs/react-dom.development.js:26560:12)
-      at performUnitOfWork (node_modules/react-dom/cjs/react-dom.development.js:26466:5)
-      at workLoopSync (node_modules/react-dom/cjs/react-dom.development.js:26434:7)
-      at renderRootSync (node_modules/react-dom/cjs/react-dom.development.js:26085:20)
-      at callback (node_modules/react-dom/cjs/react-dom.development.js:12042:22)
-      at flushSyncCallbacks (node_modules/react-dom/cjs/react-dom.development.js:26201:7)
-      at flushSync (node_modules/react-dom/cjs/react-dom.development.js:29575:5)
-      at legacyCreateRootFromDOMContainer (node_modules/react-dom/cjs/react-dom.development.js:29601:12)
-      at Object.legacyRenderSubtreeIntoContainer [as render] (node_modules/react-dom/cjs/react-dom.development.js:29685:10) 
-      at render (node_modules/@testing-library/react/dist/pure.js:101:25)
-      at callback (node_modules/react/cjs/react.development.js:2512:16)
-      at render (node_modules/@testing-library/react/dist/pure.js:97:25)
-      at Object.<anonymous> (src/app/blocks/deviceDetail/test/BlockService.test.js:48:11)
+describe('BlockServices Component', () => {
+  it('should render Block Services correctly', () => {
+    render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/']} initialIndex={0}>
+          <BlockServices location={{ state: { devices: [], isSingleDevice: false, selectedDevice: null } }} />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    // Check if the accordion is rendered correctly
+    const blockServicesAccordion = screen.getByTestId('BlockServicesTestId');
+    expect(blockServicesAccordion).toBeInTheDocument();
+    
+    // Check if the block title is rendered
+    const blockTitle = screen.getByText(/Block services/i);
+    expect(blockTitle).toBeInTheDocument();
+
+    // You can add more checks here depending on the specific elements in your component.
+  });
+
+  it('should handle empty state gracefully', () => {
+    render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/']} initialIndex={0}>
+          <BlockServices location={{ state: {} }} />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    // The component should still render even with an empty state
+    const blockServicesAccordion = screen.getByTestId('BlockServicesTestId');
+    expect(blockServicesAccordion).toBeInTheDocument();
+  });
+
+  it('should handle missing location state gracefully', () => {
+    render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/']} initialIndex={0}>
+          <BlockServices />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    // The component should still render even without the location prop
+    const blockServicesAccordion = screen.getByTestId('BlockServicesTestId');
+    expect(blockServicesAccordion).toBeInTheDocument();
+  });
+});

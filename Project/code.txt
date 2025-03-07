@@ -1,4 +1,58 @@
-handleCallsMessages = (e) => {
+handleAddNumber = (e) => {
+    e.preventDefault();
+    
+    let inputValue = this.state.newNumber;
+    let x = inputValue.replace(/\D/g, "").match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+    let changedValue = x[1] + x[2] + x[3];
+
+    let payload = {
+        mtn: this.props.selectedDevice?.encryptedMtn,
+        blockNumber: changedValue,
+        oldPhoneNumber: changedValue,
+        memo: this.state.newMemo,
+        expiredPhoneNumber: "",
+        blockedNumbers: [],
+        applyAll: this.state.applyAllFlag,
+        onlyMemo: false
+    };
+
+    this.setState({ isLoading: true });
+
+    this.props.postaddBlockCallMsg(payload).then(() => {
+        let elmnt = document.getElementById("myalert");
+        if (elmnt != null) window.scrollTo(0, elmnt.offsetTop);
+
+        if (this.props.addBlockCallMsgRes.statusCode === "00") {
+            this.setState((prevState) => ({
+                errorMsg: null,
+                powerCycle: this.props.addBlockCallMsgRes?.powerCycle,
+                blockedList: [...this.props.addBlockCallMsgRes.blockedPhoneNumbers],  // ✅ Update immediately
+                expiredList: [...this.props.addBlockCallMsgRes.expiredBlockedPhoneNumbers],
+                remainingBlockCount: this.props.addBlockCallMsgRes.remainingBlockCount, // ✅ Ensure count updates
+                newNumber: '',
+                newMemo: '',
+                addSuccess: this.props.addBlockCallMsgRes.hasSuccessMsg ? true : null,
+                failSuccess: this.props.addBlockCallMsgRes.hasFailureMsg ? true : null,
+                trackingId: this.props.addBlockCallMsgRes.hasFailureMsg && this.props.addBlockCallMsgRes.hasSuccessMsg
+                    ? "CallsMessagesSuccessFailureNotification"
+                    : this.props.addBlockCallMsgRes.hasFailureMsg
+                        ? "CallsMessagesFailureNotification"
+                        : "CallsMessagesSuccessNotification",
+                isLoading: false
+            }));
+        } else {
+            this.setState({
+                errorMsg: true,
+                addSuccess: null,
+                failSuccess: null,
+                trackingId: "CallsMessagesFailureNotification",
+                isLoading: false
+            });
+        }
+    });
+
+    console.log("State after adding number:", this.state);
+};handleCallsMessages = (e) => {
     e.preventDefault();
     this.props.selectAccordian('CM');
 

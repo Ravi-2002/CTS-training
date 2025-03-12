@@ -1,4 +1,6 @@
-let pageContent;
+  renderPreferenceLink = (singleLink, index) => {
+    let pageContent;
+    let isMvm = common.getChannelId() == 'VZW-MFA';
     if (this.props.deviceDetailInfoSection && this.props.deviceDetailInfoSection.sections) {
       pageContent = common.getContentFromSection(this.props.deviceDetailInfoSection, 'devicesLandingMainSection');
       pageContent = pageContent.sections[0];
@@ -17,5 +19,61 @@ let pageContent;
     }
     let pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
     let deviceList = (pageContent && pageContent.data) || [];
+
     let selectedDeviceDetail = (deviceList && deviceList.filter((singleDevice) => singleDevice.mtn == this.state.selectedMdn)) || [];
     let { preferences, shareNameIDBtnThrottle } = selectedDeviceDetail.length && selectedDeviceDetail[0];
+
+    return preferences[`${singleLink}`] ? (
+      <Col
+        key={`${singleLink}`}
+        colSizes={{
+          mobile: 4,
+          desktop: 6,
+          tablet: 6,
+        }}
+      >
+        <ListGroup topLine={false} bottomLine={true} surface='light' viewport='desktop' key={`${singleLink}`}>
+          <ListGroupItem
+            ariaLabel={`${common.getItemValue(pageItems, `${singleLink}`)}`}
+            actionElement='none'
+            ariaRole='link'
+            onClick={() => {
+              if (
+                singleLink == 'shareNameIDBtn' &&
+                (enableSharenameid === 'true' || shareNameIDBtnThrottle)
+              ) {
+                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
+                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
+                click_info?.onclick();
+              } else if (singleLink == 'blockSpecificServicesBtn' && enableBlocks === 'true') {
+                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
+                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
+                click_info?.onclick();
+              } else if (singleLink == 'blockCallsAndMessagesBtn' && enableBlocks === 'true') {
+                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
+                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
+                click_info?.onclick();
+              } else if (singleLink == 'manageCallFilterBtn' && enableCallFilter === 'true') {
+                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
+                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
+                click_info?.onclick();
+              } else {
+                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
+                let click_info = this.getOnClickInfo(pageContent, actionKey);
+                click_info?.onclick();
+              }
+            }}
+          >
+            <ListGroupItemTitle bold={false}>
+              <ListGroupItemTitleContent>
+                <ItemWrapper>
+                  <span>{common.getItemValue(pageItems, `${singleLink}`)}</span>
+                  <span><Icon name='right-arrow' size='medium' /></span>
+                </ItemWrapper>
+              </ListGroupItemTitleContent>
+            </ListGroupItemTitle>
+          </ListGroupItem>
+        </ListGroup>
+      </Col>
+    ) : null;
+  };

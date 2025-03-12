@@ -2,35 +2,42 @@ renderPreferenceLink = (singleLink, index) => {
     const { deviceDetailInfoSection } = this.props;
     const isMvm = common.getChannelId() === 'VZW-MFA';
 
-    // Extract page content
+    // Extract page content safely
     const pageContent = deviceDetailInfoSection?.sections
         ? common.getContentFromSection(deviceDetailInfoSection, 'devicesLandingMainSection')?.sections?.[0]
         : null;
 
-    // Extract page attributes
+    // Extract page attributes safely
     const enableSharenameid = common.getItemValue(deviceDetailInfoSection?.pageAttributes, 'enableSharenameid');
     const enableCallFilter = common.getItemValue(deviceDetailInfoSection?.pageAttributes, 'enableCallFilter');
     const enableBlocks = common.getItemValue(deviceDetailInfoSection?.pageAttributes, 'enableBlocks');
 
-    // Extract device details
+    // Extract necessary content
+    const pageItems = pageContent?.contents?.[0]?.items;
     const deviceList = pageContent?.data || [];
+
+    // Find selected device details
     const selectedDeviceDetail = deviceList.find(device => device.mtn === this.state.selectedMdn) || {};
     const { preferences, shareNameIDBtnThrottle } = selectedDeviceDetail;
 
-    // Exit early if preference doesn't exist
+    // Exit early if preference does not exist
     if (!preferences?.[singleLink]) return null;
 
-    // Define action mapping
-    const actionConditions = {
+    // Define allowed actions
+    const allowedActions = {
         shareNameIDBtn: enableSharenameid === 'true' || shareNameIDBtnThrottle,
         blockSpecificServicesBtn: enableBlocks === 'true',
         blockCallsAndMessagesBtn: enableBlocks === 'true',
         manageCallFilterBtn: enableCallFilter === 'true',
     };
 
+    // Handle click event with action validation
     const handleClick = () => {
-        const actionKey = common.getActionKey(pageContent?.contents?.[0]?.items, singleLink);
-        const clickInfo = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
+        if (!allowedActions[singleLink]) return; // Prevent action if not allowed
+
+        const actionKey = common.getActionKey(pageItems, singleLink);
+        const prefix = isMvm ? 'mvm_' : 'nsa_';
+        const clickInfo = this.getOnClickInfo(pageContent, `${prefix}${actionKey}`);
         clickInfo?.onclick();
     };
 
@@ -38,15 +45,15 @@ renderPreferenceLink = (singleLink, index) => {
         <Col key={singleLink} colSizes={{ mobile: 4, desktop: 6, tablet: 6 }}>
             <ListGroup topLine={false} bottomLine={true} surface="light" viewport="desktop">
                 <ListGroupItem
-                    ariaLabel={common.getItemValue(pageContent?.contents?.[0]?.items, singleLink)}
+                    ariaLabel={common.getItemValue(pageItems, singleLink)}
                     actionElement="none"
                     ariaRole="link"
-                    onClick={() => (actionConditions[singleLink] ? handleClick() : handleClick())}
+                    onClick={handleClick}  // ✅ Now only allowed actions trigger the click
                 >
                     <ListGroupItemTitle bold={false}>
                         <ListGroupItemTitleContent>
                             <ItemWrapper>
-                                <span>{common.getItemValue(pageContent?.contents?.[0]?.items, singleLink)}</span>
+                                <span>{common.getItemValue(pageItems, singleLink)}</span>
                                 <span><Icon name="right-arrow" size="medium" /></span>
                             </ItemWrapper>
                         </ListGroupItemTitleContent>

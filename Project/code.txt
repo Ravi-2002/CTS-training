@@ -1,195 +1,21 @@
-handleAddNumber = (e) => {
-    e.preventDefault();
-    
-    let inputValue = this.state.newNumber;
-    let x = inputValue.replace(/\D/g, "").match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
-    let changedValue = x[1] + x[2] + x[3];
-
-    let payload = {
-        mtn: this.props.selectedDevice?.encryptedMtn,
-        blockNumber: changedValue,
-        oldPhoneNumber: changedValue,
-        memo: this.state.newMemo,
-        expiredPhoneNumber: "",
-        blockedNumbers: [],
-        applyAll: this.state.applyAllFlag,
-        onlyMemo: false
-    };
-
-    this.setState({ isLoading: true });
-
-    this.props.postaddBlockCallMsg(payload).then(() => {
-        let elmnt = document.getElementById("myalert");
-        if (elmnt != null) window.scrollTo(0, elmnt.offsetTop);
-
-        if (this.props.addBlockCallMsgRes.statusCode === "00") {
-            this.setState((prevState) => ({
-                errorMsg: null,
-                powerCycle: this.props.addBlockCallMsgRes?.powerCycle,
-                blockedList: [...this.props.addBlockCallMsgRes.blockedPhoneNumbers],  // ✅ Update immediately
-                expiredList: [...this.props.addBlockCallMsgRes.expiredBlockedPhoneNumbers],
-                remainingBlockCount: this.props.addBlockCallMsgRes.remainingBlockCount, // ✅ Ensure count updates
-                newNumber: '',
-                newMemo: '',
-                addSuccess: this.props.addBlockCallMsgRes.hasSuccessMsg ? true : null,
-                failSuccess: this.props.addBlockCallMsgRes.hasFailureMsg ? true : null,
-                trackingId: this.props.addBlockCallMsgRes.hasFailureMsg && this.props.addBlockCallMsgRes.hasSuccessMsg
-                    ? "CallsMessagesSuccessFailureNotification"
-                    : this.props.addBlockCallMsgRes.hasFailureMsg
-                        ? "CallsMessagesFailureNotification"
-                        : "CallsMessagesSuccessNotification",
-                isLoading: false
-            }));
-        } else {
-            this.setState({
-                errorMsg: true,
-                addSuccess: null,
-                failSuccess: null,
-                trackingId: "CallsMessagesFailureNotification",
-                isLoading: false
-            });
-        }
-    });
-
-    console.log("State after adding number:", this.state);
-};handleCallsMessages = (e) => {
-    e.preventDefault();
-    this.props.selectAccordian('CM');
-
-    if (!this.state.open) { // Only fetch when opening
-        let payload = { mtn: this.props.selectedDevice?.encryptedMtn };
-        this.props.getCallsMessages(payload).then(() => {
-            this.setState({
-                blockedList: this.props.blockedNumbers || [],
-                expiredList: this.props.expiredNumbers || [],
-                remainingBlockCount: this.props.callsMessagesData?.remainingBlockCount,
-                addedBlockCount: this.props.callsMessagesData?.addedBlockCount
-            }, () => {
-                this.setState({ open: true }); // ✅ Open only after data is set
-            });
-        });
-    } else {
-        this.setState({ open: false });
+let pageContent;
+    if (this.props.deviceDetailInfoSection && this.props.deviceDetailInfoSection.sections) {
+      pageContent = common.getContentFromSection(this.props.deviceDetailInfoSection, 'devicesLandingMainSection');
+      pageContent = pageContent.sections[0];
     }
-};
-
-// ✅ Block Again with Proper State Update
-handleBlockAgain = (e, number) => {
-    e.preventDefault();
-    if (reactGlobals.isCsr) return;
-
-    let payload = {
-        mtn: this.props.selectedDevice?.encryptedMtn,
-        blockNumber: number.phoneNumber,
-        oldPhoneNumber: number.oldPhoneNumber,
-        expiredPhoneNumber: number.phoneNumber,
-        blockedNumbers: [],
-        memo: number.memo,
-        applyAll: false,
-        onlyMemo: false
-    };
-
-    this.setState({ isLoading: true });
-
-    this.props.postBlockAgain(payload).then(() => {
-        let elmnt = document.getElementById("myalert");
-        if (elmnt != null) window.scrollTo(0, elmnt.offsetTop);
-
-        if (parseInt(this.props.blockAgainResponse?.statusCode) === 0) {
-            this.setState((prevState) => ({
-                blockAgainSuccess: true,
-                powerCycle: this.props.blockAgainResponse?.powerCycle,
-                trackingId: "CallsMessagesSuccessNotification",
-                errorMsg: null,
-                deleteSuccess: null,
-                editAllSuccess: null,
-                editSuccess: null,
-                addSuccess: null,
-                failSuccess: null,
-                blockedList: [...this.props.blockAgainResponse.blockedPhoneNumbers],  // ✅ Updated immediately
-                expiredList: [...this.props.blockAgainResponse.expiredBlockedPhoneNumbers],
-                remainingBlockCount: this.props.blockAgainResponse.remainingBlockCount, // ✅ Fixed count update
-                isLoading: false
-            }));
-        } else {
-            this.setState({
-                blockAgainSuccess: false,
-                isLoading: false,
-                trackingId: "CallsMessagesFailureNotification"
-            });
-        }
-    });
-};
-
-// ✅ Unblock (Delete) Number with Correct State Handling
-deleteNumber = (e, number) => {
-    e.preventDefault();
-    if (reactGlobals.isCsr) return;
-
-    let payload = {
-        mtn: this.props.selectedDevice?.encryptedMtn,
-        blockNumber: number.phoneNumber,
-        oldPhoneNumber: number.phoneNumber,
-        expiredPhoneNumber: "",
-        blockedNumbers: [],
-        memo: number.memo,
-        applyAll: false,
-        onlyMemo: false
-    };
-
-    this.setState({ isLoading: true });
-
-    this.props.postDeleteBlockCallMsg(payload).then(() => {
-        let elmnt = document.getElementById("myalert");
-        if (elmnt != null) window.scrollTo(0, elmnt.offsetTop);
-
-        if (this.props.deleteBlockCallMsgRes?.statusCode === "00") {
-            this.setState({
-                deleteSuccess: true,
-                trackingId: "CallsMessagesSuccessNotification",
-                blockedList: [...this.props.deleteBlockCallMsgRes.blockedPhoneNumbers],  // ✅ Update blocked list
-                expiredList: [...this.props.deleteBlockCallMsgRes.expiredBlockedPhoneNumbers],
-                remainingBlockCount: this.props.deleteBlockCallMsgRes.remainingBlockCount, // ✅ Update count
-                isLoading: false
-            });
-        } else {
-            this.setState({
-                deleteSuccess: false,
-                isLoading: false,
-                trackingId: "CallsMessagesFailureNotification"
-            });
-        }
-    });
-};
-
-// ✅ Ensure State Syncs with Redux Props
-componentDidUpdate(prevProps) {
-    if (prevProps.blockedNumbers !== this.props.blockedNumbers) {
-        this.setState({ blockedList: this.props.blockedNumbers });
+    let enableSharenameid, enableCallFilter, enableBlocks;
+    if (this.props.deviceDetailInfoSection && this.props.deviceDetailInfoSection.pageAttributes) {
+      enableSharenameid = common.getItemValue(this.props.deviceDetailInfoSection.pageAttributes, 'enableSharenameid');
+      enableCallFilter = common.getItemValue(
+        this.props.deviceDetailInfoSection.pageAttributes,
+        'enableCallFilter'
+      )
+      enableBlocks = common.getItemValue(
+        this.props.deviceDetailInfoSection.pageAttributes,
+        'enableBlocks'
+      )
     }
-    if (prevProps.remainingBlockCount !== this.props.remainingBlockCount) {
-        this.setState({ remainingBlockCount: this.props.remainingBlockCount });
-    }
-}
-
-// ✅ Display Remaining Block Count in UI
-render() {
-    return (
-        <div>
-            <button onClick={this.handleCallsMessages}>Toggle Dropdown</button>
-            {this.state.open && (
-                <div>
-                    <p>Remaining Block Count: {this.state.remainingBlockCount}</p>  {/* ✅ UI updates immediately */}
-                    {/* Render blocked numbers */}
-                    {this.state.blockedList.map((number) => (
-                        <div key={number.phoneNumber}>
-                            <p>{number.phoneNumber}</p>
-                            <button onClick={(e) => this.handleBlockAgain(e, number)}>Block Again</button>
-                            <button onClick={(e) => this.deleteNumber(e, number)}>Unblock</button>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
+    let pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
+    let deviceList = (pageContent && pageContent.data) || [];
+    let selectedDeviceDetail = (deviceList && deviceList.filter((singleDevice) => singleDevice.mtn == this.state.selectedMdn)) || [];
+    let { preferences, shareNameIDBtnThrottle } = selectedDeviceDetail.length && selectedDeviceDetail[0];

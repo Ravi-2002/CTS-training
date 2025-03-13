@@ -12,11 +12,9 @@ renderPreferenceLink = (singleLink, index) => {
     const enableCallFilter = common.getItemValue(pageAttributes, 'enableCallFilter');
     const enableBlocks = common.getItemValue(pageAttributes, 'enableBlocks');
 
-    // Extract necessary content
     const pageItems = pageContent?.contents?.[0]?.items;
     const deviceList = pageContent?.data || [];
 
-    // Find selected device details
     const selectedDeviceDetail = deviceList.find(device => device.mtn === this.state.selectedMdn) || {};
     const { preferences, shareNameIDBtnThrottle } = selectedDeviceDetail;
 
@@ -31,19 +29,22 @@ renderPreferenceLink = (singleLink, index) => {
         manageCallFilterBtn: enableCallFilter === 'true',
     };
 
-    // Handle click event with action validation
+    // Handle click event
     const handleClick = () => {
-        if (!allowedActions[singleLink]) return; // Prevent action if not allowed
-
         const baseActionKey = common.getActionKey(pageItems, singleLink);
-        let clickInfo = this.getOnClickInfo(pageContent, `nsa_${baseActionKey}`);
+        const nsaActionKey = `nsa_${baseActionKey}`;
 
-        // If `nsa_` prefixed action is not found, fall back to normal one
-        if (!clickInfo?.onclick) {
-            clickInfo = this.getOnClickInfo(pageContent, singleLink);
+        let clickInfo;
+
+        if (allowedActions[singleLink]) {
+            // If action is allowed, try NSA first, then normal
+            clickInfo = this.getOnClickInfo(pageContent, nsaActionKey) || this.getOnClickInfo(pageContent, baseActionKey);
+        } else {
+            // If action is not allowed, directly go to normal action
+            clickInfo = this.getOnClickInfo(pageContent, baseActionKey);
         }
 
-        clickInfo?.onclick();
+        clickInfo?.onclick(); // Call action if found
     };
 
     return (
@@ -53,7 +54,7 @@ renderPreferenceLink = (singleLink, index) => {
                     ariaLabel={common.getItemValue(pageItems, singleLink)}
                     actionElement="none"
                     ariaRole="link"
-                    onClick={handleClick} // ✅ Removed redundant ternary condition
+                    onClick={handleClick} // Always executes handleClick to check for fallback
                 >
                     <ListGroupItemTitle bold={false}>
                         <ListGroupItemTitleContent>

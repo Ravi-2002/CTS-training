@@ -1,48 +1,49 @@
 renderPreferenceLink = (singleLink, index) => {
     const { deviceDetailInfoSection } = this.props;
-    const isMvm = common.getChannelId() === 'VZW-MFA';
 
-    // Extract relevant data safely
+    // Extract page content safely
     const pageContent = deviceDetailInfoSection?.sections
         ? common.getContentFromSection(deviceDetailInfoSection, 'devicesLandingMainSection')?.sections?.[0]
         : null;
 
+    // Extract page attributes safely
     const pageAttributes = deviceDetailInfoSection?.pageAttributes;
-    const enableSharenameid = common.getItemValue(pageContent?.pageAttributes, 'enableSharenameid');
-    const enableCallFilter = common.getItemValue(pageContent?.pageAttributes, 'enableCallFilter');
-    const enableBlocks = common.getItemValue(pageContent?.pageAttributes, 'enableBlocks');
+    const enableSharenameid = common.getItemValue(pageAttributes, 'enableSharenameid');
+    const enableCallFilter = common.getItemValue(pageAttributes, 'enableCallFilter');
+    const enableBlocks = common.getItemValue(pageAttributes, 'enableBlocks');
 
+    // Extract necessary content
     const pageItems = pageContent?.contents?.[0]?.items;
     const deviceList = pageContent?.data || [];
 
-    // Get selected device details
+    // Find selected device details
     const selectedDeviceDetail = deviceList.find(device => device.mtn === this.state.selectedMdn) || {};
     const { preferences, shareNameIDBtnThrottle } = selectedDeviceDetail;
 
     // Exit early if preference does not exist
     if (!preferences?.[singleLink]) return null;
 
-    // Handle click event
-    const handleClick = () => {
-        let actionKey = common.getActionKey(pageItems, singleLink);
-        let nsaActionKey = `nsa_${actionKey}`;
-
-        let clickInfo = this.getOnClickInfo(pageContent, isMvm ? nsaActionKey : actionKey);
-        
-        // If NSA action doesn't exist, use normal action key
-        if (!clickInfo?.onclick && isMvm) {
-            clickInfo = this.getOnClickInfo(pageContent, actionKey);
-        }
-
-        clickInfo?.onclick();
-    };
-
     // Define allowed actions
     const allowedActions = {
-        shareNameIDBtn: enableSharenameid === 'true' || selectedDeviceDetail?.shareNameIDBtnThrottle,
+        shareNameIDBtn: enableSharenameid === 'true' || shareNameIDBtnThrottle,
         blockSpecificServicesBtn: enableBlocks === 'true',
         blockCallsAndMessagesBtn: enableBlocks === 'true',
         manageCallFilterBtn: enableCallFilter === 'true',
+    };
+
+    // Handle click event with action validation
+    const handleClick = () => {
+        if (!allowedActions[singleLink]) return; // Prevent action if not allowed
+
+        const baseActionKey = common.getActionKey(pageItems, singleLink);
+        let clickInfo = this.getOnClickInfo(pageContent, `nsa_${baseActionKey}`);
+
+        // If `nsa_` prefixed action is not found, fall back to normal one
+        if (!clickInfo?.onclick) {
+            clickInfo = this.getOnClickInfo(pageContent, singleLink);
+        }
+
+        clickInfo?.onclick();
     };
 
     return (
@@ -52,7 +53,7 @@ renderPreferenceLink = (singleLink, index) => {
                     ariaLabel={common.getItemValue(pageItems, singleLink)}
                     actionElement="none"
                     ariaRole="link"
-                    onClick={allowedActions[singleLink] ? handleClick : null} // Only call if action is allowed
+                    onClick={handleClick} // ✅ Removed redundant ternary condition
                 >
                     <ListGroupItemTitle bold={false}>
                         <ListGroupItemTitleContent>

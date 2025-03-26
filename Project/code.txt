@@ -1,40 +1,122 @@
-test('handleClick function should be triggered when clicking a preference link', async () => {
+import React from 'react';
+import '../../../../../config/jest/test-setup';
+import {
+  act, render, screen, fireEvent, waitFor,
+} from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect';
+import { Provider } from 'react-redux';
+import { getHttpClientRequest } from '@vz/react-util';
+import { persistStore } from 'redux-persist';
+import { PersistGate } from 'redux-persist/integration/react';
+import configureStore from '../../../../shared/store/configureStore';
+import rootReducer from '../../reducers';
+import DeviceDetail from '../components/index';
+import {
+  deviceDetail, deviceDetail5, deviceDetailNew,
+} from './mockResponse';
+import * as actions from '../../home/actions';
+import common from '../../../../shared/utilities/util';
+
+const store = configureStore(rootReducer);
+const persistor = persistStore(store);
+
+jest.mock('../../../../shared/utilities/util', () => ({
+  getChannelId: jest.fn(),
+  getContentFromSection: jest.fn(),
+  getItemValue: jest.fn(),
+  getActionKey: jest.fn(),
+  getOnClickInfo: jest.fn(),
+}));
+
+describe('<DeviceDetail />', () => {
+  window.VZTAG_IS_READY = 'true';
+
+  beforeEach(async () => {
+    getHttpClientRequest.mockImplementation(() => Promise.resolve({ status: 200, data: { ...deviceDetailNew } }));
+
+    await act(async () => render(
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <DeviceDetail />
+        </PersistGate>
+      </Provider>
+    ));
+  });
+
+  test('it should mount', () => {
+    const doc = screen.getByTestId('DeviceDetailTestId');
+    expect(doc).toBeInTheDocument();
+  });
+
+  test('handleClick function should be triggered when clicking a preference link', async () => {
     let mockOnClick = jest.fn();
     let mockGetOnClickInfo = jest.fn(() => ({ onclick: mockOnClick }));
 
     common.getChannelId.mockReturnValue('VZW-MFA');
-    common.getContentFromSection.mockReturnValue({
-        contents: [{ items: {} }],
-        data: [{ mtn: '8049557864', preferences: { shareNameIDBtn: true }, shareNameIDBtnThrottle: false }],
-    });
-    common.getItemValue.mockImplementation((_, key) => key);
+    common.getOnClickInfo.mockImplementation(mockGetOnClickInfo);
     common.getActionKey.mockReturnValue('mockActionKey');
 
     render(<DeviceDetail selectedDevice={{ preferences: { shareNameIDBtn: true } }} />);
 
-    const button = screen.getByTestId('preference-shareNameIDBtn'); // Ensure test ID matches
+    const button = screen.getByTestId('preference-shareNameIDBtn');
     expect(button).toBeInTheDocument();
 
     fireEvent.click(button);
 
     await waitFor(() => {
-        expect(common.getOnClickInfo).toHaveBeenCalledWith(expect.anything(), 'nsa_mockActionKey');
+        expect(mockGetOnClickInfo).toHaveBeenCalledWith(expect.anything(), 'nsa_mockActionKey');
         expect(mockOnClick).toHaveBeenCalled();
     });
-});
+  });
 
-test('handleClick should use native suffix for MVM users', async () => {
+  test('handleClick should use native suffix for MVM users', async () => {
     let mockOnClick = jest.fn();
     let mockGetOnClickInfo = jest.fn(() => ({ onclick: mockOnClick }));
 
     common.getChannelId.mockReturnValue('MVM'); // Simulating MVM user
+    common.getOnClickInfo.mockImplementation(mockGetOnClickInfo);
+    common.getActionKey.mockReturnValue('mockActionKey');
+
     render(<DeviceDetail selectedDevice={{ preferences: { shareNameIDBtn: true } }} />);
 
-    const button = screen.getByTestId('preference-shareNameIDBtn'); // Ensure test ID matches
+    const button = screen.getByTestId('preference-shareNameIDBtn');
     fireEvent.click(button);
 
     await waitFor(() => {
-        expect(common.getOnClickInfo).toHaveBeenCalledWith(expect.anything(), 'mockActionKey_native');
+        expect(mockGetOnClickInfo).toHaveBeenCalledWith(expect.anything(), 'mockActionKey_native');
         expect(mockOnClick).toHaveBeenCalled();
     });
+  });
+
+  test('managePlanBtnTestId test', () => {
+    jest.setTimeout(10000);
+    const manageBtn = screen.getByTestId('managePlanBtnTestId');
+    expect(manageBtn).toBeInTheDocument();
+    fireEvent.click(manageBtn);
+  });
+
+  test('reviewUsageBtnTestId test', () => {
+    jest.setTimeout(10000);
+    const manageBtn = screen.getByTestId('reviewUsageBtnTestId');
+    expect(manageBtn).toBeInTheDocument();
+    fireEvent.click(manageBtn);
+  });
+
+  test('returnAndUpgradeBtnTestId test', () => {
+    jest.setTimeout(10000);
+    fireEvent.click(screen.getByTestId('returnAndUpgradeBtnTestId'));
+  });
+
+  test('deviceListTestId test', () => {
+    jest.setTimeout(10000);
+    jest.spyOn(common, 'getChannelId').mockReturnValue('VZW-MFA');
+    fireEvent.change(screen.getByTestId('deviceListTestId'));
+    store.dispatch(actions.setSelectedDevice({ preferences: { shareNameIDBtn: true } }));
+  });
+
+  test('manageTextTestId test', () => {
+    waitFor(() => {
+      fireEvent.click(screen.getAllByText('Manage')[0]);
+    });
+  });
 });

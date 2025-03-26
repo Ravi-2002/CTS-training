@@ -18,95 +18,14 @@ import {
 import * as actions from '../../home/actions';
 import common from '../../../../shared/utilities/util';
 
+// Mock common.js before using jest.spyOn()
+jest.mock('../../../../shared/utilities/util', () => ({
+  getActionKey: jest.fn(),
+  getItemValue: jest.fn(),
+}));
+
 const store = configureStore(rootReducer);
 const persistor = persistStore(store);
-
-const data = {
-  mtn: '8049557864',
-  displayMtn: '804-955-7864',
-  encryptedMtn: '7mRmqweZh69k4RQaZu6xHA%3D%3D',
-  modelName: 'Galaxy J3 Eclipse in Black',
-  nickName: 'EDIT NICKNAME',
-  simId: '89148000002444998436',
-  encryptedSimId: 'ZAEiJc%2B0MTnLUt2QZTs1GmRXgDNxzZN7',
-  simType: 'ICC',
-  upgradeEligible: true,
-  userRole: 'Manager',
-  device4G: false,
-  device5GE: false,
-  device5GA: false,
-  smartPhone: true,
-  basicPhone: false,
-  deviceId: '356352080020741',
-  paymentInfo: {
-    hasPayOffBalance: false,
-    promoDevice: false,
-    upgradeEligible: false,
-  },
-  preferences: {
-    shareNameIDBtn: true,
-    manageCallForwardingBtn: true,
-    blockSpecificServicesBtn: true,
-    blockCallsAndMessagesBtn: true,
-    manageCallFilterBtn: true,
-    manageVoicemailPasswordBtn: true,
-    backupContentToVerizonCloudBtn: true,
-  },
-  planUsageInfo: {
-    planName: '10GB',
-  },
-  deviceManagement: {
-    tradeInBtn: true,
-    activateOrSwitchDeviceBtn: true,
-    upgradeDeviceBtn: true,
-    changeMobileNumberBtn: true,
-    transferYourServiceBtn: true,
-    manageConnectedDevicesBtn: false,
-    suspendOrReconnectServiceBtn: true,
-    numberLockBtn: true,
-    numberTransferPinBtn: true,
-    disconnectDeviceBtn: true,
-    pinandPersonalUnblockingKeyBtn: true,
-    manageNumberShareBtn: true,
-    checkNetworkCompatibiltyText: false,
-    viewAddOnsBtn: true,
-  },
-  troubleshootAndSupport: {
-    troubleshootBtn: true,
-    techCoachSupportBtn: true,
-    runHealthCheckBtn: false,
-    transferContentBetweenPhonesBtn: false,
-    launchSecurityDashboardBtn: false,
-  },
-  images: {
-    defaultImage: 'https://ss7.vzw.com/is/image/VerizonWireless/samsung-galaxy-j3-eclipse-black',
-    largeImage: 'https://ss7.vzw.com/is/image/VerizonWireless/samsung-galaxy-j3-eclipse-black?$device-lg$',
-    mediumImage: 'https://ss7.vzw.com/is/image/VerizonWireless/samsung-galaxy-j3-eclipse-black?$device-med$',
-    miniImage: 'https://ss7.vzw.com/is/image/VerizonWireless/samsung-galaxy-j3-eclipse-black?$device-mini$',
-    thumbImage: 'https://ss7.vzw.com/is/image/VerizonWireless/samsung-galaxy-j3-eclipse-black?$device-thumb$',
-  },
-  displayDeviceCategory: '4G Smartphone',
-  esim: false,
-  psim: true,
-  router: true,
-  dynamicData: {
-    deviceName: 'Galaxy J3 Eclipse in Black',
-    encMdn: '7mRmqweZh69k4RQaZu6xHA==',
-    nsaHost: 'https://www.verizon.com',
-  },
-  pendingLineChange: false,
-  deviceCategory: 'phone',
-  mtnStatus: 'A',
-  isMtnSuspended: false,
-  openEnrollmentPeriod: 'Y',
-  deviceProtectionEnrolled: 'N',
-  productDisplayName: 'Galaxy J3 Eclipse',
-};
-
-jest.mock('@vz/react-util', () => ({
-  ...jest.requireActual('@vz/react-util'),
-  getHttpClientRequest: jest.fn(),
-}));
 
 const props = {
   selectedDevice: {
@@ -150,27 +69,49 @@ describe('<DeviceDetail />', () => {
   });
 });
 
-// New test for handleClick in renderPreferenceLink
+// ✅ New test for handleClick in renderPreferenceLink
 describe('renderPreferenceLink handleClick test', () => {
+  beforeEach(() => {
+    // Ensure mocked functions return valid values
+    common.getActionKey.mockReturnValue('mockedActionKey');
+    common.getItemValue.mockImplementation((_, key) => key);
+  });
+
   test('should trigger handleClick when preference link is clicked', async () => {
     jest.setTimeout('10000');
 
-    // Mock getOnClickInfo to return a function
-    const getOnClickInfoMock = jest.spyOn(DeviceDetail.prototype, 'getOnClickInfo').mockReturnValue({
-      onclick: jest.fn(),
-    });
+    // ✅ Mock getOnClickInfo to avoid undefined errors
+    const getOnClickInfoMock = jest
+      .spyOn(DeviceDetail.prototype, 'getOnClickInfo')
+      .mockImplementation(() => ({
+        onclick: jest.fn(),
+      }));
 
-    // Find the preference link and simulate click
-    const preferenceBtn = screen.getByText(/Manage Call Forwarding/i);
-    expect(preferenceBtn).toBeInTheDocument();
+    // ✅ List of preference buttons to check
+    const preferenceLinks = [
+      { key: 'shareNameIDBtn', label: 'Share Name ID' },
+      { key: 'manageCallForwardingBtn', label: 'Manage Call Forwarding' },
+      { key: 'blockSpecificServicesBtn', label: 'Block Specific Services' },
+      { key: 'blockCallsAndMessagesBtn', label: 'Block Calls and Messages' },
+      { key: 'manageCallFilterBtn', label: 'Manage Call Filter' },
+      { key: 'manageVoicemailPasswordBtn', label: 'Manage Voicemail Password' },
+      { key: 'backupContentToVerizonCloudBtn', label: 'Backup Content to Verizon Cloud' },
+    ];
 
-    fireEvent.click(preferenceBtn);
+    for (const pref of preferenceLinks) {
+      // ✅ Find button by label text
+      const preferenceBtn = screen.getByText(new RegExp(pref.label, 'i'));
+      expect(preferenceBtn).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(getOnClickInfoMock).toHaveBeenCalled();
-    });
+      // ✅ Simulate click
+      fireEvent.click(preferenceBtn);
 
-    // Restore original implementation
+      await waitFor(() => {
+        expect(getOnClickInfoMock).toHaveBeenCalled();
+      });
+    }
+
+    // ✅ Restore original function
     getOnClickInfoMock.mockRestore();
   });
 });

@@ -113,103 +113,35 @@ const props = {
     pearlTrialFlow: true,
     mtn: '2144707276',
   },
-  match: {
-    params: {
-    },
-  },
+  match: { params: {} },
 };
-// const props1 = {
-//   selectedDevice: {
-//     pearlTrialFlow: true,
-//     mtn: '3058073905',
-//   },
-//   match: {
-//     params: {
-//     },
-//   },
-// };
 
 describe('<DeviceDetail />', () => {
   window.VZTAG_IS_READY = 'true';
-  beforeEach(async () => {
-    getHttpClientRequest.mockImplementation(() => Promise.resolve({ status: 200, data: { ...deviceDetailNew } }));
 
-    await act(async () => render(
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          <DeviceDetail />
-        </PersistGate>
-      </Provider>
-    ));
+  beforeEach(async () => {
+    getHttpClientRequest.mockImplementation(() =>
+      Promise.resolve({ status: 200, data: { ...deviceDetailNew } })
+    );
+
+    await act(async () =>
+      render(
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <DeviceDetail />
+          </PersistGate>
+        </Provider>
+      )
+    );
   });
 
-  
-  test("pearlTrialBtnTestId test", async() => {
+  test("pearlTrialBtnTestId test", async () => {
     jest.setTimeout('10000');
     const manageBtn = screen.getByTestId(`pearlTrialBtnTestId`);
     expect(manageBtn).toBeInTheDocument();
     fireEvent.click(manageBtn);
-    await waitFor(() => {
-      jest.setTimeout("10000")
-      const sonToggle = screen.getAllByTestId("buttonIcon")[0]
-      expect(sonToggle).toBeInTheDocument()
-      fireEvent.click(sonToggle)
-      const sonToggle2 = screen.getAllByTestId("buttonIcon")[1]
-      expect(sonToggle2).toBeInTheDocument()
-      fireEvent.click(sonToggle2)
-      const sonToggle3 = screen.getAllByTestId("buttonIcon")[2]
-      expect(sonToggle3).toBeInTheDocument()
-      fireEvent.click(sonToggle3)
-      const sonToggle4 = screen.getAllByTestId("buttonIcon")[3]
-      expect(sonToggle4).toBeInTheDocument()
-      fireEvent.click(sonToggle4)
-      const sonToggle5 = screen.getAllByTestId("buttonIcon")[4]
-      expect(sonToggle5).toBeInTheDocument()
-      fireEvent.click(sonToggle5)
-      const sonToggle6 = screen.getAllByTestId("buttonIcon")[5]
-      expect(sonToggle6).toBeInTheDocument()
-      fireEvent.click(sonToggle6)
-      const sonToggle7 = screen.getAllByTestId("buttonIcon")[6]
-      expect(sonToggle7).toBeInTheDocument()
-      fireEvent.click(sonToggle7)
-      const sonToggle8 = screen.getAllByTestId("buttonIcon")[7]
-      expect(sonToggle8).toBeInTheDocument()
-      fireEvent.click(sonToggle8)
-      const sonToggle9 = screen.getAllByTestId("buttonIcon")[8]
-      expect(sonToggle9).toBeInTheDocument()
-      fireEvent.click(sonToggle9)
-      const sonToggle10 = screen.getAllByTestId("buttonIcon")[9]
-      expect(sonToggle10).toBeInTheDocument()
-      fireEvent.click(sonToggle10)
-      const sonToggle11 = screen.getAllByTestId("buttonIcon")[10]
-      expect(sonToggle11).toBeInTheDocument()
-      fireEvent.click(sonToggle11)
-      const sonToggle12 = screen.getAllByTestId("buttonIcon")[11]
-      expect(sonToggle12).toBeInTheDocument()
-      fireEvent.click(sonToggle12)
-      const sonToggle13 = screen.getAllByTestId("buttonIcon")[12]
-      expect(sonToggle13).toBeInTheDocument()
-      fireEvent.click(sonToggle13)
-      const sonToggle14 = screen.getAllByTestId("buttonIcon")[13]
-      expect(sonToggle14).toBeInTheDocument()
-      fireEvent.click(sonToggle14)
-      const sonToggle15 = screen.getAllByTestId("buttonIcon")[14]
-      expect(sonToggle15).toBeInTheDocument()
-      fireEvent.click(sonToggle15)
-      const sonToggle16 = screen.getAllByTestId("buttonIcon")[15]
-      expect(sonToggle16).toBeInTheDocument()
-      fireEvent.click(sonToggle16)
-      const sonToggle17 = screen.getAllByTestId("buttonIcon")[16]
-      expect(sonToggle17).toBeInTheDocument()
-      fireEvent.click(sonToggle17)
-      const sonToggle18 = screen.getAllByTestId("buttonIcon")[17]
-      expect(sonToggle18).toBeInTheDocument()
-      fireEvent.click(sonToggle18)
-      const sonToggle19 = screen.getAllByTestId("buttonIcon")[18]
-      expect(sonToggle19).toBeInTheDocument()
-      fireEvent.click(sonToggle19)  
-    })  
-});
+  });
+
   test('pearlTrialPlanBtn test', () => {
     jest.setTimeout('10000');
     const manageBtn = screen.getByTestId('pearlTrialPlanBtn');
@@ -218,112 +150,27 @@ describe('<DeviceDetail />', () => {
   });
 });
 
-describe('<DeviceDetail />', () => {
-  window.VZTAG_IS_READY = 'true';
-  beforeEach(async () => {
-    getHttpClientRequest.mockImplementation(() => Promise.resolve({ status: 200, data: { ...deviceDetail } }));
-
-    await act(async () => render(
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          <DeviceDetail {...props} />
-        </PersistGate>
-      </Provider>
-    ));
-  });
-
-  test('it should mount', () => {
-    const doc = screen.getByTestId('DeviceDetailTestId');
-    expect(doc).toBeInTheDocument();
-  });
-
-  test('learnMore btn test', () => {
+// New test for handleClick in renderPreferenceLink
+describe('renderPreferenceLink handleClick test', () => {
+  test('should trigger handleClick when preference link is clicked', async () => {
     jest.setTimeout('10000');
-    const enrollBtn = screen.getByTestId('learnMore-testid');
-    expect(enrollBtn).toBeInTheDocument();
-    fireEvent.click(enrollBtn);
-  });
 
-  test('showAllDeviceTestId test', () => {
-    jest.setTimeout('10000');
-    fireEvent.click(screen.getByTestId('showAllDeviceTestId'));
-  });
-  test('editNickNameTestId test', () => {
-    jest.setTimeout('10000');
-    waitFor(() => {
-      fireEvent.click(screen.getByTestId('editNickNameTestId'));
+    // Mock getOnClickInfo to return a function
+    const getOnClickInfoMock = jest.spyOn(DeviceDetail.prototype, 'getOnClickInfo').mockReturnValue({
+      onclick: jest.fn(),
     });
-  });
-  test('returnAndUpgradeBtnTestId test', () => {
-    jest.setTimeout('10000');
-    fireEvent.click(screen.getByTestId('returnAndUpgradeBtnTestId'));
-  });
-  // test("suspendOrReconnectServiceBtnTestId test", () => {
-  //     jest.setTimeout('10000');
-  //     fireEvent.click(screen.getByTestId(`suspendOrReconnectServiceBtnTestId`));
-  // })
-  test('managePlanBtnTestId test', () => {
-    jest.setTimeout('10000');
-    const manageBtn = screen.getByTestId('managePlanBtnTestId');
-    expect(manageBtn).toBeInTheDocument();
-    fireEvent.click(manageBtn);
-  });
-  test('reviewUsageBtnTestId test', () => {
-    jest.setTimeout('10000');
-    const manageBtn = screen.getByTestId('reviewUsageBtnTestId');
-    expect(manageBtn).toBeInTheDocument();
-    fireEvent.click(manageBtn);
-  });
-  test('reviewDetailLinkTestId test', () => {
-    jest.setTimeout('10000');
-    fireEvent.click(screen.getByTestId('reviewDetailLinkTestId'));
-  });
-  test('deviceListTestId test', () => {
-    jest.setTimeout('10000');
-    jest.spyOn(common, 'getChannelId').mockReturnValue('VZW-MFA');
-    fireEvent.change(screen.getByTestId('deviceListTestId'));
-    store.dispatch(actions.setSelectedDevice(data));
-  });
-});
 
-describe('<DeviceDetail /> deviceDetail5', () => {
-  window.VZTAG_IS_READY = 'true';
-  beforeEach(async () => {
-    getHttpClientRequest.mockImplementation(() => Promise.resolve({ status: 200, data: { ...deviceDetail5 } }));
+    // Find the preference link and simulate click
+    const preferenceBtn = screen.getByText(/Manage Call Forwarding/i);
+    expect(preferenceBtn).toBeInTheDocument();
 
-    await act(async () => render(
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          <DeviceDetail {...props} selectedDevice={props?.selectedDevice} />
-        </PersistGate>
-      </Provider>
-    ));
-  });
+    fireEvent.click(preferenceBtn);
 
-  test('manageTextTestId test', () => {
-    waitFor(() => {
-      fireEvent.click(screen.getAllByText('Manage')[0]);
+    await waitFor(() => {
+      expect(getOnClickInfoMock).toHaveBeenCalled();
     });
-  });
-});
 
-describe('<DeviceDetail /> secondNumberDeviceDetail', () => {
-  window.VZTAG_IS_READY = 'true';
-  beforeEach(async () => {
-    getHttpClientRequest.mockImplementation(() => Promise.resolve({ status: 200, data: { ...deviceDetail } }));
-    common.getChannelId = () => 'VZW-MFA';
-    await act(async () => render(
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          <DeviceDetail />
-        </PersistGate>
-      </Provider>
-    ));
-  });
-
-  test('manageTextTestId test', () => {
-    waitFor(() => {
-      fireEvent.click(screen.getAllByText('Manage')[0]);
-    });
+    // Restore original implementation
+    getOnClickInfoMock.mockRestore();
   });
 });

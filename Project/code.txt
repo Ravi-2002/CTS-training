@@ -1,74 +1,67 @@
 renderPreferenceLink = (singleLink, index) => {
-    let pageContent;
-    let isMvm = common.getChannelId() == 'VZW-MFA';
-    if (this.props.deviceDetailInfoSection && this.props.deviceDetailInfoSection.sections) {
-      pageContent = common.getContentFromSection(this.props.deviceDetailInfoSection, 'devicesLandingMainSection');
-      pageContent = pageContent.sections[0];
-    }
-    let enableSharenameid,enableCallFilter, enableBlocks;
-    if (this.props.deviceDetailInfoSection && this.props.deviceDetailInfoSection.pageAttributes) {
-      enableSharenameid = common.getItemValue(this.props.deviceDetailInfoSection.pageAttributes, 'enableSharenameid');
-      enableCallFilter = common.getItemValue(this.props.deviceDetailInfoSection.pageAttributes,'enableCallFilter')
-      enableBlocks = common.getItemValue(this.props.deviceDetailInfoSection.pageAttributes,'enableBlocks')
-    }
-    let pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
-    let deviceList = (pageContent && pageContent.data) || [];
+    const isMvm = common.getChannelId() === 'VZW-MFA';
+    const { deviceDetailInfoSection } = this.props;
 
-    let selectedDeviceDetail = (deviceList && deviceList.filter((singleDevice) => singleDevice.mtn == this.state.selectedMdn)) || [];
-    let { preferences, shareNameIDBtnThrottle } = selectedDeviceDetail.length && selectedDeviceDetail[0];
-    
-    return preferences[`${singleLink}`] ? (
-      <Col
-        key={`${singleLink}`}
-        colSizes={{
-          mobile: 4,
-          desktop: 6,
-          tablet: 6,
-        }}
-      >
-        <ListGroup topLine={false} bottomLine={true} surface='light' viewport='desktop' key={`${singleLink}`}>
-          <ListGroupItem
-            ariaLabel={`${common.getItemValue(pageItems, `${singleLink}`)}`}
-            actionElement='none'
-            ariaRole='link'
-            onClick={() => {
-              if (singleLink == 'shareNameIDBtn' && shareNameIDBtnThrottle) {
-                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
-                let click_info = this.getOnClickInfo(pageContent, isMvm ? `nsa_${actionKey}_native` : `nsa_${actionKey}`, this.state.selectedMdn);
-                click_info?.onclick();
-              } else if(singleLink == 'shareNameIDBtn' && enableSharenameid === 'true'){
-                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
-                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
-                click_info?.onclick();
-              }else if (singleLink == 'blockSpecificServicesBtn' && enableBlocks === 'true'&&!isMvm) {
-                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
-                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
-                click_info?.onclick();
-              } else if (singleLink == 'blockCallsAndMessagesBtn' && enableBlocks === 'true'&&!isMvm) {
-                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
-                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
-                click_info?.onclick();
-              } else if (singleLink == 'manageCallFilterBtn' && enableCallFilter === 'true'&&!isMvm) {
-                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
-                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
-                click_info?.onclick();
-              }else {
-                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
-                let click_info = this.getOnClickInfo(pageContent, isMvm ? `${actionKey}_native` : actionKey, this.state.selectedMdn);
-                click_info?.onclick();
-              }
-            }}
-          >
-            <ListGroupItemTitle bold={false}>
-              <ListGroupItemTitleContent>
-                <ItemWrapper>
-                  <span>{common.getItemValue(pageItems, `${singleLink}`)}</span>
-                  <span><Icon name='right-arrow' size='medium' /></span>
-                </ItemWrapper>
-                </ListGroupItemTitleContent>
-            </ListGroupItemTitle>
-          </ListGroupItem>
-        </ListGroup>
-      </Col>
-    ) : null;
-  };
+    // Extract content and attributes
+    const pageContent = deviceDetailInfoSection?.sections
+        ? common.getContentFromSection(deviceDetailInfoSection, 'devicesLandingMainSection')?.sections?.[0]
+        : null;
+
+    const pageAttributes = deviceDetailInfoSection?.pageAttributes || {};
+    const enableSharenameid = common.getItemValue(pageAttributes, 'enableSharenameid') === 'true';
+    const enableCallFilter = common.getItemValue(pageAttributes, 'enableCallFilter') === 'true';
+    const enableBlocks = common.getItemValue(pageAttributes, 'enableBlocks') === 'true';
+
+    const pageItems = pageContent?.contents?.[0]?.items;
+    const deviceList = pageContent?.data || [];
+
+    const selectedDeviceDetail = deviceList.find(device => device.mtn === this.state.selectedMdn) || {};
+    const { preferences, shareNameIDBtnThrottle } = selectedDeviceDetail;
+
+    if (!preferences?.[singleLink]) return null; // Guard clause for cleaner code
+
+    // Determine if action is allowed based on link type
+    const isAllowedAction = {
+        shareNameIDBtn: enableSharenameid || shareNameIDBtnThrottle,
+        blockSpecificServicesBtn: enableBlocks && !isMvm,
+        blockCallsAndMessagesBtn: enableBlocks && !isMvm,
+        manageCallFilterBtn: enableCallFilter && !isMvm
+    }[singleLink];
+
+    const handleClick = () => {
+        const actionKey = common.getActionKey(pageItems, singleLink);
+        let clickInfo;
+
+        if (singleLink === 'shareNameIDBtn' && shareNameIDBtnThrottle) {
+            clickInfo = this.getOnClickInfo(pageContent, isMvm ? `nsa_${actionKey}_native` : `nsa_${actionKey}`, this.state.selectedMdn);
+        } else if (isAllowedAction) {
+            clickInfo = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
+        } else {
+            clickInfo = this.getOnClickInfo(pageContent, isMvm ? `${actionKey}_native` : actionKey, this.state.selectedMdn);
+        }
+
+        clickInfo?.onclick();
+    };
+
+    return (
+        <Col key={singleLink} colSizes={{ mobile: 4, desktop: 6, tablet: 6 }}>
+            <ListGroup topLine={false} bottomLine={true} surface="light" viewport="desktop">
+                <ListGroupItem
+                    ariaLabel={common.getItemValue(pageItems, singleLink)}
+                    actionElement="none"
+                    ariaRole="link"
+                    onClick={handleClick}
+                >
+                    <ListGroupItemTitle bold={false}>
+                        <ListGroupItemTitleContent>
+                            <ItemWrapper>
+                                <span>{common.getItemValue(pageItems, singleLink)}</span>
+                                <span><Icon name="right-arrow" size="medium" /></span>
+                            </ItemWrapper>
+                        </ListGroupItemTitleContent>
+                    </ListGroupItemTitle>
+                </ListGroupItem>
+            </ListGroup>
+        </Col>
+    );
+};

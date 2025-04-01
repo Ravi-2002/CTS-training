@@ -1,24 +1,139 @@
-import React, { useEffect, useState } from 'react'; import { connect } from 'react-redux'; import { Redirect } from 'react-router-dom'; import { Body } from '@vds/typography'; import { bindActionCreators } from 'redux'; import { Button, TextLink } from '@vds/buttons'; import { Line } from '@vds/lines'; import { Modal, ModalBody, ModalTitle } from '@vds/modals'; import { Toggle } from '@vds/toggles'; import { Loader } from '@vds/loaders'; import { DropdownSelect } from '@vds/selects'; import { Tooltip } from '@vds/tooltips'; import BlockServices from './blocksServices/BlockServices'; import BlockCallsMessages from './blockCallsMessages'; import Alert from '../../alert'; import * as deviceDetailActions from '../actions'; import AdvancedControls from '../../home/components/AdvanceControls'; import { Col, Grid, Row } from '@vds/grids'; import './blocksServices/style.css';
+import React, { useEffect, useState } from 'react';
+import { connect } from 'react-redux';
+import { Redirect } from 'react-router-dom';
+import { Body } from '@vds/typography';
+import { bindActionCreators } from 'redux';
+import { Button, TextLink } from '@vds/buttons';
+import { Line } from '@vds/lines';
+import { Modal, ModalBody, ModalTitle } from '@vds/modals';
+import { Toggle } from '@vds/toggles';
+import { Loader } from '@vds/loaders';
+import { DropdownSelect } from '@vds/selects';
+import { Tooltip } from '@vds/tooltips';
+import BlockServices from './blocksServices/BlockServices';
+import BlockCallsMessages from './blockCallsMessages';
+import Alert from '../../alert';
+import * as deviceDetailActions from '../actions';
+import AdvancedControls from '../../home/components/AdvanceControls';
+import { Col, Grid, Row } from '@vds/grids';
+import './blocksServices/style.css';
 
-const MDN_ROLE_MESSAGE = "This line isn't registered for a My Verizon Account yet. You'll need this line to complete the online registration in order to access the features within My Verizon."; const MDN_ROLE_NONREG_MESSAGE = "Non Registered";
+const MDN_ROLE_MESSAGE = "This line isn't registered for a My Verizon Account yet. You'll need this line to complete the online registration in order to access the features within My Verizon.";
+const MDN_ROLE_NONREG_MESSAGE = "Non Registered";
 
-const iPhoneModels = [ "iPhone 16/16 Pro/16 Pro Max", "iPhone 15/15 Pro/15 Pro Max", "iPhone 14/14 Pro/14 Pro Max", "iPhone 13/13 Pro/13 Pro Max", "iPhone 12/12 Pro/12 Pro Max", "iPhone 11/11 Pro/11 Pro Max", "iPhone X/XS Max/XR", "iPhone 8/8 Plus", "iPhone 7/7 Plus", "iPhone SE", "iPhone 6/6 Plus/6S/6S Plus", "iPhone 5/5C/5S", "iPhone 4/4S" ];
+const iPhoneModels = [
+  "iPhone 16/16 Pro/16 Pro Max", "iPhone 15/15 Pro/15 Pro Max", "iPhone 14/14 Pro/14 Pro Max", 
+  "iPhone 13/13 Pro/13 Pro Max", "iPhone 12/12 Pro/12 Pro Max", "iPhone 11/11 Pro/11 Pro Max", 
+  "iPhone X/XS Max/XR", "iPhone 8/8 Plus", "iPhone 7/7 Plus", "iPhone SE", 
+  "iPhone 6/6 Plus/6S/6S Plus", "iPhone 5/5C/5S", "iPhone 4/4S"
+];
 
-const DeviceDetail = ({ location, actions, deviceDetails, isFetching }) => { const [state, setState] = useState({ selectedDevice: location?.state?.selectedDevice || {}, devices: location?.state?.devices || [], advanceControls: location?.state?.advanceControls || [], applePopUp: false, isSingleDevice: location?.state?.isSingleDevice || false, selectedAccordian: "" });
+const DeviceDetail = ({ location, actions, deviceDetails, isFetching }) => {
+  const [state, setState] = useState({
+    selectedDevice: location?.state?.selectedDevice || {},
+    devices: location?.state?.devices || [],
+    advanceControls: location?.state?.advanceControls || [],
+    applePopUp: false,
+    isSingleDevice: location?.state?.isSingleDevice || false,
+    selectedAccordian: ""
+  });
 
-useEffect(() => { const selectedMdn = location?.state?.selectedDevice?.encryptedMtn; if (selectedMdn) actions.getDeviceDetail(selectedMdn); }, [actions, location]);
+  useEffect(() => {
+    const selectedMdn = location?.state?.selectedDevice?.encryptedMtn;
+    if (selectedMdn) actions.getDeviceDetail(selectedMdn);
+  }, [actions, location]);
 
-const handleOnChangeDevice = (event) => { const newSelectedDevice = state.devices.find((device) => device.mtn === event.target.value); if (newSelectedDevice) { actions.getDeviceDetail(newSelectedDevice.encryptedMtn); setState((prevState) => ({ ...prevState, selectedDevice: newSelectedDevice, selectedAccordian: "" })); } };
+  const handleOnChangeDevice = (event) => {
+    const newSelectedDevice = state.devices.find((device) => device.mtn === event.target.value);
+    if (newSelectedDevice) {
+      actions.getDeviceDetail(newSelectedDevice.encryptedMtn);
+      setState((prevState) => ({ ...prevState, selectedDevice: newSelectedDevice, selectedAccordian: "" }));
+    }
+  };
 
-if (!state.devices.length) return <Redirect push to={{ pathname: '/' }} />;
+  if (!state.devices.length) return <Redirect push to={{ pathname: '/' }} />;
 
-const deviceOptions = state.devices.filter((rec) => !rec.isFiveGDevice).map((device) => ( <option key={device.mtn} value={device.mtn}>{device.deviceNickname} {device.mtn}</option> ));
+  const deviceOptions = state.devices.filter((rec) => !rec.isFiveGDevice).map((device) => (
+    <option key={device.mtn} value={device.mtn}>{device.deviceNickname} {device.mtn}</option>
+  ));
 
-return ( <div className="oneD"> <Loader show={isFetching} /> <h1>Now, let's manage blocks for this device.</h1> {!state.isSingleDevice && ( <Button use="secondary" onClick={() => (window.location.href = "/digital/nsa/secure/ui/devices/blocks/#/")}>See all devices</Button> )} {!state.isSingleDevice && ( <DropdownSelect onChange={handleOnChangeDevice} defaultValue={state.selectedDevice.mtn}> {deviceOptions} </DropdownSelect> )} <Line /> <Grid rowGutter="10px"> <Row> <Col colSizes={{ desktop: 5 }}> <p className="role">{state.selectedDevice.role}</p> {state.selectedDevice.role === MDN_ROLE_NONREG_MESSAGE && <Tooltip outlined>{MDN_ROLE_MESSAGE}</Tooltip>} <h4>{state.selectedDevice.deviceNickname}</h4> <h4>{state.selectedDevice.displayMtn}</h4> <img src={state.selectedDevice?.images?.mediumImage} alt="Device" /> </Col> <Col colSizes={{ desktop: 7 }}> <BlockCallsMessages selectAccordian={setState} selectedAccordian={state.selectedAccordian} selectedDevice={state.selectedDevice} /> <BlockServices key={state.selectedDevice.mtn} selectAccordian={setState} selectedAccordian={state.selectedAccordian} selectedDevice={state.selectedDevice} /> </Col> </Row> </Grid> <Line /> <Modal toggleButton={<TextLink surface="light">Click here</TextLink>} surface="light"> <ModalTitle>Apple® iPhone® - Turn iMessage on/off</ModalTitle> <ModalBody> <p>Note the steps below apply to the following models:</p> <ul> {iPhoneModels.map((model, index) => ( <li key={index}>{model}</li> ))} </ul> <h5>Steps</h5> <ol> <li>From the Home screen, navigate: Settings Messages.</li> <li> Tap iMessage switch to turn <Toggle disabled={false} showText on /> or <Toggle disabled={false} on={false} showText /> </li> </ol> </ModalBody> </Modal> {state.showAdvanceControls && <AdvancedControls advanceControls={state.advanceControls} />} </div> ); };
+  return (
+    <div className="oneD">
+      <Loader show={isFetching} />
+      <h1>Now, let's manage blocks for this device.</h1>
+      {!state.isSingleDevice && (
+        <Button use="secondary" onClick={() => (window.location.href = "/digital/nsa/secure/ui/devices/blocks/#/")}>See all devices</Button>
+      )}
+      {!state.isSingleDevice && (
+        <DropdownSelect onChange={handleOnChangeDevice} defaultValue={state.selectedDevice.mtn}>
+          {deviceOptions}
+        </DropdownSelect>
+      )}
+      <Line />
+      <Grid rowGutter="10px">
+        <Row>
+          <Col colSizes={{ desktop: 5 }}>
+            <p className="role">{state.selectedDevice.role}</p>
+            {state.selectedDevice.role === MDN_ROLE_NONREG_MESSAGE && <Tooltip outlined>{MDN_ROLE_MESSAGE}</Tooltip>}
+            <h4>{state.selectedDevice.deviceNickname}</h4>
+            <h4>{state.selectedDevice.displayMtn}</h4>
+            <img src={state.selectedDevice?.images?.mediumImage} alt="Device" />
+          </Col>
+          <Col colSizes={{ desktop: 7 }}>
+            <BlockCallsMessages selectAccordian={setState} selectedAccordian={state.selectedAccordian} selectedDevice={state.selectedDevice} />
+            <BlockServices key={state.selectedDevice.mtn} selectAccordian={setState} selectedAccordian={state.selectedAccordian} selectedDevice={state.selectedDevice} />
+          </Col>
+        </Row>
+      </Grid>
+      <Line />
+      <Modal toggleButton={<TextLink surface="light">Click here</TextLink>} surface="light">
+        <ModalTitle>Apple® iPhone® - Turn iMessage on/off</ModalTitle>
+        <ModalBody>
+          <p>Note the steps below apply to the following models:</p>
+          <ul>
+            {iPhoneModels.map((model, index) => (
+              <li key={index}>{model}</li>
+            ))}
+          </ul>
+          <h5>Steps</h5>
+          <ol>
+            <li>From the Home screen, navigate: Settings Messages.</li>
+            <li>
+              Tap iMessage switch to turn
+              <Toggle disabled={false} showText on /> or <Toggle disabled={false} on={false} showText />
+            </li>
+          </ol>
+        </ModalBody>
+      </Modal>
+      {state.showAdvanceControls && <AdvancedControls advanceControls={state.advanceControls} />}
+    </div>
+  );
+};
 
-const mapStateToProps = (store) => ({ isFetching: store.Detail.Details.isFetching, deviceDetails: store.Detail.Details.deviceDetails, });
+const mapStateToProps = (store) => ({
+  isFetching: store.Detail.Details.isFetching,
+  deviceDetails: store.Detail.Details.deviceDetails,
+});
 
-const mapDispatchToProps = (dispatch) => ({ actions: bindActionCreators({ ...deviceDetailActions }, dispatch), });
+const mapDispatchToProps = (dispatch) => ({
+  actions: bindActionCreators({ ...deviceDetailActions }, dispatch),
+});
 
 export default connect(mapStateToProps, mapDispatchToProps)(DeviceDetail);
+
+
+This version includes:
+
+Full modal functionality.
+
+Static iPhone models list.
+
+Device selection dropdown.
+
+API calls via Redux actions.
+
+Proper UI components from Verizon's design system.
+
+
+Let me know if you need any modifications!
 

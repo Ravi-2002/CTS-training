@@ -1,59 +1,39 @@
 componentDidUpdate(prevProps) {
-  const { confirmServices, confirmServiceFlag } = this.props;
+  const { confirmServices, confirmServiceFlag, services } = this.props;
 
+  // Update toggle switch when confirmService is received
   if (
     prevProps.confirmServices !== confirmServices &&
     confirmServiceFlag &&
     confirmServices?.responseInfo?.responseCode === "00"
   ) {
     const updatedServiceCode = confirmServices?.sfoCode;
-    const services = { ...this.state.services };
+    const updatedServiceName = confirmServices?.serviceName;
 
-    Object.keys(services).forEach((key) => {
-      services[key].data.forEach((item) => {
-        if (item.sfoCode === updatedServiceCode) {
-          item.sfoEnabled = item.sfoEnabled === "Y" ? "N" : "Y";
+    if (updatedServiceCode) {
+      const servicesCopy = { ...this.state.services };
+
+      Object.keys(servicesCopy).forEach((key) => {
+        if (Array.isArray(servicesCopy[key]?.data)) {
+          servicesCopy[key].data = servicesCopy[key].data.map((item) => {
+            if (item.sfoCode === updatedServiceCode) {
+              return {
+                ...item,
+                sfoEnabled: item.sfoEnabled === "Y" ? "N" : "Y"
+              };
+            }
+            return item;
+          });
         }
       });
-    });
 
-    this.setState({
-      services,
-      status: true,
-      successMsg: `We have successfully saved settings for "${confirmServices.serviceName}"`
-    });
-  }
-
-  // Existing service update logic (unchanged)
-  if (
-    prevProps.services !== this.props.services &&
-    this.props.services &&
-    Object.keys(this.props.services).length > 0
-  ) {
-    const obj = {};
-    const additionalSer = "Additional Services";
-    let isAdditionalServiceAvailable = false;
-    const emailDomainObj = { [BLOCK_EMAIL_DOMAIN]: { isExpand: false } };
-
-    Object.keys(this.props.services).forEach((key) => {
-      this.props.services[key].forEach((item) => {
-        item.showMore = false;
+      this.setState({
+        services: servicesCopy,
+        status: true,
+        successMsg: `We have successfully saved settings for "${updatedServiceName || updatedServiceCode}"`
       });
-
-      if (key === additionalSer) isAdditionalServiceAvailable = true;
-
-      obj[key] = {
-        isExpand: false,
-        data: this.props.services[key],
-      };
-    });
-
-    const { [additionalSer]: additionalService, ...rest } = obj;
-
-    this.setState({
-      services: isAdditionalServiceAvailable
-        ? { ...emailDomainObj, ...rest, [additionalSer]: additionalService }
-        : { ...emailDomainObj, ...rest },
-    });
+    }
   }
+
+  // Keep your existing service loading logic here unchanged...
 }

@@ -1,17 +1,39 @@
-toggleOn(e, service, i) {
-  e.preventDefault();
-  const { selectedDevice } = this.props;
-  const services = this.state.services;
-  const sfoCode = services[service].data[i].sfoCode;
-  const newsfoEnabled = services[service].data[i].sfoEnabled === "Y" ? "N" : "Y";
+componentDidUpdate(prevProps) {
+  const { confirmServices, confirmServiceFlag } = this.props;
 
-  this.setState({ updatedServiceCode: sfoCode, successMsg: "", status: false });
+  if (
+    confirmServiceFlag &&
+    confirmServices &&
+    confirmServices !== prevProps.confirmServices &&
+    confirmServices.responseInfo?.responseCode === "00"
+  ) {
+    const updatedSfoCode = confirmServices.payload?.sfoCode;
+    const newSfoStatus = confirmServices.payload?.sfoEnabled;
 
-  const payload = {
-    mdn: selectedDevice.encryptedMtn,
-    sfoCode,
-    sfoEnabled: newsfoEnabled,
-  };
+    if (!updatedSfoCode || !newSfoStatus) return;
 
-  this.props.actions.postServices(payload);
+    const updatedServices = { ...this.state.services };
+
+    Object.keys(updatedServices).forEach((key) => {
+      const serviceSection = updatedServices[key];
+
+      if (Array.isArray(serviceSection.data)) {
+        serviceSection.data = serviceSection.data.map((item) => {
+          if (item.sfoCode === updatedSfoCode) {
+            return {
+              ...item,
+              sfoEnabled: newSfoStatus
+            };
+          }
+          return item;
+        });
+      }
+    });
+
+    this.setState({
+      services: updatedServices,
+      successMsg: `We have successfully saved settings.`,
+      status: true
+    });
+  }
 }

@@ -1,17 +1,85 @@
-We toggle on and off based this
+componentDidUpdate(prevProps) {
+  const { confirmServices, confirmServiceFlag, services } = this.props;
 
-if (services[service].data[i].sfoEnabled == "Y") {
-services[service].data[i].sfoEnabled = "N"
-this.setState({
-services,
-updatedService: services[service].data[i].sfoCode
-})
-}
-else if (services[service].data[i].sfoEnabled == "N") {
-services[service].data[i].sfoEnabled = "Y"
-this.setState({
-services,
-updatedService: services[service].data[i].sfoCode
-})
-}
+  // Apply toggle logic only after successful API response
+  if (
+    confirmServiceFlag &&
+    confirmServices &&
+    confirmServices !== prevProps.confirmServices &&
+    confirmServices.responseInfo?.responseCode === "00"
+  ) {
+    const updatedSfoCode = confirmServices.payload?.sfoCode;
 
+    const updatedServices = { ...this.state.services };
+
+    Object.keys(updatedServices).forEach((serviceKey) => {
+      const serviceList = updatedServices[serviceKey]?.data;
+      if (Array.isArray(serviceList)) {
+        serviceList.forEach((item, index) => {
+          if (item.sfoCode === updatedSfoCode) {
+            // Your toggle logic starts here
+            if (item.sfoEnabled === "Y") {
+              updatedServices[serviceKey].data[index].sfoEnabled = "N";
+            } else if (item.sfoEnabled === "N") {
+              updatedServices[serviceKey].data[index].sfoEnabled = "Y";
+            }
+
+            // Update state with success
+            this.setState({
+              services: updatedServices,
+              updatedService: updatedSfoCode,
+              successMsg: `We have successfully saved settings for "${item.serviceName}"`,
+              status: true
+            });
+          }
+        });
+      }
+    });
+  }
+
+  // Error fallback (if needed)
+  if (
+    confirmServiceFlag &&
+    confirmServices &&
+    confirmServices !== prevProps.confirmServices &&
+    confirmServices.responseInfo?.responseCode !== "00"
+  ) {
+    this.setState({
+      successMsg: "Something went wrong. Please try again.",
+      status: false
+    });
+  }
+
+  // Initial loading of services from props
+  if (
+    prevProps.services !== this.props.services &&
+    this.props.services &&
+    Object.keys(this.props.services).length > 0
+  ) {
+    const obj = {};
+    const additionalSer = "Additional Services";
+    let isAdditionalServiceAvailable = false;
+    const emailDomainObj = { [BLOCK_EMAIL_DOMAIN]: { isExpand: false } };
+
+    Object.keys(this.props.services).forEach((key) => {
+      this.props.services[key].forEach((item) => {
+        item.showMore = false;
+      });
+
+      if (key === additionalSer) isAdditionalServiceAvailable = true;
+
+      obj[key] = {
+        isExpand: false,
+        data: this.props.services[key],
+      };
+    });
+
+    const { [additionalSer]: additionalService, ...rest } = obj;
+
+    this.setState({
+      services: isAdditionalServiceAvailable
+        ? { ...emailDomainObj, ...rest, [additionalSer]: additionalService }
+        : { ...emailDomainObj, ...rest },
+    });
+  }
+}

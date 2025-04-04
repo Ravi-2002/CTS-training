@@ -1,39 +1,14 @@
-componentDidUpdate(prevProps) {
-  const { confirmServices, confirmServiceFlag } = this.props;
-
-  if (
-    confirmServiceFlag &&
-    confirmServices &&
-    confirmServices !== prevProps.confirmServices &&
-    confirmServices.responseInfo?.responseCode === "00"
-  ) {
-    const updatedSfoCode = confirmServices.payload?.sfoCode;
-    const newSfoStatus = confirmServices.payload?.sfoEnabled;
-
-    if (!updatedSfoCode || !newSfoStatus) return;
-
-    const updatedServices = { ...this.state.services };
-
-    Object.keys(updatedServices).forEach((key) => {
-      const serviceSection = updatedServices[key];
-
-      if (Array.isArray(serviceSection.data)) {
-        serviceSection.data = serviceSection.data.map((item) => {
-          if (item.sfoCode === updatedSfoCode) {
-            return {
-              ...item,
-              sfoEnabled: newSfoStatus
-            };
+if (services[service].data[i].sfoEnabled == "Y") {
+            services[service].data[i].sfoEnabled = "N"
+            this.setState({
+              services,
+              updatedService: services[service].data[i].sfoCode
+            })
           }
-          return item;
-        });
-      }
-    });
-
-    this.setState({
-      services: updatedServices,
-      successMsg: `We have successfully saved settings.`,
-      status: true
-    });
-  }
-}
+          else if (services[service].data[i].sfoEnabled == "N") {
+            services[service].data[i].sfoEnabled = "Y"
+            this.setState({
+              services,
+              updatedService: services[service].data[i].sfoCode
+            })
+          }

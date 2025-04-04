@@ -1,26 +1,17 @@
-componentDidUpdate(prevProps, prevState) {
-  if (
-    prevProps.confirmServices !== this.props.confirmServices &&
-    this.props.confirmServices?.responseInfo?.responseCode === "00"
-  ) {
-    const updatedServiceCode = this.state.updatedServiceCode;
+toggleOn(e, service, i) {
+  e.preventDefault();
+  const { selectedDevice } = this.props;
+  const services = this.state.services;
+  const sfoCode = services[service].data[i].sfoCode;
+  const newsfoEnabled = services[service].data[i].sfoEnabled === "Y" ? "N" : "Y";
 
-    // Find and toggle it in state
-    const services = { ...this.state.services };
-    Object.keys(services).forEach((key) => {
-      services[key].data = services[key].data.map((item) => {
-        if (item.sfoCode === updatedServiceCode) {
-          item.sfoEnabled = item.sfoEnabled === "Y" ? "N" : "Y";
-        }
-        return item;
-      });
-    });
+  this.setState({ updatedServiceCode: sfoCode, successMsg: "", status: false });
 
-    this.setState({
-      services,
-      successMsg: `We have successfully saved settings.`,
-      status: true,
-      updatedServiceCode: null
-    });
-  }
+  const payload = {
+    mdn: selectedDevice.encryptedMtn,
+    sfoCode,
+    sfoEnabled: newsfoEnabled,
+  };
+
+  this.props.actions.postServices(payload);
 }

@@ -16,8 +16,21 @@ toggleOn(e, service, i) {
     const responseCode = response?.responseInfo?.responseCode;
 
     if (responseCode === "00") {
-      const updatedServices = { ...services };
-      updatedServices[service].data[i].sfoEnabled = newsfoEnabled;
+      // Deep clone the affected service data
+      const updatedServiceData = [...services[service].data];
+      updatedServiceData[i] = {
+        ...updatedServiceData[i],
+        sfoEnabled: newsfoEnabled,
+      };
+
+      // Rebuild the services object with updated data
+      const updatedServices = {
+        ...services,
+        [service]: {
+          ...services[service],
+          data: updatedServiceData,
+        },
+      };
 
       this.setState({
         services: updatedServices,
@@ -26,7 +39,6 @@ toggleOn(e, service, i) {
         status: true
       });
     } else {
-      // Optionally handle error responses here
       this.setState({ status: true });
     }
   });

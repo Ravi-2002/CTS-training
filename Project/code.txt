@@ -1,39 +1,26 @@
-componentDidUpdate(prevProps) {
-  const { confirmServices, confirmServiceFlag, services } = this.props;
-
-  // Update toggle switch when confirmService is received
+componentDidUpdate(prevProps, prevState) {
   if (
-    prevProps.confirmServices !== confirmServices &&
-    confirmServiceFlag &&
-    confirmServices?.responseInfo?.responseCode === "00"
+    prevProps.confirmServices !== this.props.confirmServices &&
+    this.props.confirmServices?.responseInfo?.responseCode === "00"
   ) {
-    const updatedServiceCode = confirmServices?.sfoCode;
-    const updatedServiceName = confirmServices?.serviceName;
+    const updatedServiceCode = this.state.updatedServiceCode;
 
-    if (updatedServiceCode) {
-      const servicesCopy = { ...this.state.services };
-
-      Object.keys(servicesCopy).forEach((key) => {
-        if (Array.isArray(servicesCopy[key]?.data)) {
-          servicesCopy[key].data = servicesCopy[key].data.map((item) => {
-            if (item.sfoCode === updatedServiceCode) {
-              return {
-                ...item,
-                sfoEnabled: item.sfoEnabled === "Y" ? "N" : "Y"
-              };
-            }
-            return item;
-          });
+    // Find and toggle it in state
+    const services = { ...this.state.services };
+    Object.keys(services).forEach((key) => {
+      services[key].data = services[key].data.map((item) => {
+        if (item.sfoCode === updatedServiceCode) {
+          item.sfoEnabled = item.sfoEnabled === "Y" ? "N" : "Y";
         }
+        return item;
       });
+    });
 
-      this.setState({
-        services: servicesCopy,
-        status: true,
-        successMsg: `We have successfully saved settings for "${updatedServiceName || updatedServiceCode}"`
-      });
-    }
+    this.setState({
+      services,
+      successMsg: `We have successfully saved settings.`,
+      status: true,
+      updatedServiceCode: null
+    });
   }
-
-  // Keep your existing service loading logic here unchanged...
 }

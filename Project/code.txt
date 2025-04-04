@@ -1,14 +1,17 @@
+We toggle on and off based this
+
 if (services[service].data[i].sfoEnabled == "Y") {
-            services[service].data[i].sfoEnabled = "N"
-            this.setState({
-              services,
-              updatedService: services[service].data[i].sfoCode
-            })
-          }
-          else if (services[service].data[i].sfoEnabled == "N") {
-            services[service].data[i].sfoEnabled = "Y"
-            this.setState({
-              services,
-              updatedService: services[service].data[i].sfoCode
-            })
-          }
+services[service].data[i].sfoEnabled = "N"
+this.setState({
+services,
+updatedService: services[service].data[i].sfoCode
+})
+}
+else if (services[service].data[i].sfoEnabled == "N") {
+services[service].data[i].sfoEnabled = "Y"
+this.setState({
+services,
+updatedService: services[service].data[i].sfoCode
+})
+}
+

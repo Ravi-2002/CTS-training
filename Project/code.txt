@@ -1,45 +1,59 @@
-toggleOn(e, service, i) {
-  const { selectedDevice } = this.props;
-  const { services } = this.state;
-  e.preventDefault();
+componentDidUpdate(prevProps) {
+  const { confirmServices, confirmServiceFlag } = this.props;
 
-  this.setState({ successMsg: "" });
+  if (
+    prevProps.confirmServices !== confirmServices &&
+    confirmServiceFlag &&
+    confirmServices?.responseInfo?.responseCode === "00"
+  ) {
+    const updatedServiceCode = confirmServices?.sfoCode;
+    const services = { ...this.state.services };
 
-  const newsfoEnabled = services[service].data[i].sfoEnabled === "Y" ? "N" : "Y";
-  const payload = {
-    mdn: selectedDevice.encryptedMtn,
-    sfoCode: services[service].data[i].sfoCode,
-    sfoEnabled: newsfoEnabled,
-  };
-
-  this.props.actions.postServices(payload).then((response) => {
-    const responseCode = response?.responseInfo?.responseCode;
-
-    if (responseCode === "00") {
-      // Deep clone the affected service data
-      const updatedServiceData = [...services[service].data];
-      updatedServiceData[i] = {
-        ...updatedServiceData[i],
-        sfoEnabled: newsfoEnabled,
-      };
-
-      // Rebuild the services object with updated data
-      const updatedServices = {
-        ...services,
-        [service]: {
-          ...services[service],
-          data: updatedServiceData,
-        },
-      };
-
-      this.setState({
-        services: updatedServices,
-        updatedService: services[service].data[i].sfoCode,
-        successMsg: `We have successfully saved settings for "${services[service].data[i].serviceName}"`,
-        status: true
+    Object.keys(services).forEach((key) => {
+      services[key].data.forEach((item) => {
+        if (item.sfoCode === updatedServiceCode) {
+          item.sfoEnabled = item.sfoEnabled === "Y" ? "N" : "Y";
+        }
       });
-    } else {
-      this.setState({ status: true });
-    }
-  });
+    });
+
+    this.setState({
+      services,
+      status: true,
+      successMsg: `We have successfully saved settings for "${confirmServices.serviceName}"`
+    });
+  }
+
+  // Existing service update logic (unchanged)
+  if (
+    prevProps.services !== this.props.services &&
+    this.props.services &&
+    Object.keys(this.props.services).length > 0
+  ) {
+    const obj = {};
+    const additionalSer = "Additional Services";
+    let isAdditionalServiceAvailable = false;
+    const emailDomainObj = { [BLOCK_EMAIL_DOMAIN]: { isExpand: false } };
+
+    Object.keys(this.props.services).forEach((key) => {
+      this.props.services[key].forEach((item) => {
+        item.showMore = false;
+      });
+
+      if (key === additionalSer) isAdditionalServiceAvailable = true;
+
+      obj[key] = {
+        isExpand: false,
+        data: this.props.services[key],
+      };
+    });
+
+    const { [additionalSer]: additionalService, ...rest } = obj;
+
+    this.setState({
+      services: isAdditionalServiceAvailable
+        ? { ...emailDomainObj, ...rest, [additionalSer]: additionalService }
+        : { ...emailDomainObj, ...rest },
+    });
+  }
 }

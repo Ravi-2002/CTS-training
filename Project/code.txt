@@ -3,7 +3,7 @@ import { connect } from 'react-redux'
 import * as actions from '../../actions/fetchServices';
 import { bindActionCreators } from 'redux';
 import styled from "styled-components";
-import { postServices,getServices } from "../../actions/fetchServices";
+
 import './style.css';
 import Alert from '../../../alert';
 import BSEmailDomains from "../blocksEmailDomains/BSEmailDomains";
@@ -35,11 +35,10 @@ class BlockServices extends Component {
 
   handleServices(e, accordion) {
     e.preventDefault();
-    console.log(this.props,'this.props')
     if (accordion === 'BS') {
       window.scrollTo(0,0);
       this.props.selectAccordian('BS')
-      this.props.getServices(this.props.selectedDevice.encryptedMtn)
+      this.props.actions.getServices(this.props.selectedDevice.encryptedMtn)
     }
   };
 
@@ -94,6 +93,7 @@ class BlockServices extends Component {
   toggleOn(e, service, i) {
     const { selectedDevice } = this.props
     const { services } = this.state
+    e.preventDefault();
     this.setState({
 
       successMsg:""
@@ -104,11 +104,11 @@ class BlockServices extends Component {
       "sfoCode": services[service].data[i].sfoCode,
       "sfoEnabled": newsfoEnabled
     }
-    this.props.postServices(payload).then(() => {
+    this.props.actions.postServices(payload).then((response) => {
       // window.scrollTo( 0,elmnt.offsetTop);
-      console.log(this.props,'confirmservices')
+       setTimeout(()=>{
 
-        if (this.props.confirmServices ) {
+        if (this.props.confirmServices && this.props.confirmServices?.responseInfo?.responseCode=="00") {
           if (services[service].data[i].sfoEnabled == "Y") {
             services[service].data[i].sfoEnabled = "N"
             this.setState({
@@ -130,7 +130,8 @@ class BlockServices extends Component {
         }
         this.setState({
           status:true
-        })
+        })        
+      },20000);
     })
   }
   closePupup=(e)=>{
@@ -188,6 +189,7 @@ class BlockServices extends Component {
             </div>
           </div>
           <div data-testid="loader"> <Loader show={isFetching} /></div>
+          
           {<div id="myNotification">
             {showNotice && <div data-track={trackingId}> <Alert Message={Message} Type={Type} closeBanner={true}> </Alert></div>}
           </div>}
@@ -401,7 +403,6 @@ const FAQsSection = styled.div`
 `;
 
 const mapStateToProps = state => {
-  console.log(state,'state')
   return {
     services: state.Detail.serviceCalls.services,
     serviceStatus: state.Detail.serviceCalls.serviceStatus,
@@ -416,6 +417,8 @@ const mapStateToProps = state => {
   }
 }
 
+const mapDispatchToProps = dispatch => ({
+  actions: bindActionCreators(actions, dispatch),
+})
 
-
-export default connect(mapStateToProps, {getServices,postServices})(BlockServices)
+export default connect(mapStateToProps, mapDispatchToProps)(BlockServices)

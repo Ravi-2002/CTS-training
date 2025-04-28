@@ -1,179 +1,266 @@
-import React, { Component } from "react";
-import { connect } from "react-redux";
-import { convertHTML2UTF, mobileNumberFormat } from '../../shared/commonExp';
-//import { TileGroup, Tile } from "vz-odt-modules/Tile";
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { Redirect } from 'react-router-dom';
-import AdvancedControls from "./advancedControls";
-import Loader from "../../../suspendReconnect/shared/Loader/Loader"
-import {
-  Tile,
-  TileBody,
-} from "@vzrf/react-tile";
-import "../../styles.css";
-import { getBlocksDeviceList } from '../actions/fetchBlocksDeviceList';
-import Alert from '../alert/alert';
-import DynamicFAQs from "./DynamicFAQs";
-import ToolTip from "./Tooltip/Tooltip";
-import styled from "styled-components";
-import { MDN_ROLE_MESSAGE,MDN_ROLE_NONREG_MESSAGE } from "./../../../constants";
-import { notifyError } from "../../Tagging/VendorScripts"
+import { TileContainer } from '@vds/tiles';
+import { Title, Body } from '@vds/typography';
+import { Col, Grid, Row } from '@vds/grids';
+import '../../styles.css';
+import { bindActionCreators } from 'redux';
+import styled from 'styled-components';
+import Alert from '../../alert';
+import common from '../../../../shared/utilities/util';
+import DynamicFAQs from './DynamicFAQs';
+import * as deviceLandingActions from '../actions';
+import AdvancedControls from './AdvanceControls';
+import { Tooltip } from '@vds/tooltips';
+import { Line } from '@vds/lines';
+import { Loader } from '@vds/loaders';
+import { notifyError } from '../../../../app/utils/VendorScripts/VendorScripts';
 
 class BlocksPage extends Component {
   constructor(props) {
     super(props);
-    window.scrollTo({ top: 0, behavior: "smooth"});
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     this.state = {
-      selectedDevice: {},
-      pendingOderNotified: false
+      selectedDevice: null,
+      pendingOderNotified: false,
     };
   }
-  componentDidMount() {
 
-    this.props.getBlocksDeviceList().then(() => {
-      vzwDL.page.flowType=this.props.deviceList.isFamilyBase?"family base":"non family base"
-      if(this.props.deviceList.isSingleDevice)
-      this.setState({selectedDevice:this.props.deviceList.devices[0]})
-    })
-    
+  componentDidMount() {
+    this.props.actions.getBlocksDeviceList();
+    console.log(this.props, 'this.props');
+    // vzwDL.page.flowType = this.props.deviceList.isFamilyBase ? 'family base' : 'non family base'
   }
   selectDevice = (event, device) => {
     event.preventDefault();
-    if(this.props.deviceList && !this.props.deviceList.isPendingOrder){
+    if (this.props.deviceList && !this.props.deviceList?.sections?.[0]?.sections[0]?.data?.pendingOrder) {
       this.setState({ selectedDevice: device });
     }
   }
   render() {
-
-    const {isFetching, deviceListError} = this.props;
-
-    if(this.props.deviceList && this.props.deviceList.isPendingOrder){
-      if(!this.state.pendingOderNotified){
+    const { deviceListError, isFetching } = this.props;
+    
+    let pageContent;
+    if (this.props.deviceList && this.props.deviceList?.sections) {
+      pageContent = common.getContentFromSection(this.props.deviceList,'devicesBlocksMainSection');
+      console.log(pageContent,'pageContent')			
+      if(pageContent){
+				pageContent = pageContent?.sections[0];
+			}else {
+			window.location.reload();
+			}
+		}
+     console.log(this.props,'this.props')
+    const pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
+		const pageActions = pageContent && pageContent.actions;
+       if (
+      this.props.deviceList
+      && pageContent?.data?.pendingOrder
+    ) {
+      if (!this.state.pendingOderNotified) {
         notifyError("PENDING-ORDER-DEVICE-LIST", "Block device list Pending order.");
-        this.setState({pendingOderNotified: true});
+        this.setState({ pendingOderNotified: true });
       }
     }
-
-    if(this.props.deviceList.isFiveGRedirect)
-    {
-      {window.location=this.props.deviceList.fiveGRedirectUrl}
-    }
-    else{
-      if (this.state.selectedDevice && this.state.selectedDevice.encryptedMtn) {
+    else {
+      if (this.state.selectedDevice && pageContent?.data?.devices[0]?.encryptedMtn) {
         return (
-          <Redirect push to={{
-            pathname: `/devicedetails/${this.state.selectedDevice.encryptedMtn}`,
-            state: { devices: this.props.deviceList.devices, isSingleDevice:this.props.deviceList.isSingleDevice, selectedDevice: this.state.selectedDevice, advanceControls: this.props.advanceControls, showAdvanceControls:this.props.deviceList.showAdvanceControls }
-          }} />
-        )
-      }
-      console.log(this.props,'props');
-      console.log(this.props.advanceControls,'advance');
-      const tileGroupComp = this.props.deviceList.devices.filter(rec=>!rec.isFiveGDevice).map((tile, index) => {
-        return (
-          <div>
-          <div  className="col-lg-4 col-md-4 col-sm-12 col-xs-12 p-l-r-0">
-           <Tile style={{ "border-color": "#D3D3D3",height:'265px',border:'1px solid #ededed' }} onClick={(event) => this.selectDevice(event, tile)} role={this.props?.deviceList?.isPendingOrder ? '' : 'link'} tabIndex={this.props.deviceList.isPendingOrder ? '-1' : '0'} aria-disabled={this.props.deviceList.isPendingOrder} 
-          data-track={tile.mtn} onKeyPress={(event) => this.selectDevice(event, tile)} className="VZTILES" aria-label={`${tile.deviceNickname} ${mobileNumberFormat(tile.mtn)} ${this.props.deviceList.isPendingOrder ? 'disabled': ''}`}>
-            
-              <TileBody style={{ "width": "100%" }}>
-                <div className="row" style={{ "height": "215px" }}>
-                  <div className="col-lg-8 col-md-8 col-sm-8 col-xs-8 p-l-r-0">
-                  <p className="role blocksTitle">{tile.role}{tile.role==MDN_ROLE_NONREG_MESSAGE ?<div className="deviceListTooltipWrp" style={{ "z-index": "-1" }}>
-                       <ToolTipPTP>
-                       <ToolTip outlined={true} style={{ marginLeft:"0.5rem" }}>
-                       <ToolTipText>{MDN_ROLE_MESSAGE}</ToolTipText>
-                     </ToolTip>
-                      </ToolTipPTP>
-                    </div>:""
-                    }
-                    </p>
-                    <h3 aria-label={`${(this.props.deviceList.isPendingOrder)? 'disabled': ''} ${tile.deviceNickname} ${mobileNumberFormat(tile.mtn)}`}>{tile.deviceNickname}<br></br>{mobileNumberFormat(tile.mtn)}</h3>
-                    <br aria-hidden="true"></br>
-                    <p> {convertHTML2UTF(tile.deviceMake)} - {convertHTML2UTF(tile.deviceModel)}</p>
-                    </div>
-                    <div className="col-lg-4 p-l-r-0"  aria-hidden="true">
-                    <img className="img-fluid" src={tile.deviceImage} alt="" />
-                  </div>
-                </div>
-              </TileBody>
-            </Tile>
-          </div>
-          </div>
+          <Redirect
+            push
+            to={{
+              pathname: `/devicedetails/${this.state.selectedDevice.encryptedMtn}`,
+              state: {
+                devices: pageContent?.data?.devices,
+                isSingleDevice:
+                  pageContent?.data?.isSingleDevice,
+                selectedDevice: this.state.selectedDevice,
+                advanceControls:
+                  this.props.deviceList?.sections[0]?.sections[1]?.data,
+                showAdvanceControls:
+                  pageContent?.data?.showAdvanceControls,
+              },
+            }}
+          />
         );
-      });
+      }
+      const tileGroupComp = this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.devices
+        ?.filter((rec) => !rec.isFiveGDevice)
+        .map((tile, index) => (
+          <Col colSizes={{ mobile: 1, desktop: 3, tablet: 2 }} width="100px">
+            <TileContainer
+              key={`${index}`}
+              id="tileContainer"
+              backgroundImage="none"
+              aspectRatio="5:1"
+              height="220px"
+              width="400px"
+              showBorder
+              onClick={(event) => this.selectDevice(event, tile)}
+              onKeyPress={(event) => this.selectDevice(event, tile)}
+              // role={
+              //   this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder ? '' : 'link'
+              // }
+              // aria-label={`${tile.deviceNickname}  ${this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder
+              //   ? 'disabled'
+              //   : ''
+              //   }`}
+              // tabIndex={
+              //   this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder ? '-1' : '0'
+              // }
+              // aria-disabled={this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder}
+              data-track={tile.mtn}
+            >
+              <Col className="col col-title">
+                <div>
+                  <Body>{tile.role}</Body>
+                  <Title size="medium" bold color="#000000">
+                    {tile.deviceNickname}
+                    <br />
+                    {tile.displayMtn}
+                    <br />
+                  </Title>
+
+                  <Body primitive="p">
+                    {' '}
+                    {tile.deviceMake}
+                    {' '}
+                    -
+                    {' '}
+                    {tile.deviceModel}
+                  </Body>
+                </div>
+              </Col>
+              <Col className="col-image">
+                <div aria-hidden="true">
+                  <img src={tile.images.mediumImage} alt="" />
+                </div>
+              </Col>
+              {tile.role == common.getItemValue(pageItems,'mdnRoleNonRegMsg') ? <div >
+                <Tooltip outlined={true} style={{ marginLeft: "0.5rem" }}>
+                  {common.getItemValue(pageItems,'mdnRoleMsg')}
+                </Tooltip>
+              </div> : ""
+              }
+            </TileContainer>
+          </Col>
+        ));
+
       return (
         <div className="oneD">
-        <div> <Loader show={isFetching} /></div>
-          {this.props.deviceCallFail &&
+          <div>
+            <Loader active={isFetching} fullscreen={true} />
+          </div>
+          {this.props.deviceCallFail && (
             <div className="mb-32">
-              <br /> <Alert Message={this.props.deviceListError && deviceListError.errorMessage ? deviceListError.errorMessage : "Something went wrong, Please try again later!"} Type={3} closeBanner={false}></Alert>
-            </div>}
-  
-          {this.props.deviceCallSuccess &&
-            <React.Fragment>
-              <div className="oneD row">
-                <div className="col-lg-12">
-                  <h1 className="mt-40">Blocks</h1>
-                </div>
+              <br />
+              {' '}
+              <Alert
+                Message={
+                  this.props.deviceListError && deviceListError.errorMessage
+                    ? deviceListError.errorMessage
+                    : 'Something went wrong, Please try again later!'
+                }
+                Type={3}
+                closeBanner={false}
+              />
+            </div>
+          )}
+          {/* {this.props.deviceCallSuccess && ( */}
+          <React.Fragment>
+          <Title size="2XLarge" bold primitive="h1">{common.getItemValue(pageItems,'headerText')}</Title>
+            <Grid
+              padding="0"
+              >
+              <Row>
+                <Col colSizes={{ desktop: 5, mobile: 4 }} padding="0" id="blocktext"><Body size="medium" >{common.getItemValue(pageItems,'subHeaderText')}</Body>
+                </Col>
+              </Row>
+            </Grid>
+            
+            {/* <div className=" row">
+              <div className="col-lg-12">
+                {this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder && (
+                  <Alert
+                    Message={common.getItemValue(pageItems,'pendingOrderMsg')}
+                    URL={common.getItemValue(pageItems,'pendingOrderBtn')}
+                    Label={" "}
+                    Type={3}
+                    closeBanner={false}
+                  />
+                )}
+                <Title size="medium" bold>{common.getItemValue(pageItems,'devicesHeader')}</Title>
+                <br />
+                <Body>{common.getItemValue(pageItems,"selectDeviceText")}</Body>
+                <br />
               </div>
-          <div className="oneD row">
-            <div className="col-lg-4">
-              <p>Temporarily block calls and messages, use of services, and certain types of purchases with this free My Verizon service.</p>
+            </div> */}
+            <div
+              // className={
+              //   this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder
+              //     ? 'radio-choose--disabled'
+              //     : ''
+              // }
+              // aria-disabled={this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder}
+            >
+              <Row Id="deviceListTiles">
+                {/* <AccessElement
+                  id="enabled"
+                  className="accessibility"
+                  aria-hidden={
+                    !this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder
+                      ? 'true'
+                      : 'false'
+                  }
+                >
+                 <Body>{common.getItemValue(pageItems,"deviceDisabledText")}</Body>
+                </AccessElement> */}
+
+                {tileGroupComp}
+              </Row>
               <br />
             </div>
-          </div>
-          <div className="oneD row">
-            <div className="col-lg-12">
-            {this.props.deviceList.isPendingOrder&&    <Alert Message={this.props.deviceList.pendingOrderMsg} URL={this.props.deviceList.goToPendingUrl} Label={this.props.deviceList.goToPendingOrder} Type={3} closeBanner={false}></Alert>}
-               <h2>Devices</h2>
-               {/* <h2>{getLabelByCode('1')}</h2> */}
-               <br />
-               <p>Please select a device.</p><br/>
-            </div>
-          </div>
-          <div className={this.props.deviceList.isPendingOrder ?"radio-choose--disabled":""} aria-disabled={this.props.deviceList.isPendingOrder}>
-          <div className="oneD row"  Id= "deviceListTiles">
-            <AccessElement id="enabled" className="accessibility" aria-hidden={!this.props.deviceList.isPendingOrder ? 'true' : 'false'}>Devices disabled</AccessElement>
-            {tileGroupComp}
-          </div><br />
-          </div>
-          <br />
-          {this.props.deviceList.showAdvanceControls && 
-          <div>
-          <hr></hr>
-          <br />
-          <AdvancedControls advanceControls={this.props.advanceControls}/>
-          <DynamicFAQs />
-          </div>
-          }
-          </React.Fragment>}
+            <br />
+            {this.props.advanceControls
+              && (
+                <div>
+                  <Line />
+                  <div className="One">
+                    <br></br>
+                    <AdvancedControls advanceControls={this.props.deviceList?.sections?.[0]?.sections?.[1]?.data} />
+                    <br />
+                    <DynamicFAQs />
+                  </div>
+                </div>
+              )}
+          </React.Fragment>
+          
         </div>
       );
     }
-
-    }
-
-    
-}
-
-const mapStateToProps = state => {
-  return {
-    isFetching: state.blocksDeviceList.isFetching,
-    deviceList: state.blocksDeviceList.deviceList,
-    deviceListError:state.blocksDeviceList.deviceListError,
-    advanceControls: state.blocksDeviceList.advanceControls,
-    deviceCallFail: state.blocksDeviceList.deviceCallFail,
-    deviceCallSuccess: state.blocksDeviceList.deviceCallSuccess
   }
 }
+
+const mapStateToProps = (state) => ({
+  isFetching: state.Home.isFetching,
+  deviceList: state.Home.deviceList,
+  deviceListError: state.Home.deviceListError,
+  advanceControls: state.Home.advanceControls,
+  deviceListFlag: state.Home.deviceListFlag,
+});
+
+const mapDispatchToProps = (dispatch) => ({
+  actions: bindActionCreators({ ...deviceLandingActions }, dispatch),
+});
+
 const ToolTipPTP = styled.div`
   padding-left: 0.5rem;
 `;
 const ToolTipWrapper = styled.div`
-display: flex;
-top: 2% !important;
-position: absolute;
-left: 48%;
+  display: flex;
+  top: 2% !important;
+  position: absolute;
+  left: 48%;
 `;
 const ToolTipText = styled.div`
   font-family: NHaasGroteskDSStd-55Rg;
@@ -187,10 +274,4 @@ const AccessElement = styled.span`
   visibilty: hidden;
 `;
 
-
-export default connect(
-  mapStateToProps,
-  {
-    getBlocksDeviceList
-  }
-)(BlocksPage);
+export default connect(mapStateToProps, mapDispatchToProps)(BlocksPage);

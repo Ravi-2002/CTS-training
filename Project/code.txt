@@ -1,142 +1,90 @@
-export const GET_SERVICES_BEGIN = "services/GET_SERVICES_BEGIN";
-export const GET_SERVICES_SUCCESS = "services/GET_SERVICES_SUCCESS";
-export const GET_SERVICES_FAIL = "services/GET_SERVICES_FAIL";
+import {
+  GET_SERVICES_BEGIN,
+  GET_SERVICES_SUCCESS,
+  GET_SERVICES_FAIL,
+  POST_SERVICES_BEGIN,
+  POST_SERVICES_SUCCESS,
+  POST_SERVICES_FAIL,
+} from '../actions'
 
-export const POST_SERVICES_BEGIN = "confirmServices/POST_SERVICES_BEGIN";
-export const POST_SERVICES_SUCCESS = "confirmServices/POST_SERVICES_SUCCESS";
-export const POST_SERVICES_FAIL = "confirmServices/POST_SERVICES_FAIL";
+const initialState = {
+  isFetching: false,
+  services:{},
+  confirmServices:{},
+  servicesError:{},
+  serviceErrorFlag: false,
+  confirmServiceFlag: false,
+  failServices: {},
+  getServices : false,
+  failServices : false
+}
 
-//export const API_EMAILS_DOMAINS_URL = reactGlobals.editBlockEmailDomains;
+const servicesReducer = (state = initialState, action) => {
+  // console.log("Email in Reducer",action.emailDomains)
+  //  console.log("Blcoked Emails in Reducer",action.blockedSites)
+  console.log(action,'action')
+  const { type } = action
+  // console.log("TYPE", type)
 
-export const getServices = (encryptedMtn) => async dispatch => {
-    dispatch(getServicesBegin())
-    const onSuccess = (resp) => {
-      if (
-        resp &&
-        resp.data &&
-        resp.data.responseInfo &&
-        resp.data.responseInfo.responseCode == "00"
-      ) {
-        dispatch(getServicesSuccess(resp.data));
-      } else {
-        dispatch(getServicesFail(resp.data));
-      }
-    };
-  
-    const onError = error => {
-      // below code is for redirecting to unauthorised screen for member account
-      
-        dispatch(getServicesFail(error));
-      
-    };
-  
-    const callMS = () => {
-      let axConfig = {
-        headers: {
-          flowName:'Blocks',
-          contentType: 'application/json',
-          // pageName: 'dsrDeviceLanding',
-          // flowName: 'Device',
-        },
-      }
-      return getHttpClientRequest(apiUrl().blockServiceV2+'?mdn='+encryptedMtn, axConfig)}
-    callMS()
-      .then(msResp => {
-        console.log(msResp, 'msResp')
-        if (msResp && msResp.status == 200) {
-          onSuccess(msResp);
-        }
-      })
-      .catch(onError);
-      }
-  export const getServicesBegin = () => ({
-    type: GET_SERVICES_BEGIN
-  })
-  
-  export const getServicesSuccess = (response) => (
-    {
-    type: GET_SERVICES_SUCCESS,
-    services: response.body.sections[0].sections[0].data.serviceDetailsMap,
-    serviceStatus: response
-    
-  })
-  export const getServicesFail = (response) => ({
-    type: GET_SERVICES_FAIL,
-    failServices: response.body
-  })
-  export const postServices = (payload) => async dispatch => {
-    dispatch(postServicesBegin())
-    const onSuccess = (resp) => {
-      
-      if (
-        resp &&
-        resp.data &&
-        resp.data.responseInfo &&
-        resp.data.responseInfo.responseCode == "00"
-      ) {
-          dispatch(postServicesSuccess(resp.data));
-      } else {
-        dispatch(postServicesFail(resp.data.libErrorInfo));
-      }
-    };
-  
-    const onError = error => {
-      // below code is for redirecting to unauthorised screen for member account
-      let msResp = error && error.response && error.response.data;
-      let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-      let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-      if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-        window.location.href = apiUrl().mvoLimitedAccessUrl;
-      }
-      else {
-        dispatch(postServicesFail(error));
-      }
-    };
-  
-    const callMS = () => {
-      let axConfig = {
-        headers: {
-          flowName:'Blocks',
-          contentType: 'application/json',
-          // pageName: 'dsrDeviceLanding',
-          // flowName: 'Device',
-        },
-      }
-      if (apiUrl().updateService?.indexOf('ApiData') > -1) {
-        return getHttpClientRequest(
-          apiUrl().updateService,
-          axConfig
-        ) 
-      } 
-      else {
-        return postHttpClientRequest(
-          apiUrl().updateService,
-          payload,
-          axConfig
-        );}
-    }
-  
-    callMS()
-      .then(msResp => {
-        if (msResp && (msResp.status == 200 )) {
-          onSuccess(msResp);
-        }
-      })
-      .catch(onError);
+  console.log(type,'type')
+  switch (type) {
+      case GET_SERVICES_BEGIN:
+          return {
+              ...state,
+              isFetching: true,
+              confirmServices: {},
+              failServices: {},
+              serviceErrorFlag: false,
+              confirmServiceFlag: false,
+              getServices : false,
+              serviceFail : false
+          }
+
+      case GET_SERVICES_SUCCESS:   
+          return {
+              ...state,
+              services : action.services,
+              serviceStatus : action.serviceStatus,
+              getServices : true,
+              isFetching: false
+          }
+          
+      case GET_SERVICES_FAIL: 
+          return {
+              ...state,
+              isFetching: false,
+              serviceFail: true,
+              failServices: action.failServices
+          }
+
+          case POST_SERVICES_BEGIN:
+          return {
+              ...state,
+              isFetching: true,
+              confirmServices: {},
+              serviceErrorFlag: false,
+              confirmServiceFlag: false
+          }
+
+          case POST_SERVICES_SUCCESS:   
+          return {
+              ...state,
+              confirmServices : action.confirmServices,
+              isFetching: false,
+              confirmServiceFlag: true
+          }
+
+          case POST_SERVICES_FAIL:
+          return {
+              ...state,
+              isFetching: false,
+              servicesError: action.servicesError,
+              serviceErrorFlag: true
+          }
+
+      default:
+          return state
   }
+}
 
-  export const postServicesBegin = () => ({
-    type: POST_SERVICES_BEGIN
-  })
-  
-  export const postServicesSuccess = (response) => (
-    {
-    type: POST_SERVICES_SUCCESS,
-    confirmServices: response,
-    
-  })
-  export const postServicesFail = (response) => (
-    {
-    type: POST_SERVICES_FAIL,
-    servicesError: response
-  })
+export default servicesReducer

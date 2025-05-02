@@ -1,54 +1,142 @@
-import React, { useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchBlockServices, toggleBlockService } from "../redux/blockServicesSlice"; // adjust the import path as needed
-import "bootstrap/dist/css/bootstrap.min.css";
+export const GET_SERVICES_BEGIN = "services/GET_SERVICES_BEGIN";
+export const GET_SERVICES_SUCCESS = "services/GET_SERVICES_SUCCESS";
+export const GET_SERVICES_FAIL = "services/GET_SERVICES_FAIL";
 
-const BlockServices = () => {
-  const dispatch = useDispatch();
-  const services = useSelector((state) => state.blockServices.services);
-  const loading = useSelector((state) => state.blockServices.loading);
-  const error = useSelector((state) => state.blockServices.error);
+export const POST_SERVICES_BEGIN = "confirmServices/POST_SERVICES_BEGIN";
+export const POST_SERVICES_SUCCESS = "confirmServices/POST_SERVICES_SUCCESS";
+export const POST_SERVICES_FAIL = "confirmServices/POST_SERVICES_FAIL";
 
-  useEffect(() => {
-    dispatch(fetchBlockServices());
-  }, [dispatch]);
+//export const API_EMAILS_DOMAINS_URL = reactGlobals.editBlockEmailDomains;
 
-  const handleToggle = (serviceName) => {
-    dispatch(toggleBlockService(serviceName));
-  };
+export const getServices = (encryptedMtn) => async dispatch => {
+    dispatch(getServicesBegin())
+    const onSuccess = (resp) => {
+      if (
+        resp &&
+        resp.data &&
+        resp.data.responseInfo &&
+        resp.data.responseInfo.responseCode == "00"
+      ) {
+        dispatch(getServicesSuccess(resp.data));
+      } else {
+        dispatch(getServicesFail(resp.data));
+      }
+    };
+  
+    const onError = error => {
+      // below code is for redirecting to unauthorised screen for member account
+      
+        dispatch(getServicesFail(error));
+      
+    };
+  
+    const callMS = () => {
+      let axConfig = {
+        headers: {
+          flowName:'Blocks',
+          contentType: 'application/json',
+          // pageName: 'dsrDeviceLanding',
+          // flowName: 'Device',
+        },
+      }
+      return getHttpClientRequest(apiUrl().blockServiceV2+'?mdn='+encryptedMtn, axConfig)}
+    callMS()
+      .then(msResp => {
+        console.log(msResp, 'msResp')
+        if (msResp && msResp.status == 200) {
+          onSuccess(msResp);
+        }
+      })
+      .catch(onError);
+      }
+  export const getServicesBegin = () => ({
+    type: GET_SERVICES_BEGIN
+  })
+  
+  export const getServicesSuccess = (response) => (
+    {
+    type: GET_SERVICES_SUCCESS,
+    services: response.body.sections[0].sections[0].data.serviceDetailsMap,
+    serviceStatus: response
+    
+  })
+  export const getServicesFail = (response) => ({
+    type: GET_SERVICES_FAIL,
+    failServices: response.body
+  })
+  export const postServices = (payload) => async dispatch => {
+    dispatch(postServicesBegin())
+    const onSuccess = (resp) => {
+      
+      if (
+        resp &&
+        resp.data &&
+        resp.data.responseInfo &&
+        resp.data.responseInfo.responseCode == "00"
+      ) {
+          dispatch(postServicesSuccess(resp.data));
+      } else {
+        dispatch(postServicesFail(resp.data.libErrorInfo));
+      }
+    };
+  
+    const onError = error => {
+      // below code is for redirecting to unauthorised screen for member account
+      let msResp = error && error.response && error.response.data;
+      let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
+      let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
+      if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
+        window.location.href = apiUrl().mvoLimitedAccessUrl;
+      }
+      else {
+        dispatch(postServicesFail(error));
+      }
+    };
+  
+    const callMS = () => {
+      let axConfig = {
+        headers: {
+          flowName:'Blocks',
+          contentType: 'application/json',
+          // pageName: 'dsrDeviceLanding',
+          // flowName: 'Device',
+        },
+      }
+      if (apiUrl().updateService?.indexOf('ApiData') > -1) {
+        return getHttpClientRequest(
+          apiUrl().updateService,
+          axConfig
+        ) 
+      } 
+      else {
+        return postHttpClientRequest(
+          apiUrl().updateService,
+          payload,
+          axConfig
+        );}
+    }
+  
+    callMS()
+      .then(msResp => {
+        if (msResp && (msResp.status == 200 )) {
+          onSuccess(msResp);
+        }
+      })
+      .catch(onError);
+  }
 
-  if (loading) return <p className="text-center mt-4">Loading...</p>;
-  if (error) return <p className="text-center text-danger mt-4">{error}</p>;
-
-  return (
-    <div className="container mt-4">
-      <h1 className="h4 mb-1">Be in charge of who does what on your account.</h1>
-      <p className="text-muted mb-4">732.609.9414</p>
-
-      {services.map(({ serviceName, shortDescription, sfoEnabled }) => (
-        <div key={serviceName} className="d-flex justify-content-between align-items-center border-bottom py-3">
-          <div>
-            <p className="mb-1 fw-medium">{serviceName}</p>
-            <small className="text-muted">{shortDescription}</small>
-          </div>
-          <div className="form-check form-switch">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              role="switch"
-              id={serviceName}
-              checked={sfoEnabled === true}
-              onChange={() => handleToggle(serviceName)}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-export default BlockServices;
-
-
-The BlockServices component is now integrated with Redux. It fetches the block services data from the backend and toggles each service using Redux actions. Let me know if you want to include API call statuses or save changes to the backend.
-
+  export const postServicesBegin = () => ({
+    type: POST_SERVICES_BEGIN
+  })
+  
+  export const postServicesSuccess = (response) => (
+    {
+    type: POST_SERVICES_SUCCESS,
+    confirmServices: response,
+    
+  })
+  export const postServicesFail = (response) => (
+    {
+    type: POST_SERVICES_FAIL,
+    servicesError: response
+  })

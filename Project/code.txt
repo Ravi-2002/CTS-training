@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Switch } from "@headlessui/react";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const BlockServices = () => {
   const [settings, setSettings] = useState({
@@ -25,24 +25,25 @@ const BlockServices = () => {
   ];
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-1">Be in charge of who does what on your account.</h1>
-      <p className="mb-6 text-gray-500">732.609.9414</p>
+    <div className="container mt-4">
+      <h1 className="h4 mb-1">Be in charge of who does what on your account.</h1>
+      <p className="text-muted mb-4">732.609.9414</p>
       {options.map(({ key, label }) => (
-        <div key={key} className="flex items-center justify-between border-b py-4">
+        <div key={key} className="d-flex justify-content-between align-items-center border-bottom py-3">
           <div>
-            <p className="font-medium">{label}</p>
-            <a href="#" className="text-sm text-blue-600 underline">Tell Me More</a>
+            <p className="mb-1 fw-medium">{label}</p>
+            <a href="#" className="text-primary small">Tell Me More</a>
           </div>
-          <Switch
-            checked={settings[key]}
-            onChange={() => toggleSetting(key)}
-            className={`${settings[key] ? 'bg-green-500' : 'bg-black'} relative inline-flex h-6 w-11 items-center rounded-full`}
-          >
-            <span
-              className={`${settings[key] ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition`}
+          <div className="form-check form-switch">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              role="switch"
+              id={key}
+              checked={settings[key]}
+              onChange={() => toggleSetting(key)}
             />
-          </Switch>
+          </div>
         </div>
       ))}
     </div>
@@ -50,3 +51,7 @@ const BlockServices = () => {
 };
 
 export default BlockServices;
+
+
+The component now uses only Bootstrap for styling, including Bootstrap's switch toggles. Let me know if you want it responsive or need to integrate it with backend logic.
+

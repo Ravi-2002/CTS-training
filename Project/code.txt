@@ -1,90 +1,95 @@
-import {
-  GET_SERVICES_BEGIN,
-  GET_SERVICES_SUCCESS,
-  GET_SERVICES_FAIL,
-  POST_SERVICES_BEGIN,
-  POST_SERVICES_SUCCESS,
-  POST_SERVICES_FAIL,
-} from '../actions'
+import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { getServices, postServices } from "../redux/blockServicesActions"; // adjust path if necessary
+import "bootstrap/dist/css/bootstrap.min.css";
 
-const initialState = {
-  isFetching: false,
-  services:{},
-  confirmServices:{},
-  servicesError:{},
-  serviceErrorFlag: false,
-  confirmServiceFlag: false,
-  failServices: {},
-  getServices : false,
-  failServices : false
-}
+const BlockServices = ({ encryptedMtn }) => {
+  const dispatch = useDispatch();
 
-const servicesReducer = (state = initialState, action) => {
-  // console.log("Email in Reducer",action.emailDomains)
-  //  console.log("Blcoked Emails in Reducer",action.blockedSites)
-  console.log(action,'action')
-  const { type } = action
-  // console.log("TYPE", type)
+  const serviceDetailsMap = useSelector((state) => state.blockServices.services);
+  const loading = useSelector((state) => state.blockServices.isFetching);
+  const loadError = useSelector((state) => state.blockServices.serviceFail);
+  const postSuccess = useSelector((state) => state.blockServices.confirmServiceFlag);
+  const postError = useSelector((state) => state.blockServices.serviceErrorFlag);
 
-  console.log(type,'type')
-  switch (type) {
-      case GET_SERVICES_BEGIN:
-          return {
-              ...state,
-              isFetching: true,
-              confirmServices: {},
-              failServices: {},
-              serviceErrorFlag: false,
-              confirmServiceFlag: false,
-              getServices : false,
-              serviceFail : false
-          }
+  const [formState, setFormState] = useState({});
 
-      case GET_SERVICES_SUCCESS:   
-          return {
-              ...state,
-              services : action.services,
-              serviceStatus : action.serviceStatus,
-              getServices : true,
-              isFetching: false
-          }
-          
-      case GET_SERVICES_FAIL: 
-          return {
-              ...state,
-              isFetching: false,
-              serviceFail: true,
-              failServices: action.failServices
-          }
+  useEffect(() => {
+    dispatch(getServices(encryptedMtn));
+  }, [dispatch, encryptedMtn]);
 
-          case POST_SERVICES_BEGIN:
-          return {
-              ...state,
-              isFetching: true,
-              confirmServices: {},
-              serviceErrorFlag: false,
-              confirmServiceFlag: false
-          }
+  useEffect(() => {
+    const updatedState = {};
+    for (const category in serviceDetailsMap) {
+      serviceDetailsMap[category].forEach((service) => {
+        updatedState[service.serviceName] = service.sfoEnabled === true;
+      });
+    }
+    setFormState(updatedState);
+  }, [serviceDetailsMap]);
 
-          case POST_SERVICES_SUCCESS:   
-          return {
-              ...state,
-              confirmServices : action.confirmServices,
-              isFetching: false,
-              confirmServiceFlag: true
-          }
+  const handleToggle = (serviceName) => {
+    setFormState((prev) => ({
+      ...prev,
+      [serviceName]: !prev[serviceName],
+    }));
+  };
 
-          case POST_SERVICES_FAIL:
-          return {
-              ...state,
-              isFetching: false,
-              servicesError: action.servicesError,
-              serviceErrorFlag: true
-          }
+  const handleSubmit = () => {
+    const payload = Object.entries(formState).map(([serviceName, enabled]) => ({
+      serviceName,
+      enabled,
+    }));
+    dispatch(postServices(payload));
+  };
 
-      default:
-          return state
-  }
-}
+  if (loading) return <p className="text-center mt-4">Loading...</p>;
+  if (loadError) return <p className="text-center text-danger mt-4">Failed to fetch services.</p>;
 
-export default servicesReducer
+  return (
+    <div className="container mt-4">
+      <h1 className="h4 mb-1">Be in charge of who does what on your account.</h1>
+      <p className="text-muted mb-4">732.609.9414</p>
+
+      {postSuccess && <div className="alert alert-success">Services updated successfully!</div>}
+      {postError && <div className="alert alert-danger">Failed to update services. Please try again.</div>}
+
+      {Object.entries(serviceDetailsMap).map(([category, services]) => (
+        <div key={category} className="mb-4">
+          <h5 className="text-primary mb-3">{category}</h5>
+          {services.map(({ serviceName, shortDescription }) => (
+            <div
+              key={serviceName}
+              className="d-flex justify-content-between align-items-center border-bottom py-3"
+            >
+              <div>
+                <p className="mb-1 fw-medium">{serviceName}</p>
+                <small className="text-muted">{shortDescription}</small>
+              </div>
+              <div className="form-check form-switch">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id={serviceName}
+                  checked={formState[serviceName] || false}
+                  onChange={() => handleToggle(serviceName)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      <button className="btn btn-primary w-100 mt-3" onClick={handleSubmit}>
+        Save Changes
+      </button>
+    </div>
+  );
+};
+
+export default BlockServices;
+
+
+Here's the full updated BlockServices component file, fully integrated with Redux actions and state, and using Bootstrap for styling. It handles loading, errors, and post success messaging. Let me know if you need a connected container or routing setup next.
+

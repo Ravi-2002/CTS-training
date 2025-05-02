@@ -1,277 +1,52 @@
-import React, { Component } from 'react';
-import { connect } from 'react-redux';
-import { Redirect } from 'react-router-dom';
-import { TileContainer } from '@vds/tiles';
-import { Title, Body } from '@vds/typography';
-import { Col, Grid, Row } from '@vds/grids';
-import '../../styles.css';
-import { bindActionCreators } from 'redux';
-import styled from 'styled-components';
-import Alert from '../../alert';
-import common from '../../../../shared/utilities/util';
-import DynamicFAQs from './DynamicFAQs';
-import * as deviceLandingActions from '../actions';
-import AdvancedControls from './AdvanceControls';
-import { Tooltip } from '@vds/tooltips';
-import { Line } from '@vds/lines';
-import { Loader } from '@vds/loaders';
-import { notifyError } from '../../../../app/utils/VendorScripts/VendorScripts';
+import React, { useState } from "react";
+import { Switch } from "@headlessui/react";
 
-class BlocksPage extends Component {
-  constructor(props) {
-    super(props);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    this.state = {
-      selectedDevice: null,
-      pendingOderNotified: false,
-    };
-  }
+const BlockServices = () => {
+  const [settings, setSettings] = useState({
+    videoDownloads: false,
+    pictureMessaging: false,
+    callerID: false,
+    appDownloads: true,
+    allMessaging: false,
+    purchasesGifting: false,
+  });
 
-  componentDidMount() {
-    this.props.actions.getBlocksDeviceList();
-    console.log(this.props, 'this.props');
-    // vzwDL.page.flowType = this.props.deviceList.isFamilyBase ? 'family base' : 'non family base'
-  }
-  selectDevice = (event, device) => {
-    event.preventDefault();
-    if (this.props.deviceList && !this.props.deviceList?.sections?.[0]?.sections[0]?.data?.pendingOrder) {
-      this.setState({ selectedDevice: device });
-    }
-  }
-  render() {
-    const { deviceListError, isFetching } = this.props;
-    
-    let pageContent;
-    if (this.props.deviceList && this.props.deviceList?.sections) {
-      pageContent = common.getContentFromSection(this.props.deviceList,'devicesBlocksMainSection');
-      console.log(pageContent,'pageContent')			
-      if(pageContent){
-				pageContent = pageContent?.sections[0];
-			}else {
-			window.location.reload();
-			}
-		}
-     console.log(this.props,'this.props')
-    const pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
-		const pageActions = pageContent && pageContent.actions;
-       if (
-      this.props.deviceList
-      && pageContent?.data?.pendingOrder
-    ) {
-      if (!this.state.pendingOderNotified) {
-        notifyError("PENDING-ORDER-DEVICE-LIST", "Block device list Pending order.");
-        this.setState({ pendingOderNotified: true });
-      }
-    }
-    else {
-      if (this.state.selectedDevice && pageContent?.data?.devices[0]?.encryptedMtn) {
-        return (
-          <Redirect
-            push
-            to={{
-              pathname: `/devicedetails/${this.state.selectedDevice.encryptedMtn}`,
-              state: {
-                devices: pageContent?.data?.devices,
-                isSingleDevice:
-                  pageContent?.data?.isSingleDevice,
-                selectedDevice: this.state.selectedDevice,
-                advanceControls:
-                  this.props.deviceList?.sections[0]?.sections[1]?.data,
-                showAdvanceControls:
-                  pageContent?.data?.showAdvanceControls,
-              },
-            }}
-          />
-        );
-      }
-      const tileGroupComp = this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.devices
-        ?.filter((rec) => !rec.isFiveGDevice)
-        .map((tile, index) => (
-          <Col colSizes={{ mobile: 1, desktop: 3, tablet: 2 }} width="100px">
-            <TileContainer
-              key={`${index}`}
-              id="tileContainer"
-              backgroundImage="none"
-              aspectRatio="5:1"
-              height="220px"
-              width="400px"
-              showBorder
-              onClick={(event) => this.selectDevice(event, tile)}
-              onKeyPress={(event) => this.selectDevice(event, tile)}
-              // role={
-              //   this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder ? '' : 'link'
-              // }
-              // aria-label={`${tile.deviceNickname}  ${this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder
-              //   ? 'disabled'
-              //   : ''
-              //   }`}
-              // tabIndex={
-              //   this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder ? '-1' : '0'
-              // }
-              // aria-disabled={this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder}
-              data-track={tile.mtn}
-            >
-              <Col className="col col-title">
-                <div>
-                  <Body>{tile.role}</Body>
-                  <Title size="medium" bold color="#000000">
-                    {tile.deviceNickname}
-                    <br />
-                    {tile.displayMtn}
-                    <br />
-                  </Title>
+  const toggleSetting = (key) => {
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
-                  <Body primitive="p">
-                    {' '}
-                    {tile.deviceMake}
-                    {' '}
-                    -
-                    {' '}
-                    {tile.deviceModel}
-                  </Body>
-                </div>
-              </Col>
-              <Col className="col-image">
-                <div aria-hidden="true">
-                  <img src={tile.images.mediumImage} alt="" />
-                </div>
-              </Col>
-              {tile.role == common.getItemValue(pageItems,'mdnRoleNonRegMsg') ? <div >
-                <Tooltip outlined={true} style={{ marginLeft: "0.5rem" }}>
-                  {common.getItemValue(pageItems,'mdnRoleMsg')}
-                </Tooltip>
-              </div> : ""
-              }
-            </TileContainer>
-          </Col>
-        ));
+  const options = [
+    { key: "videoDownloads", label: "Block Video Downloads" },
+    { key: "pictureMessaging", label: "Block Picture & Video Messaging" },
+    { key: "callerID", label: "Caller ID Blocking" },
+    { key: "appDownloads", label: "Block App Downloads" },
+    { key: "allMessaging", label: "Block All Messaging" },
+    { key: "purchasesGifting", label: "Block Purchases and Gifting" },
+  ];
 
-      return (
-        <div className="oneD">
+  return (
+    <div className="p-4 max-w-md mx-auto">
+      <h1 className="text-2xl font-bold mb-1">Be in charge of who does what on your account.</h1>
+      <p className="mb-6 text-gray-500">732.609.9414</p>
+      {options.map(({ key, label }) => (
+        <div key={key} className="flex items-center justify-between border-b py-4">
           <div>
-            <Loader active={isFetching} fullscreen={true} />
+            <p className="font-medium">{label}</p>
+            <a href="#" className="text-sm text-blue-600 underline">Tell Me More</a>
           </div>
-          {this.props.deviceCallFail && (
-            <div className="mb-32">
-              <br />
-              {' '}
-              <Alert
-                Message={
-                  this.props.deviceListError && deviceListError.errorMessage
-                    ? deviceListError.errorMessage
-                    : 'Something went wrong, Please try again later!'
-                }
-                Type={3}
-                closeBanner={false}
-              />
-            </div>
-          )}
-          {/* {this.props.deviceCallSuccess && ( */}
-          <React.Fragment>
-          <Title size="2XLarge" bold primitive="h1">{common.getItemValue(pageItems,'headerText')}</Title>
-            <Grid
-              padding="0"
-              >
-              <Row>
-                <Col colSizes={{ desktop: 5, mobile: 4 }} padding="0" id="blocktext"><Body size="medium" >{common.getItemValue(pageItems,'subHeaderText')}</Body>
-                </Col>
-              </Row>
-            </Grid>
-            
-            {/* <div className=" row">
-              <div className="col-lg-12">
-                {this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder && (
-                  <Alert
-                    Message={common.getItemValue(pageItems,'pendingOrderMsg')}
-                    URL={common.getItemValue(pageItems,'pendingOrderBtn')}
-                    Label={" "}
-                    Type={3}
-                    closeBanner={false}
-                  />
-                )}
-                <Title size="medium" bold>{common.getItemValue(pageItems,'devicesHeader')}</Title>
-                <br />
-                <Body>{common.getItemValue(pageItems,"selectDeviceText")}</Body>
-                <br />
-              </div>
-            </div> */}
-            <div
-              // className={
-              //   this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder
-              //     ? 'radio-choose--disabled'
-              //     : ''
-              // }
-              // aria-disabled={this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder}
-            >
-              <Row Id="deviceListTiles">
-                {/* <AccessElement
-                  id="enabled"
-                  className="accessibility"
-                  aria-hidden={
-                    !this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder
-                      ? 'true'
-                      : 'false'
-                  }
-                >
-                 <Body>{common.getItemValue(pageItems,"deviceDisabledText")}</Body>
-                </AccessElement> */}
-
-                {tileGroupComp}
-              </Row>
-              <br />
-            </div>
-            <br />
-            {this.props.advanceControls
-              && (
-                <div>
-                  <Line />
-                  <div className="One">
-                    <br></br>
-                    <AdvancedControls advanceControls={this.props.deviceList?.sections?.[0]?.sections?.[1]?.data} />
-                    <br />
-                    <DynamicFAQs />
-                  </div>
-                </div>
-              )}
-          </React.Fragment>
-          
+          <Switch
+            checked={settings[key]}
+            onChange={() => toggleSetting(key)}
+            className={`${settings[key] ? 'bg-green-500' : 'bg-black'} relative inline-flex h-6 w-11 items-center rounded-full`}
+          >
+            <span
+              className={`${settings[key] ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition`}
+            />
+          </Switch>
         </div>
-      );
-    }
-  }
-}
+      ))}
+    </div>
+  );
+};
 
-const mapStateToProps = (state) => ({
-  isFetching: state.Home.isFetching,
-  deviceList: state.Home.deviceList,
-  deviceListError: state.Home.deviceListError,
-  advanceControls: state.Home.advanceControls,
-  deviceListFlag: state.Home.deviceListFlag,
-});
-
-const mapDispatchToProps = (dispatch) => ({
-  actions: bindActionCreators({ ...deviceLandingActions }, dispatch),
-});
-
-const ToolTipPTP = styled.div`
-  padding-left: 0.5rem;
-`;
-const ToolTipWrapper = styled.div`
-  display: flex;
-  top: 2% !important;
-  position: absolute;
-  left: 48%;
-`;
-const ToolTipText = styled.div`
-  font-family: NHaasGroteskDSStd-55Rg;
-  font-size: 0.7rem;
-  display: inline-flex;
-`;
-const AccessElement = styled.span`
-  position: absolute;
-  top: -1000px;
-  left: -1000px;
-  visibilty: hidden;
-`;
-
-export default connect(mapStateToProps, mapDispatchToProps)(BlocksPage);
+export default BlockServices;

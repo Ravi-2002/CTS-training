@@ -1,98 +1,22 @@
-import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { getServices, postServices } from "../actions/index";
-import { Link } from "react-router-dom";
+import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-const BlockServices = ({ encryptedMtn }) => {
-  const dispatch = useDispatch();
+const ServiceDetails = () => {
+  const { state } = useLocation();
+  const navigate = useNavigate();
 
-  const serviceDetailsMap = useSelector((state) => state.Home.services);
-  const loading = useSelector((state) => state.Home.isFetching);
-  const loadError = useSelector((state) => state.Home.serviceFail);
-  const postSuccess = useSelector((state) => state.Home.confirmServiceFlag);
-  const postError = useSelector((state) => state.Home.serviceErrorFlag);
-
-  const [formState, setFormState] = useState({});
-
-  useEffect(() => {
-    dispatch(getServices(encryptedMtn));
-  }, [dispatch, encryptedMtn]);
-
-  useEffect(() => {
-    const updatedState = {};
-    for (const category in serviceDetailsMap) {
-      serviceDetailsMap[category].forEach((service) => {
-        updatedState[service.serviceName] = service.sfoEnabled === true;
-      });
-    }
-    setFormState(updatedState);
-  }, [serviceDetailsMap]);
-
-  const handleToggle = (serviceName) => {
-    setFormState((prev) => ({
-      ...prev,
-      [serviceName]: !prev[serviceName],
-    }));
-  };
-
-  const handleSubmit = () => {
-    const payload = Object.entries(formState).map(([serviceName, enabled]) => ({
-      serviceName,
-      enabled,
-    }));
-    dispatch(postServices(payload));
-  };
-
-  if (loading) return <p className="text-center mt-4">Loading...</p>;
-  if (loadError) return <p className="text-center text-danger mt-4">Failed to fetch services.</p>;
+  const longDescription = state?.longDescription || "No description available.";
 
   return (
-    <div className="container mt-4">
-      <h1 className="h4 mb-1">Be in charge of who does what on your account.</h1>
-      <p className="text-muted mb-4">732.609.9414</p>
-
-      {postSuccess && <div className="alert alert-success">Services updated successfully!</div>}
-      {postError && <div className="alert alert-danger">Failed to update services. Please try again.</div>}
-
-      {Object.entries(serviceDetailsMap).map(([category, services]) => (
-        <div key={category}>
-          {services.map(({ serviceName, shortDescription, longDescription }) => (
-            <div
-              key={serviceName}
-              className="d-flex justify-content-between align-items-center border-bottom py-3"
-            >
-              <div>
-                <p className="mb-1 fw-medium">{serviceName}</p>
-                <small className="text-muted">{shortDescription}</small><br />
-                <Link
-                  to={`/service-details/${encodeURIComponent(serviceName)}`}
-                  state={{ longDescription }}
-                  className="text-primary text-decoration-underline"
-                >
-                  Tell me more
-                </Link>
-              </div>
-              <div className="form-check form-switch">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  role="switch"
-                  id={serviceName}
-                  checked={formState[serviceName] || false}
-                  onChange={() => handleToggle(serviceName)}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      ))}
-
-      <button className="btn btn-primary w-100 mt-4" onClick={handleSubmit}>
-        Save Changes
+    <div className="container mt-5">
+      <h4 className="mb-4">Service Description</h4>
+      <p>{longDescription}</p>
+      <button className="btn btn-secondary mt-3" onClick={() => navigate(-1)}>
+        Done
       </button>
     </div>
   );
 };
 
-export default BlockServices;
+export default ServiceDetails;

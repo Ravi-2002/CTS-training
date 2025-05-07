@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { getServices, postServices } from "../redux/blockServicesActions"; // adjust path if necessary
+import { getServices, postServices } from "../actions/index"; // adjust path if necessary
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const BlockServices = ({ encryptedMtn }) => {
   const dispatch = useDispatch();
 
-  const serviceDetailsMap = useSelector((state) => state.blockServices.services);
-  const loading = useSelector((state) => state.blockServices.isFetching);
-  const loadError = useSelector((state) => state.blockServices.serviceFail);
-  const postSuccess = useSelector((state) => state.blockServices.confirmServiceFlag);
-  const postError = useSelector((state) => state.blockServices.serviceErrorFlag);
+  const serviceDetailsMap = useSelector((state) => state.Home.services);
+  const loading = useSelector((state) => state.Home.isFetching);
+  const loadError = useSelector((state) => state.Home.serviceFail);
+  const postSuccess = useSelector((state) => state.Home.confirmServiceFlag);
+  const postError = useSelector((state) => state.Home.serviceErrorFlag);
 
   const [formState, setFormState] = useState({});
 
@@ -55,8 +55,7 @@ const BlockServices = ({ encryptedMtn }) => {
       {postError && <div className="alert alert-danger">Failed to update services. Please try again.</div>}
 
       {Object.entries(serviceDetailsMap).map(([category, services]) => (
-        <div key={category} className="mb-4">
-          <h5 className="text-primary mb-3">{category}</h5>
+        <div>
           {services.map(({ serviceName, shortDescription }) => (
             <div
               key={serviceName}
@@ -78,18 +77,14 @@ const BlockServices = ({ encryptedMtn }) => {
               </div>
             </div>
           ))}
-        </div>
+          </div>
       ))}
 
-      <button className="btn btn-primary w-100 mt-3" onClick={handleSubmit}>
-        Save Changes
-      </button>
+      
     </div>
   );
 };
 
 export default BlockServices;
 
-
-Here's the full updated BlockServices component file, fully integrated with Redux actions and state, and using Bootstrap for styling. It handles loading, errors, and post success messaging. Let me know if you need a connected container or routing setup next.
 

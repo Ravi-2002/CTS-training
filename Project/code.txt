@@ -1,22 +1,109 @@
-import React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { getServices, postServices } from "../actions/index";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-const ServiceDetails = () => {
-  const { state } = useLocation();
-  const navigate = useNavigate();
+const BlockServices = ({ encryptedMtn }) => {
+  const dispatch = useDispatch();
 
-  const longDescription = state?.longDescription || "No description available.";
+  const serviceDetailsMap = useSelector((state) => state.Home.services);
+  const loading = useSelector((state) => state.Home.isFetching);
+  const loadError = useSelector((state) => state.Home.serviceFail);
+  const confirmServices = useSelector((state) => state.Home.confirmServices);
+  const postError = useSelector((state) => state.Home.serviceErrorFlag);
+
+  const [formState, setFormState] = useState({});
+  const [lastToggledService, setLastToggledService] = useState(null);
+
+  // Fetch services on mount
+  useEffect(() => {
+    dispatch(getServices(encryptedMtn));
+  }, [dispatch, encryptedMtn]);
+
+  // Initialize form state from fetched services
+  useEffect(() => {
+    const updatedState = {};
+    for (const category in serviceDetailsMap) {
+      serviceDetailsMap[category].forEach((service) => {
+        updatedState[service.serviceName] = service.sfoEnabled === "Y";
+      });
+    }
+    setFormState(updatedState);
+  }, [serviceDetailsMap]);
+
+  // Update toggle UI after successful POST
+  useEffect(() => {
+    if (
+      confirmServices?.responseCode === "00" &&
+      lastToggledService?.serviceName
+    ) {
+      const { serviceName, toggledValue } = lastToggledService;
+      setFormState((prev) => ({
+        ...prev,
+        [serviceName]: toggledValue,
+      }));
+      setLastToggledService(null);
+    }
+  }, [confirmServices]);
+
+  const handleToggle = (serviceName, sfoCode) => {
+    const toggledValue = !formState[serviceName];
+    setLastToggledService({ serviceName, toggledValue });
+
+    const payload = [
+      {
+        encryptedMtn,
+        sfoEnabled: toggledValue ? "Y" : "N",
+        sfoCode,
+      },
+    ];
+
+    dispatch(postServices(payload));
+  };
+
+  if (loading) return <p className="text-center mt-4">Loading...</p>;
+  if (loadError) return <p className="text-center text-danger mt-4">Failed to fetch services.</p>;
 
   return (
-    <div className="container mt-5">
-      <h4 className="mb-4">Service Description</h4>
-      <p>{longDescription}</p>
-      <button className="btn btn-secondary mt-3" onClick={() => navigate(-1)}>
-        Done
-      </button>
+    <div className="container mt-4">
+      <h1 className="h4 mb-1">Be in charge of who does what on your account.</h1>
+      <p className="text-muted mb-4">{encryptedMtn}</p>
+
+      {confirmServices?.responseCode === "00" && (
+        <div className="alert alert-success">Service updated successfully!</div>
+      )}
+      {postError && (
+        <div className="alert alert-danger">Failed to update service. Please try again.</div>
+      )}
+
+      {Object.entries(serviceDetailsMap).map(([category, services]) => (
+        <div key={category} className="mb-4">
+          <h5 className="text-primary mb-3">{category}</h5>
+          {services.map(({ serviceName, shortDescription, sfoCode }) => (
+            <div
+              key={serviceName}
+              className="d-flex justify-content-between align-items-center border-bottom py-3"
+            >
+              <div>
+                <p className="mb-1 fw-medium">{serviceName}</p>
+                <small className="text-muted">{shortDescription}</small>
+              </div>
+              <div className="form-check form-switch">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id={serviceName}
+                  checked={formState[serviceName] || false}
+                  onChange={() => handleToggle(serviceName, sfoCode)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 };
 
-export default ServiceDetails;
+export default BlockServices;

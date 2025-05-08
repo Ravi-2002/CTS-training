@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { getServices, postServices } from "../actions/index";
+import { getServices, postServices } from "../actions";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const BlockServices = ({ encryptedMtn }) => {
@@ -10,17 +10,14 @@ const BlockServices = ({ encryptedMtn }) => {
   const loading = useSelector((state) => state.Home.isFetching);
   const loadError = useSelector((state) => state.Home.serviceFail);
   const confirmServices = useSelector((state) => state.Home.confirmServices);
-  const postError = useSelector((state) => state.Home.serviceErrorFlag);
 
   const [formState, setFormState] = useState({});
-  const [lastToggledService, setLastToggledService] = useState(null);
+  const [pendingToggle, setPendingToggle] = useState(null);
 
-  // Fetch services on mount
   useEffect(() => {
     dispatch(getServices(encryptedMtn));
   }, [dispatch, encryptedMtn]);
 
-  // Initialize form state from fetched services
   useEffect(() => {
     const updatedState = {};
     for (const category in serviceDetailsMap) {
@@ -31,30 +28,29 @@ const BlockServices = ({ encryptedMtn }) => {
     setFormState(updatedState);
   }, [serviceDetailsMap]);
 
-  // Update toggle UI after successful POST
   useEffect(() => {
     if (
       confirmServices?.responseCode === "00" &&
-      lastToggledService?.serviceName
+      pendingToggle?.serviceName
     ) {
-      const { serviceName, toggledValue } = lastToggledService;
+      const { serviceName, currentValue } = pendingToggle;
       setFormState((prev) => ({
         ...prev,
-        [serviceName]: toggledValue,
+        [serviceName]: currentValue === "Y" ? false : true,
       }));
-      setLastToggledService(null);
     }
+    setPendingToggle(null);
   }, [confirmServices]);
 
-  const handleToggle = (serviceName, sfoCode) => {
-    const toggledValue = !formState[serviceName];
-    setLastToggledService({ serviceName, toggledValue });
+  const handleToggle = (serviceName, currentValue, sfoCode) => {
+    const newStatus = currentValue === "Y" ? "N" : "Y";
+    setPendingToggle({ serviceName, currentValue });
 
     const payload = [
       {
         encryptedMtn,
-        sfoEnabled: toggledValue ? "Y" : "N",
-        sfoCode,
+        sfoEnabled: newStatus,
+        sfoCode: sfoCode,
       },
     ];
 
@@ -67,19 +63,12 @@ const BlockServices = ({ encryptedMtn }) => {
   return (
     <div className="container mt-4">
       <h1 className="h4 mb-1">Be in charge of who does what on your account.</h1>
-      <p className="text-muted mb-4">{encryptedMtn}</p>
-
-      {confirmServices?.responseCode === "00" && (
-        <div className="alert alert-success">Service updated successfully!</div>
-      )}
-      {postError && (
-        <div className="alert alert-danger">Failed to update service. Please try again.</div>
-      )}
+      <p className="text-muted mb-4">732.609.9414</p>
 
       {Object.entries(serviceDetailsMap).map(([category, services]) => (
         <div key={category} className="mb-4">
           <h5 className="text-primary mb-3">{category}</h5>
-          {services.map(({ serviceName, shortDescription, sfoCode }) => (
+          {services.map(({ serviceName, shortDescription, sfoEnabled, sfoCode }) => (
             <div
               key={serviceName}
               className="d-flex justify-content-between align-items-center border-bottom py-3"
@@ -95,7 +84,9 @@ const BlockServices = ({ encryptedMtn }) => {
                   role="switch"
                   id={serviceName}
                   checked={formState[serviceName] || false}
-                  onChange={() => handleToggle(serviceName, sfoCode)}
+                  onChange={() =>
+                    handleToggle(serviceName, sfoEnabled, sfoCode)
+                  }
                 />
               </div>
             </div>

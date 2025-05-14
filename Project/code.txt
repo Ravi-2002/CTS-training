@@ -1,501 +1,176 @@
-import axios from 'axios';
-import apiUrl from '../../../../shared/utilities/apiUrl';
-import { getHttpClientRequest, postHttpClientRequest } from '../../../../shared/services/httpClient';
-// import { notifySuccess, notifyError } from "../../../utils/VendorScripts/VendorScripts"
-
-export const GET_CALLS_MESSAGES_BEGIN = "CallsMessages/GET_CALLS_MESSAGES_BEGIN"
-export const GET_CALLS_MESSAGES_SUCCESS =
-  "CallsMessages/GET_CALLS_MESSAGES_SUCCESS"
-export const GET_CALLS_MESSAGES_FAIL = "CallsMessages/GET_CALLS_MESSAGES_FAIL"
- 
-export const POST_BLOCK_AGAIN_BEGIN = "CallsMessages/POST_BLOCK_AGAIN_BEGIN"
-export const POST_BLOCK_AGAIN_SUCCESS = "CallsMessages/POST_BLOCK_AGAIN_SUCCESS"
-export const POST_BLOCK_AGAIN_FAIL = "CallsMessages/POST_BLOCK_AGAIN_FAIL"
-
-export const POST_ADD_CALL_MSG_BEGIN = "CallsMessages/POST_ADD_CALL_MSG_BEGIN"
-export const POST_ADD_CALL_MSG_SUCCESS =
-  "CallsMessages/POST_ADD_CALL_MSG_SUCCESS"
-export const POST_ADD_CALL_MSG_FAIL = "CallsMessages/POST_ADD_CALL_MSG_FAIL"
-
-export const POST_EDIT_CALL_MSG_BEGIN = "CallsMessages/POST_EDIT_CALL_MSG_BEGIN"
-export const POST_EDIT_CALL_MSG_SUCCESS =
-  "CallsMessages/POST_EDIT_CALL_MSG_SUCCESS"
-export const POST_EDIT_CALL_MSG_FAIL = "CallsMessages/POST_EDIT_CALL_MSG_FAIL"
-
-export const POST_DELETE_CALL_MSG_BEGIN =
-  "CallsMessages/POST_DELETE_CALL_MSG_BEGIN"
-export const POST_DELETE_CALL_MSG_SUCCESS =
-  "CallsMessages/POST_DELETE_CALL_MSG_SUCCESS"
-export const POST_DELETE_CALL_MSG_FAIL =
-  "CallsMessages/POST_DELETE_CALL_MSG_FAIL"
-
-
-export const POST_EDIT_ALL_BEGIN = "CallsMessages/POST_EDIT_ALL_BEGIN"
-export const POST_EDIT_ALL_SUCCESS = "CallsMessages/POST_EDIT_ALL_SUCCESS"
-export const POST_EDIT_ALL_FAIL = "CallsMessages/POST_EDIT_ALL_FAIL"
-
-
-export const getCallsMessages = (payload) => async dispatch => {
-
-  dispatch(getCallsMessagesBegin())
-    
-
-    const onSuccess = (resp) => {
-      if (
-        resp &&
-        resp.data &&
-        resp.data.responseInfo &&
-        resp.data.responseInfo.responseCode == "00"
-      ) {
-        dispatch(getCallsMessagesSuccess(resp.data));
-      } else {
-        dispatch(getCallsMessagesError(resp.data));
-      }
-    };
+import {
+    GET_CALLS_MESSAGES_BEGIN,
+    GET_CALLS_MESSAGES_SUCCESS,
+    GET_CALLS_MESSAGES_FAIL,
+    POST_BLOCK_AGAIN_BEGIN,
+    POST_BLOCK_AGAIN_SUCCESS,
+    POST_BLOCK_AGAIN_FAIL,
+    POST_ADD_CALL_MSG_BEGIN,
+    POST_ADD_CALL_MSG_SUCCESS,
+    POST_ADD_CALL_MSG_FAIL,
+    POST_EDIT_CALL_MSG_BEGIN,
+    POST_EDIT_CALL_MSG_SUCCESS,
+    POST_EDIT_CALL_MSG_FAIL,
+    POST_DELETE_CALL_MSG_BEGIN,
+    POST_DELETE_CALL_MSG_SUCCESS,
+    POST_DELETE_CALL_MSG_FAIL,
+    POST_EDIT_ALL_BEGIN,
+    POST_EDIT_ALL_SUCCESS,
+    POST_EDIT_ALL_FAIL,
+  } from "../actions/fetchCallsMessages";
   
-    const onError = error => {
-      // below code is for redirecting to unauthorised screen for member account
-      let msResp = error && error.response && error.response.data;
-      let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-      let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-      if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-        window.location.href = apiUrl().mvoLimitedAccessUrl;
-      }
-      else {
-        dispatch(getCallsMessagesError(error));
-      }
-    };
+  const initialState = {
+    isFetching: false,
+    callsMessages: {},
+    blockedNumbers: [],
+    expiredNumbers: [],
+    blockAgainResponse: {},
+    addBlockCallMsg: {},
+    editBlockCallMsg: {},
+    deleteBlockCallMsg: {},
+    editAllBlockCallMsg: {},
+    getCMError: {}
+  };
   
-    const callMS = () => {
-      let axConfig = {
-        headers: {
-          flowName:'Blocks',
-          contentType: 'application/json',
-          // pageName: 'dsrDeviceLanding',
-          // flowName: 'Device',
-        },
-      }
-      return getHttpClientRequest(apiUrl().callsMessages, axConfig)
-    }
+  const callsMessagesReducer = (state = initialState, action) => {
+    const {
+      type
+    } = action;
+     console.log("TYPE", type)
+    console.log(action,'action')
+    switch (type) {
+      case GET_CALLS_MESSAGES_BEGIN:
+        return {
+          ...state,
+          isFetching: true
+        };
   
-    callMS()
-      .then(msResp => {
-        console.log(msResp, 'msResp')
-        if (msResp && msResp.status == 200) {
-          onSuccess(msResp);
-        }
-      })
-      .catch((error)=>{console.log("error",error)});
-}
-
-
-export const postBlockAgain = (expiredBlockNumber) => async dispatch => {
-
-  dispatch(postBlockAgainBegin())
-  const onSuccess = (resp) => {
-    if (
-      resp &&
-      resp.data &&
-      resp.data.responseInfo &&
-      resp.data.responseInfo.responseCode == "00"
-    ) {
-      
-      dispatch(postBlockAgainSuccess(resp.data));
-    } else {
-      dispatch(postBlockAgainError(resp.data));
+      case GET_CALLS_MESSAGES_SUCCESS:
+        return {
+          ...state,
+          callsMessages: action.payload,
+            blockedNumbers: action.blockedNumbers,
+            expiredNumbers: action.expiredBlockNumbers,
+            isFetching: false
+        };
+  
+      case GET_CALLS_MESSAGES_FAIL:
+        return {
+          ...state,
+          isFetching: false,
+            getCMError: action.payloadGetCMError
+        };
+  
+  
+      case POST_BLOCK_AGAIN_BEGIN:
+        return {
+          ...state,
+          isFetching: true
+        };
+  
+      case POST_BLOCK_AGAIN_SUCCESS:
+        return {
+          ...state,
+          blockAgainResponse: action.payloadBlockAgain,
+            isFetching: false
+        };
+  
+      case POST_BLOCK_AGAIN_FAIL:
+        return {
+          ...state,
+          isFetching: false,
+            blockAgainResponse: action.payloadBlockAgainError
+        };
+  
+  
+      case POST_ADD_CALL_MSG_BEGIN:
+        return {
+          ...state,
+          isFetching: true
+        };
+  
+      case POST_ADD_CALL_MSG_SUCCESS:
+        return {
+          ...state,
+          addBlockCallMsg: action.payloadAddCallMsg,
+            isFetching: false
+        };
+  
+      case POST_ADD_CALL_MSG_FAIL:
+        return {
+          ...state,
+          isFetching: false,
+            addBlockCallMsg: action.payloadAddCallMsgError
+        };
+  
+  
+      case POST_EDIT_CALL_MSG_BEGIN:
+        return {
+          ...state,
+          isFetching: true
+        };
+  
+      case POST_EDIT_CALL_MSG_SUCCESS:
+        return {
+          ...state,
+          editBlockCallMsg: action.payloadEditCallMsg,
+            isFetching: false
+        };
+  
+      case POST_EDIT_CALL_MSG_FAIL:
+        return {
+          ...state,
+          isFetching: false,
+            editBlockCallMsg: action.payloadEditCallMsgError,
+        };
+  
+  
+      case POST_DELETE_CALL_MSG_BEGIN:
+        return {
+          ...state,
+          isFetching: true
+        };
+  
+      case POST_DELETE_CALL_MSG_SUCCESS:
+        return {
+          ...state,
+          deleteBlockCallMsg: action.payloadDeleteCallMsg,
+            isFetching: false
+        };
+  
+      case POST_DELETE_CALL_MSG_FAIL:
+        return {
+          ...state,
+          isFetching: false,
+            deleteBlockCallMsg: action.payloadDeleteCallMsgError
+        };
+  
+  
+      case POST_EDIT_ALL_BEGIN:
+        return {
+          ...state,
+          isFetching: true
+        };
+  
+      case POST_EDIT_ALL_SUCCESS:
+        return {
+          ...state,
+          editAllBlockCallMsg: action.payloadEditAll,
+            isFetching: false
+        };
+  
+      case POST_EDIT_ALL_FAIL:
+        return {
+          ...state,
+          isFetching: false,
+            editAllBlockCallMsg: action.payloadEditAllError
+        };
+  
+  
+      default:
+        return state;
     }
   };
   
-  const onError = error => {
-    // below code is for redirecting to unauthorised screen for member account
-    let msResp = error && error.response && error.response.data;
-    let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-    let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-    if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-      window.location.href = apiUrl().mvoLimitedAccessUrl;
-    }
-    else {
-      dispatch(postBlockAgainError(error));
-    }
-  };
-  
-  const callMS = () => {
-    let axConfig = {
-      headers: {
-        flowName:'Blocks',
-        contentType: 'application/json',
-        
-      },
-    }
-    if (apiUrl().expiredNumbers?.indexOf('ApiData') > -1) {
-      return getHttpClientRequest(
-        apiUrl().expiredNumbers,
-        axConfig
-      ) 
-    } else {
-      
-      return postHttpClientRequest(
-        apiUrl().expiredNumbers,
-        expiredBlockNumber,
-        axConfig
-      );
-    }
-  }
-  
-  callMS()
-    .then(msResp => {
-      if (msResp && msResp.status == 200) {
-        onSuccess(msResp);
-      }
-    })
-    .catch(onError);
-
-}
-
-
-export const postaddBlockCallMsg = (blockNum) => async dispatch => {
-
-  dispatch(postaddBlockCallMsgBegin())
-  const onSuccess = (resp) => {
-    if (
-      resp &&
-      resp.data &&
-      resp.data.responseInfo &&
-      resp.data.responseInfo.responseCode == "00"
-    ) {
-      
-      dispatch(postaddBlockCallMsgSuccess(resp.data));
-    } else {
-      dispatch(postaddBlockCallMsgError(resp.data));
-    }
-  };
-  
-  const onError = error => {
-    // below code is for redirecting to unauthorised screen for member account
-    let msResp = error && error.response && error.response.data;
-    let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-    let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-    if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-      window.location.href = apiUrl().mvoLimitedAccessUrl;
-    }
-    else {
-      dispatch(postaddBlockCallMsgError(error));
-    }
-  };
-  
-  const callMS = () => {
-    let axConfig = {
-      headers: {
-        flowName:'Blocks',
-        contentType: 'application/json',
-        
-      },
-    }
-    if (apiUrl().addNumber?.indexOf('ApiData') > -1) {
-      return getHttpClientRequest(
-        apiUrl().addNumber,
-        axConfig
-      ) 
-    } else {
-      
-      return postHttpClientRequest(
-        apiUrl().addNumber,
-        blockNum,
-        axConfig
-      );
-    }
-  }
-  
-  callMS()
-    .then(msResp => {
-      console.log(msResp, 'msResp')
-      if (msResp && msResp.status == 200) {
-        onSuccess(msResp);
-      }
-    })
-    .catch(onError);
-
-}
-
-
-export const postEditBlockCallMsg = (blockNum) => async dispatch => {
-
-  dispatch(postEditBlockCallMsgBegin())
- const onSuccess = (resp) => {
-  if (
-    resp &&
-    resp.data &&
-    resp.data.responseInfo &&
-    resp.data.responseInfo.responseCode == "00"
-  ) {
-    
-    dispatch(postEditBlockCallMsgSuccess(resp.data));
-  } else {
-    dispatch(postEditBlockCallMsgError(resp.data));
-  }
-};
-
-const onError = error => {
-  // below code is for redirecting to unauthorised screen for member account
-  let msResp = error && error.response && error.response.data;
-  let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-  let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-  if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-    window.location.href = apiUrl().mvoLimitedAccessUrl;
-  }
-  else {
-    dispatch(postEditBlockCallMsgError(error));
-  }
-};
-
-const callMS = () => {
-  let axConfig = {
-    headers: {
-      flowName:'Blocks',
-      contentType: 'application/json',
-      // pageName: 'dsrDeviceLanding',
-      // flowName: 'Device',
-    },
-  }
-  if (apiUrl().editNumber?.indexOf('ApiData') > -1) {
-    return getHttpClientRequest(
-      apiUrl().editNumber,
-      axConfig
-    ) 
-  } else {
-    
-    return postHttpClientRequest(
-      apiUrl().editNumber,
-      blockNum,
-      axConfig
-    );
-  }
-}
-
-callMS()
-  .then(msResp => {
-    console.log(msResp, 'msResp')
-    if (msResp && msResp.status == 200) {
-      onSuccess(msResp);
-    }
-  })
-  .catch(onError);
-        
-}
-
-
-
-export const postDeleteBlockCallMsg = (blockNum) => async dispatch => {
-
-  dispatch(postDeleteBlockCallMsgBegin())
- //const response = await axios.get(reactGlobals.postdeleteBlockCallMsg)
- const onSuccess = (resp) => {
-  if (
-    resp &&
-    resp.data &&
-    resp.data.responseInfo &&
-    resp.data.responseInfo.responseCode == "00"
-  ) {
-    
-    dispatch(postDeleteBlockCallMsgSuccess(resp.data));
-  } else {
-    dispatch(postDeleteBlockCallMsgError(resp.data));
-  }
-};
-
-const onError = error => {
-  // below code is for redirecting to unauthorised screen for member account
-  let msResp = error && error.response && error.response.data;
-  let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-  let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-  if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-    window.location.href = apiUrl().mvoLimitedAccessUrl;
-  }
-  else {
-    dispatch(postDeleteBlockCallMsgError(error));
-  }
-};
-
-const callMS = () => {
-  let axConfig = {
-    headers: {
-      flowName:'Blocks',
-      contentType: 'application/json',
-      // pageName: 'dsrDeviceLanding',
-      // flowName: 'Device',
-    },
-  }
-  if (apiUrl().deleteNumber?.indexOf('ApiData') > -1) {
-    return getHttpClientRequest(
-      apiUrl().deleteNumber,
-      axConfig
-    ) 
-  } else {
-    
-    return postHttpClientRequest(
-      apiUrl().deleteNumber,
-      blockNum,
-      axConfig
-    );
-  }
-}
-
-callMS()
-  .then(msResp => {
-    console.log(msResp, 'msResp')
-    if (msResp && msResp.status == 200) {
-      onSuccess(msResp);
-    }
-  })
-  .catch(onError);
-   
-}
-
-
-export const postEditAll = (blockNums) => async dispatch => {
-
-  dispatch(postEditAllBegin())
- // const response = await axios.get(reactGlobals.postEditAllCallMsg)
- const onSuccess = (resp) => {
-  if (
-    resp &&
-    resp.data &&
-    resp.data.responseInfo &&
-    resp.data.responseInfo.responseCode == "00"
-  ) {
-    
-    dispatch(postEditAllSuccess(resp.data));
-  } else {
-    dispatch(postEditAllError(resp.data));
-  }
-};
-
-const onError = error => {
-  // below code is for redirecting to unauthorised screen for member account
-  let msResp = error && error.response && error.response.data;
-  let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-  let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-  if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-    window.location.href = apiUrl().mvoLimitedAccessUrl;
-  }
-  else {
-    dispatch(postEditAllError(error));
-  }
-};
-
-const callMS = () => {
-  let axConfig = {
-    headers: {
-      flowName:'Blocks',
-      contentType: 'application/json',
-      // pageName: 'dsrDeviceLanding',
-      // flowName: 'Device',
-    },
-  }
-  if (apiUrl().editAllNumbers?.indexOf('ApiData') > -1) {
-    return getHttpClientRequest(
-      apiUrl().editAllNumbers,
-      axConfig
-    ) 
-  } else {
-    
-    return postHttpClientRequest(
-      apiUrl().editAllNumbers,
-      blockNums,
-      axConfig
-    );
-  }
-}
-
-callMS()
-  .then(msResp => {
-    console.log(msResp, 'msResp')
-    if (msResp && msResp.status == 200) {
-      onSuccess(msResp);
-    }
-  })
-  .catch(onError);
-
-}
-
-
-export const getCallsMessagesBegin = () => ({
-  type: GET_CALLS_MESSAGES_BEGIN
-})
-export const getCallsMessagesSuccess = (response) => ({
-  type: GET_CALLS_MESSAGES_SUCCESS,
-  payload: response.body,
-  blockedNumbers: response.body.blockedPhoneNumbers,
-  expiredBlockNumbers: response.body.expiredBlockedPhoneNumbers
-})
-export const getCallsMessagesError = (response) => ({
-  type: GET_CALLS_MESSAGES_FAIL,
-  payloadGetCMError: response.body
-})
-
-
-export const postBlockAgainBegin = () => ({
-  type: POST_BLOCK_AGAIN_BEGIN
-})
-export const postBlockAgainSuccess = (response) => ({
-  type: POST_BLOCK_AGAIN_SUCCESS,
-  payloadBlockAgain: response.body
-})
-export const postBlockAgainError = (response) => ({
-  type: POST_BLOCK_AGAIN_FAIL,
-  payloadBlockAgainError: response.body
-})
-
-
-export const postaddBlockCallMsgBegin = () => ({
-  type: POST_ADD_CALL_MSG_BEGIN
-})
-export const postaddBlockCallMsgSuccess = (response) => ({
-  type: POST_ADD_CALL_MSG_SUCCESS,
-  payloadAddCallMsg: response.body
-})
-export const postaddBlockCallMsgError = (response) => ({
-  type: POST_ADD_CALL_MSG_FAIL,
-  payloadAddCallMsgError: response.body
-})
-
-
-export const postEditBlockCallMsgBegin = () => ({
-  type: POST_EDIT_CALL_MSG_BEGIN
-})
-export const postEditBlockCallMsgSuccess = (response) => ({
-  type: POST_EDIT_CALL_MSG_SUCCESS,
-  payloadEditCallMsg: response.body
-})
-export const postEditBlockCallMsgError = (response) => ({
-  type: POST_EDIT_CALL_MSG_FAIL,
-  payloadEditCallMsgError: response.body
-})
-
-
-export const postDeleteBlockCallMsgBegin = () => ({
-  type: POST_DELETE_CALL_MSG_BEGIN
-})
-export const postDeleteBlockCallMsgSuccess = (response) => ({
-  type: POST_DELETE_CALL_MSG_SUCCESS,
-  payloadDeleteCallMsg: response.body
-})
-export const postDeleteBlockCallMsgError = (response) => ({
-  type: POST_DELETE_CALL_MSG_FAIL,
-  payloadDeleteCallMsgError: response.body
-})
-
-
-export const postEditAllBegin = () => ({
-  type: POST_EDIT_ALL_BEGIN
-})
-export const postEditAllSuccess = (response) => ({
-  type: POST_EDIT_ALL_SUCCESS,
-  payloadEditAll: response.body
-})
-export const postEditAllError = (response) => ({
-  type: POST_EDIT_ALL_FAIL,
-  payloadEditAllError: response.body
-})
-
+  export default callsMessagesReducer;
 

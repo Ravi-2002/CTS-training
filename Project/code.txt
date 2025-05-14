@@ -2,51 +2,59 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { useSelector } from "react-redux";
-import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
 import { Button } from "@vds/buttons";
 import { Title } from "@vds/typography";
 
 const ServiceDetails = () => {
-    const { serviceName } = useParams();
-    const history = useHistory();
-    const serviceDetailsMap = useSelector((state) => state.Home.services);
+  const { serviceName } = useParams();
+  const navigate = useNavigate();
+  const serviceDetailsMap = useSelector((state) => state.Home.services);
 
-    let longDescription = "Description not found.";
-    for (const category in serviceDetailsMap) {
-        const service = serviceDetailsMap[category].find(
-            (svc) => svc.serviceName === serviceName
-        );
-        if (service) {
-            longDescription = service.longDescription || "No additional details available.";
-            break;
-        }
-    }
-
-    return (
-        <ServiceDetail>
-            <Title size='XLarge' bold>{serviceName}</Title>
-            <p dangerouslySetInnerHTML={{ __html: longDescription }}></p>
-            <ButtonWrapper>
-            <Button
-                size="large"
-                surface="light"
-                disabled={false}
-                use="primary"
-                onClick={() => history.goBack()}>
-                Done
-            </Button>;
-            </ButtonWrapper>
-        </ServiceDetail>
+  let longDescription = "Description not found.";
+  for (const category in serviceDetailsMap) {
+    const service = serviceDetailsMap[category].find(
+      (svc) => svc.serviceName === serviceName
     );
+    if (service) {
+      longDescription = service.longDescription || "No additional details available.";
+      break;
+    }
+  }
+
+  return (
+    <PageWrapper>
+      <div>
+        <Title size="XLarge" bold>{serviceName}</Title>
+        <p dangerouslySetInnerHTML={{ __html: longDescription }}></p>
+      </div>
+
+      <ButtonWrapper>
+        <Button
+          size="large"
+          surface="light"
+          use="primary"
+          onClick={() => navigate(-1)}
+        >
+          Done
+        </Button>
+      </ButtonWrapper>
+    </PageWrapper>
+  );
 };
-const ServiceDetail = styled.div`
-padding : 20px;
+
+const PageWrapper = styled.div`
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 `;
+
 const ButtonWrapper = styled.div`
-  align-items:center;
-  justify-content:center;
-  display:flex;
-  min-height:80vh;
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
 `;
 
 export default ServiceDetails;

@@ -1,319 +1,175 @@
-{
-    "responseInfo": {
-        "timeStamp": "26-02-2025 07:31:43",
-        "correlationId": "7f54b5bb-4179-4850-a4ff-57661d227276-47025",
-        "responseCode": "00",
-        "responseMessage": "SUCCESS",
-        "sectionErrors": []
-    },
-    "body": {
-        "statusCode": "00",
-        "errorCode": "SUCCESS",
-        "apiType": "addNumber",
-        "remainingBlockCount": 2,
-        "addedBlockCount": 3,
-        "blockedPhoneNumbers": [
-            {
-                "phoneNumber": "3202820828"
-            },
-            {
-                "phoneNumber": "3202820823"
-            }
-        ],
-        "hasSuccessMsg": true,
-        "hasFailureMsg": false,
-        "successMsg": "the number is blocked",
-        "failureMsg": "",
-        "powerCycle": false,
-        "aemResponse": {
-            "pageAttributes": [
-                {
-                    "itemKey": "pageTitle",
-                    "itemValue": "Devices blocks",
-                    "itemAttributes": {}
-                },
-                {
-                    "itemKey": "hashedAccountNumber",
-                    "itemValue": "##HASHED_ACCTNO##",
-                    "itemType": "text",
-                    "itemAttributes": {}
-                },
-                {
-                    "itemKey": "hashedMdn",
-                    "itemValue": "##HASHED_MDN##",
-                    "itemType": "text",
-                    "itemAttributes": {}
-                }
-            ],
-            "sections": [
-                {
-                    "sectionIndex": "0",
-                    "sectionId": "devicesBlocksMainSection",
-                    "sectionType": "devicesBlocksMainSection",
-                    "sectionComponentId": "GenericComponent",
-                    "sections": [
-                        {
-                            "sectionIndex": "3",
-                            "sectionId": "devicesBlockCallsMsgsPageSection",
-                            "sectionType": "blockCallsMsgsSection",
-                            "actions": [
-                                {
-                                    "actionType": "http",
-                                    "actionValue": "https://www.verizon.com/support/how-to-add-blocks-video/",
-                                    "actionKey": "videoAction",
-                                    "clickStream": "video-add-blocks-cta"
-                                },
-                                {
-                                    "actionType": "http",
-                                    "actionValue": "https://www.verizon.com/support/block-numbers/",
-                                    "actionKey": "faqsAction",
-                                    "clickStream": "video-add-blocks-cta"
-                                }
-                            ],
-                            "contents": [
-                                {
-                                    "contentIndex": "0",
-                                    "items": [
-                                        {
-                                            "itemKey": "title",
-                                            "itemType": "text",
-                                            "itemValue": "Block calls & messages",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "headerText",
-                                            "itemType": "text",
-                                            "itemValue": "Block a new number",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "subHeaderText",
-                                            "itemType": "text",
-                                            "itemValue": "Add up to #BLOCK_COUNT# numbers. Blocks always expire after #EXPIRE_DAYS# days.",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "textfield1Label",
-                                            "itemType": "text",
-                                            "itemValue": "Number",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "textfield1Default",
-                                            "itemType": "text",
-                                            "itemValue": "XXX.XXX.XXXX",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "textfield1Error",
-                                            "itemType": "text",
-                                            "itemValue": "Please enter a valid phone number.",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "textfield2Label",
-                                            "itemType": "text",
-                                            "itemValue": "Memo (Optional. 25 characters max)",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "textfield2Default",
-                                            "itemType": "text",
-                                            "itemValue": "Include any notes here",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "chkboxApplyAllLabel",
-                                            "itemType": "text",
-                                            "itemValue": "Apply block to all eligible lines on this account.",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "saveBtn",
-                                            "itemType": "button",
-                                            "itemValue": "Save",
-                                            "itemAttributes": {},
-                                            "actionKey": "saveAction"
-                                        },
-                                        {
-                                            "itemKey": "editAllLink",
-                                            "itemType": "link",
-                                            "itemValue": "Edit All",
-                                            "itemAttributes": {},
-                                            "actionKey": "editAllAction"
-                                        },
-                                        {
-                                            "itemKey": "editLink",
-                                            "itemType": "link",
-                                            "itemValue": "Edit",
-                                            "itemAttributes": {},
-                                            "actionKey": "editAction"
-                                        },
-                                        {
-                                            "itemKey": "deleteLink",
-                                            "itemType": "link",
-                                            "itemValue": "Delete",
-                                            "itemAttributes": {},
-                                            "actionKey": "deleteAction"
-                                        },
-                                        {
-                                            "itemKey": "blockLink",
-                                            "itemType": "link",
-                                            "itemValue": "Block again",
-                                            "itemAttributes": {},
-                                            "actionKey": "blockAction"
-                                        },
-                                        {
-                                            "itemKey": "saveChangesBtn",
-                                            "itemType": "button",
-                                            "itemValue": "Save changes",
-                                            "itemAttributes": {},
-                                            "actionKey": "saveChangesAction"
-                                        },
-                                        {
-                                            "itemKey": "cancelBtn",
-                                            "itemType": "button",
-                                            "itemValue": "Cancel",
-                                            "itemAttributes": {},
-                                            "actionKey": "cancelAction"
-                                        },
-                                        {
-                                            "itemKey": "currNumbersHeader",
-                                            "itemType": "text",
-                                            "itemValue": "Currently blocked numbers",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "currNumbersExpireLabel",
-                                            "itemType": "text",
-                                            "itemValue": "This block will expire on ",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "prevNumbersHeader",
-                                            "itemType": "text",
-                                            "itemValue": "Previously blocked numbers",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "spamLink",
-                                            "itemType": "link",
-                                            "itemValue": "Report suspected spam text messages",
-                                            "itemAttributes": {},
-                                            "actionKey": "spamAction"
-                                        },
-                                        {
-                                            "itemKey": "spamLinkMsg1",
-                                            "itemType": "text",
-                                            "itemValue": "You may forward the suspected Spam message to SMS short code 7726. Once received, you will receive an SMS requesting a reply with the \"From\" address. The result will be a free text message with a 'Thank you' notification and the investigation will begin. You will not receive any further updates once complete.",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "spamLinkMsg2",
-                                            "itemType": "text",
-                                            "itemValue": "(Note: There are no charges for these messages sent to or received from 7726)",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "contactLink",
-                                            "itemType": "link",
-                                            "itemValue": "What does a blocked contact experience?",
-                                            "itemAttributes": {},
-                                            "actionKey": "contactAction"
-                                        },
-                                        {
-                                            "itemKey": "contactLinkMsg1",
-                                            "itemType": "text",
-                                            "itemValue": "Customers who call your number will hear: Welcome to Verizon Wireless. We're sorry the number you have dialed has calling restrictions that have prevented the completion of your call.",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "contactLinkMsg2",
-                                            "itemType": "text",
-                                            "itemValue": "Customers who text your number will receive the reply: Message Failed.",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "unableToProcessMsg",
-                                            "itemType": "text",
-                                            "itemValue": "Unable to process your request. Please try again later.",
-                                            "itemAttributes": {}
-                                        },
-                                        {
-                                            "itemKey": "videoLink",
-                                            "itemType": "link",
-                                            "itemValue": "Video: How to add blocks",
-                                            "itemAttributes": {},
-                                            "actionKey": "videoAction"
-                                        },
-                                        {
-                                            "itemKey": "faqsLink",
-                                            "itemType": "link",
-                                            "itemValue": "Go to block and unblock calls FAQ's",
-                                            "itemAttributes": {},
-                                            "actionKey": "faqsAction"
-                                        }
-                                    ]
-                                }
-                            ],
-                            "data": {
-                                "remainingBlockCount": "##REMAINING_COUNT##",
-                                "addedBlockCount": "##ADDED_COUNT##",
-                                "blockExpireTimeInDays": "##EXPIRE_DAYS##",
-                                "blockedPhoneNumbers": [
-                                    {
-                                        "phoneNumber": "##BLOCKED_MDN##",
-                                        "oldPhoneNumber": "##BLOCKED_MDN_OLD##",
-                                        "encryptedPhoneNumber": "##BLOCKED_ENCRYPTED_MDN##",
-                                        "memo": "##BLOCKED_MEMO##",
-                                        "expireDate": "##BLOCKED_EXPIRE_DATE##"
-                                    }
-                                ],
-                                "expiredBlockedPhoneNumbers": [
-                                    {
-                                        "phoneNumber": "##EXPIRED_MDN##",
-                                        "oldPhoneNumber": "##EXPIRED_MDN_OLD##",
-                                        "encryptedPhoneNumber": "##EXPIRED_ENCRYPTED_MDN##",
-                                        "memo": "##EXPIRED_MEMO##"
-                                    }
-                                ],
-                                "cq": {
-                                    "callsMsgsExpCol1": "Phone Number",
-                                    "callsMsgsFAQLink1": "Block and unblock calls FAQ",
-                                    "callsMsgsApplyAll": "Apply block to all eligible lines on this account",
-                                    "callsMsgsBlkExpTxt2": "Customers who text your number will receive the reply",
-                                    "callsMsgsBlkExpTxt1": "Customers who call your number will hear",
-                                    "callsMsgsEditAll": "EditAll",
-                                    "callsMsgsVideo": "Video",
-                                    "callsMsgsThCol4": "Expiry Date",
-                                    "callsMsgsThCol3": "Actions",
-                                    "callsMsgsExpHeader": "Expired blocked numbers",
-                                    "callsMsgsSpamNote": "Note",
-                                    "callsMsgsNote": "There are no charges for these messages sent to or received from 7726",
-                                    "callsMsgsThCol2": "Memo",
-                                    "callsMsgsExpCol2": "Memo",
-                                    "callsMsgsThCol1": "Phone Number",
-                                    "callsMsgsExpCol3": "Actions",
-                                    "callsMsgsBlkExpHear": "Welcome to Verizon Wireless. We're sorry the number you have dialed has calling restrictions that have prevented the completion of your call.",
-                                    "callsMsgsSpamTxt": "You may forward the suspected Spam message to SMS short code 7726. Once received, you will receive an SMS requesting a reply with the 'From' address. The result will be a free text message with a 'Thank you' notification and the investigation will begin. You will not receive any further updates once complete.",
-                                    "callsMsgsHeader": "Blocked Numbers",
-                                    "callsMsgsVideoTxt": "How to add blocks",
-                                    "callsMsgsBlkExpHeader": "What does a blocked contact experience?",
-                                    "callsMessageFailed": "Message Failed.",
-                                    "callsMsgsEdit": "Edit",
-                                    "callsMsgsSpamTxtHeader": "Report suspected spam text messages"
-                                },
-                                "Success": "<li>null 5188790075<li>was successfully added."
-                            }
-                        }
-                    ]
-                }
-            ],
-            "usageNewLandingFlag": false,
-            "updateNickNameFlag": false,
-            "assignDeviceFFlag": false,
-            "fwaUpsFlag": false,
-            "deceasedFlag": false
-        }
+import React, { useState, useEffect } from "react";
+import "bootstrap/dist/css/bootstrap.min.css";
+import { Button } from "@vds/buttons";
+import { Link } from "react-router-dom";
+import styled from "styled-components";
+import { Body, Title } from "@vds/typography";
+import { Input } from "@vds/inputs";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getCallsMessages,
+  postaddBlockCallMsg,
+  postDeleteBlockCallMsg,
+} from "../redux/actions/fetchCallsMessages";
+
+const BlockCallsAndMessages = () => {
+  const dispatch = useDispatch();
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [blockedList, setBlockedList] = useState([]);
+
+  const {
+    blockedNumbers,
+    addBlockCallMsg,
+    deleteBlockCallMsg,
+  } = useSelector((state) => state.callsMessagesReducer);
+
+  // Initial fetch
+  useEffect(() => {
+    dispatch(getCallsMessages());
+  }, [dispatch]);
+
+  // Sync blockedList with store initially
+  useEffect(() => {
+    if (blockedNumbers) {
+      setBlockedList(blockedNumbers);
     }
-}
+  }, [blockedNumbers]);
+
+  // Update local list after successful ADD response
+  useEffect(() => {
+    if (
+      addBlockCallMsg?.blockedPhoneNumbers &&
+      Array.isArray(addBlockCallMsg.blockedPhoneNumbers)
+    ) {
+      setBlockedList(addBlockCallMsg.blockedPhoneNumbers);
+    }
+  }, [addBlockCallMsg]);
+
+  // Update local list after successful DELETE response
+  useEffect(() => {
+    if (
+      deleteBlockCallMsg?.blockedPhoneNumbers &&
+      Array.isArray(deleteBlockCallMsg.blockedPhoneNumbers)
+    ) {
+      setBlockedList(deleteBlockCallMsg.blockedPhoneNumbers);
+    }
+  }, [deleteBlockCallMsg]);
+
+  const handleAddNumber = () => {
+    if (phoneNumber.trim() && blockedList.length < 5) {
+      const payload = {
+        phoneNumber: phoneNumber.trim(),
+        reason: "Blocked manually",
+      };
+      dispatch(postaddBlockCallMsg(payload));
+      setPhoneNumber("");
+    }
+  };
+
+  const handleRemoveNumber = (number) => {
+    dispatch(postDeleteBlockCallMsg({ phoneNumber: number }));
+  };
+
+  return (
+    <div className="container mt-4">
+      <Title size="large" bold>
+        Block calls and messages from up to 5 numbers.
+      </Title>
+      <p className="text-muted mb-4">732.609.9414</p>
+
+      {blockedList.length === 0 ? (
+        <>
+          <div className="mb-3">
+            <Body>Enter phone number</Body>
+            <Input
+              type="text"
+              className="form-control"
+              id="phoneInput"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              maxLength={10}
+            />
+          </div>
+          <ButtonWrapper>
+            <Button
+              disabled={!phoneNumber.trim()}
+              onClick={handleAddNumber}
+            >
+              Block number
+            </Button>
+          </ButtonWrapper>
+        </>
+      ) : (
+        <>
+          <TextWrapper>
+            <Body>
+              You are blocking {blockedList.length} of 5 numbers.
+            </Body>
+          </TextWrapper>
+
+          {blockedList.length < 5 && (
+            <>
+              <div className="mb-3">
+                <Input
+                  type="text"
+                  className="form-control"
+                  placeholder="Enter phone number"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  maxLength={10}
+                />
+              </div>
+              <ButtonWrapper>
+                <Button
+                  onClick={handleAddNumber}
+                  disabled={!phoneNumber.trim()}
+                >
+                  Add a number
+                </Button>
+              </ButtonWrapper>
+            </>
+          )}
+
+          <ul className="list-group mb-3">
+            {blockedList.map((item, index) => (
+              <li
+                key={index}
+                className="list-group-item d-flex justify-content-between align-items-center"
+              >
+                {item.phoneNumber}
+                <button
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => handleRemoveNumber(item.phoneNumber)}
+                >
+                  &times;
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <p className="mt-4 text-muted">
+        There is no charge to block.{" "}
+        <Link
+          to={`/viewlimitation`}
+          className="text-primary text-decoration-underline"
+        >
+          View Limitations
+        </Link>
+      </p>
+    </div>
+  );
+};
+
+const ButtonWrapper = styled.div`
+  align-items: center;
+  justify-content: center;
+  display: flex;
+`;
+
+const TextWrapper = styled.div`
+  margin-bottom: 16px;
+`;
+
+export default BlockCallsAndMessages;

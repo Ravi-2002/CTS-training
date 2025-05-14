@@ -1,175 +1,52 @@
-import React, { useState, useEffect } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import { Button } from "@vds/buttons";
-import { Link } from "react-router-dom";
+import React from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { Body, Title } from "@vds/typography";
-import { Input } from "@vds/inputs";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  getCallsMessages,
-  postaddBlockCallMsg,
-  postDeleteBlockCallMsg,
-} from "../redux/actions/fetchCallsMessages";
+import { useSelector } from "react-redux";
+import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
+import { Button } from "@vds/buttons";
+import { Title } from "@vds/typography";
 
-const BlockCallsAndMessages = () => {
-  const dispatch = useDispatch();
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [blockedList, setBlockedList] = useState([]);
+const ServiceDetails = () => {
+    const { serviceName } = useParams();
+    const history = useHistory();
+    const serviceDetailsMap = useSelector((state) => state.Home.services);
 
-  const {
-    blockedNumbers,
-    addBlockCallMsg,
-    deleteBlockCallMsg,
-  } = useSelector((state) => state.callsMessagesReducer);
-
-  // Initial fetch
-  useEffect(() => {
-    dispatch(getCallsMessages());
-  }, [dispatch]);
-
-  // Sync blockedList with store initially
-  useEffect(() => {
-    if (blockedNumbers) {
-      setBlockedList(blockedNumbers);
+    let longDescription = "Description not found.";
+    for (const category in serviceDetailsMap) {
+        const service = serviceDetailsMap[category].find(
+            (svc) => svc.serviceName === serviceName
+        );
+        if (service) {
+            longDescription = service.longDescription || "No additional details available.";
+            break;
+        }
     }
-  }, [blockedNumbers]);
 
-  // Update local list after successful ADD response
-  useEffect(() => {
-    if (
-      addBlockCallMsg?.blockedPhoneNumbers &&
-      Array.isArray(addBlockCallMsg.blockedPhoneNumbers)
-    ) {
-      setBlockedList(addBlockCallMsg.blockedPhoneNumbers);
-    }
-  }, [addBlockCallMsg]);
-
-  // Update local list after successful DELETE response
-  useEffect(() => {
-    if (
-      deleteBlockCallMsg?.blockedPhoneNumbers &&
-      Array.isArray(deleteBlockCallMsg.blockedPhoneNumbers)
-    ) {
-      setBlockedList(deleteBlockCallMsg.blockedPhoneNumbers);
-    }
-  }, [deleteBlockCallMsg]);
-
-  const handleAddNumber = () => {
-    if (phoneNumber.trim() && blockedList.length < 5) {
-      const payload = {
-        phoneNumber: phoneNumber.trim(),
-        reason: "Blocked manually",
-      };
-      dispatch(postaddBlockCallMsg(payload));
-      setPhoneNumber("");
-    }
-  };
-
-  const handleRemoveNumber = (number) => {
-    dispatch(postDeleteBlockCallMsg({ phoneNumber: number }));
-  };
-
-  return (
-    <div className="container mt-4">
-      <Title size="large" bold>
-        Block calls and messages from up to 5 numbers.
-      </Title>
-      <p className="text-muted mb-4">732.609.9414</p>
-
-      {blockedList.length === 0 ? (
-        <>
-          <div className="mb-3">
-            <Body>Enter phone number</Body>
-            <Input
-              type="text"
-              className="form-control"
-              id="phoneInput"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              maxLength={10}
-            />
-          </div>
-          <ButtonWrapper>
+    return (
+        <ServiceDetail>
+            <Title size='XLarge' bold>{serviceName}</Title>
+            <p dangerouslySetInnerHTML={{ __html: longDescription }}></p>
+            <ButtonWrapper>
             <Button
-              disabled={!phoneNumber.trim()}
-              onClick={handleAddNumber}
-            >
-              Block number
-            </Button>
-          </ButtonWrapper>
-        </>
-      ) : (
-        <>
-          <TextWrapper>
-            <Body>
-              You are blocking {blockedList.length} of 5 numbers.
-            </Body>
-          </TextWrapper>
-
-          {blockedList.length < 5 && (
-            <>
-              <div className="mb-3">
-                <Input
-                  type="text"
-                  className="form-control"
-                  placeholder="Enter phone number"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  maxLength={10}
-                />
-              </div>
-              <ButtonWrapper>
-                <Button
-                  onClick={handleAddNumber}
-                  disabled={!phoneNumber.trim()}
-                >
-                  Add a number
-                </Button>
-              </ButtonWrapper>
-            </>
-          )}
-
-          <ul className="list-group mb-3">
-            {blockedList.map((item, index) => (
-              <li
-                key={index}
-                className="list-group-item d-flex justify-content-between align-items-center"
-              >
-                {item.phoneNumber}
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={() => handleRemoveNumber(item.phoneNumber)}
-                >
-                  &times;
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      <p className="mt-4 text-muted">
-        There is no charge to block.{" "}
-        <Link
-          to={`/viewlimitation`}
-          className="text-primary text-decoration-underline"
-        >
-          View Limitations
-        </Link>
-      </p>
-    </div>
-  );
+                size="large"
+                surface="light"
+                disabled={false}
+                use="primary"
+                onClick={() => history.goBack()}>
+                Done
+            </Button>;
+            </ButtonWrapper>
+        </ServiceDetail>
+    );
 };
-
+const ServiceDetail = styled.div`
+padding : 20px;
+`;
 const ButtonWrapper = styled.div`
-  align-items: center;
-  justify-content: center;
-  display: flex;
+  align-items:center;
+  justify-content:center;
+  display:flex;
+  min-height:80vh;
 `;
 
-const TextWrapper = styled.div`
-  margin-bottom: 16px;
-`;
-
-export default BlockCallsAndMessages;
+export default ServiceDetails;

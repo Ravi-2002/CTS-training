@@ -1,176 +1,119 @@
-import {
-    GET_CALLS_MESSAGES_BEGIN,
-    GET_CALLS_MESSAGES_SUCCESS,
-    GET_CALLS_MESSAGES_FAIL,
-    POST_BLOCK_AGAIN_BEGIN,
-    POST_BLOCK_AGAIN_SUCCESS,
-    POST_BLOCK_AGAIN_FAIL,
-    POST_ADD_CALL_MSG_BEGIN,
-    POST_ADD_CALL_MSG_SUCCESS,
-    POST_ADD_CALL_MSG_FAIL,
-    POST_EDIT_CALL_MSG_BEGIN,
-    POST_EDIT_CALL_MSG_SUCCESS,
-    POST_EDIT_CALL_MSG_FAIL,
-    POST_DELETE_CALL_MSG_BEGIN,
-    POST_DELETE_CALL_MSG_SUCCESS,
-    POST_DELETE_CALL_MSG_FAIL,
-    POST_EDIT_ALL_BEGIN,
-    POST_EDIT_ALL_SUCCESS,
-    POST_EDIT_ALL_FAIL,
-  } from "../actions/fetchCallsMessages";
-  
-  const initialState = {
-    isFetching: false,
-    callsMessages: {},
-    blockedNumbers: [],
-    expiredNumbers: [],
-    blockAgainResponse: {},
-    addBlockCallMsg: {},
-    editBlockCallMsg: {},
-    deleteBlockCallMsg: {},
-    editAllBlockCallMsg: {},
-    getCMError: {}
-  };
-  
-  const callsMessagesReducer = (state = initialState, action) => {
-    const {
-      type
-    } = action;
-     console.log("TYPE", type)
-    console.log(action,'action')
-    switch (type) {
-      case GET_CALLS_MESSAGES_BEGIN:
-        return {
-          ...state,
-          isFetching: true
-        };
-  
-      case GET_CALLS_MESSAGES_SUCCESS:
-        return {
-          ...state,
-          callsMessages: action.payload,
-            blockedNumbers: action.blockedNumbers,
-            expiredNumbers: action.expiredBlockNumbers,
-            isFetching: false
-        };
-  
-      case GET_CALLS_MESSAGES_FAIL:
-        return {
-          ...state,
-          isFetching: false,
-            getCMError: action.payloadGetCMError
-        };
-  
-  
-      case POST_BLOCK_AGAIN_BEGIN:
-        return {
-          ...state,
-          isFetching: true
-        };
-  
-      case POST_BLOCK_AGAIN_SUCCESS:
-        return {
-          ...state,
-          blockAgainResponse: action.payloadBlockAgain,
-            isFetching: false
-        };
-  
-      case POST_BLOCK_AGAIN_FAIL:
-        return {
-          ...state,
-          isFetching: false,
-            blockAgainResponse: action.payloadBlockAgainError
-        };
-  
-  
-      case POST_ADD_CALL_MSG_BEGIN:
-        return {
-          ...state,
-          isFetching: true
-        };
-  
-      case POST_ADD_CALL_MSG_SUCCESS:
-        return {
-          ...state,
-          addBlockCallMsg: action.payloadAddCallMsg,
-            isFetching: false
-        };
-  
-      case POST_ADD_CALL_MSG_FAIL:
-        return {
-          ...state,
-          isFetching: false,
-            addBlockCallMsg: action.payloadAddCallMsgError
-        };
-  
-  
-      case POST_EDIT_CALL_MSG_BEGIN:
-        return {
-          ...state,
-          isFetching: true
-        };
-  
-      case POST_EDIT_CALL_MSG_SUCCESS:
-        return {
-          ...state,
-          editBlockCallMsg: action.payloadEditCallMsg,
-            isFetching: false
-        };
-  
-      case POST_EDIT_CALL_MSG_FAIL:
-        return {
-          ...state,
-          isFetching: false,
-            editBlockCallMsg: action.payloadEditCallMsgError,
-        };
-  
-  
-      case POST_DELETE_CALL_MSG_BEGIN:
-        return {
-          ...state,
-          isFetching: true
-        };
-  
-      case POST_DELETE_CALL_MSG_SUCCESS:
-        return {
-          ...state,
-          deleteBlockCallMsg: action.payloadDeleteCallMsg,
-            isFetching: false
-        };
-  
-      case POST_DELETE_CALL_MSG_FAIL:
-        return {
-          ...state,
-          isFetching: false,
-            deleteBlockCallMsg: action.payloadDeleteCallMsgError
-        };
-  
-  
-      case POST_EDIT_ALL_BEGIN:
-        return {
-          ...state,
-          isFetching: true
-        };
-  
-      case POST_EDIT_ALL_SUCCESS:
-        return {
-          ...state,
-          editAllBlockCallMsg: action.payloadEditAll,
-            isFetching: false
-        };
-  
-      case POST_EDIT_ALL_FAIL:
-        return {
-          ...state,
-          isFetching: false,
-            editAllBlockCallMsg: action.payloadEditAllError
-        };
-  
-  
-      default:
-        return state;
-    }
-  };
-  
-  export default callsMessagesReducer;
+import React, { useState } from "react"; 
+import "bootstrap/dist/css/bootstrap.min.css";
+import { Button } from "@vds/buttons";
+import { Link } from "react-router-dom/cjs/react-router-dom.min";
+import styled from "styled-components";
+import { Body, Title } from "@vds/typography";
+import { Input } from "@vds/inputs";
 
+
+const BlockCallsAndMessages = () => {
+  const [blockedNumbers, setBlockedNumbers] = useState([]); 
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  const handleAddNumber = () => { if (phoneNumber.trim() && blockedNumbers.length < 5)
+     { 
+      setBlockedNumbers([...blockedNumbers, phoneNumber.trim()]); setPhoneNumber(""); } 
+    };
+
+  const handleRemoveNumber = (number) => { setBlockedNumbers(blockedNumbers.filter((num) => num !== number)); };
+
+  return (
+  <div className="container mt-4"> 
+  <Title size="large" bold >Block calls and messages from up to 5 numbers.</Title>
+   <p className="text-muted mb-4">732.609.9414</p>
+
+    {blockedNumbers.length === 0 ? (
+      <>
+        <div className="mb-3">
+          <Body >
+            Enter phone number
+          </Body>
+          <Input
+            type="text"
+            className="form-control"
+            id="phoneInput"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            maxLength={10}
+          />
+        </div>
+        <ButtonWrapper>
+        <Button
+          disabled={!phoneNumber.trim() || blockedNumbers.length >= 5}
+          onClick={handleAddNumber}
+        >
+          Block number
+        </Button>
+        </ButtonWrapper>
+      </>
+    ) : (
+      <>
+      <TextWrapper>
+        <Body>
+          You are blocking {blockedNumbers.length} of 5 numbers.
+        </Body>
+        </TextWrapper>
+        
+        {blockedNumbers.length < 5 && (
+          <>
+            <div className="mb-3">
+              <Input
+                type="text"
+                className="form-control"
+                placeholder="Enter phone number"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
+            </div>
+            <ButtonWrapper>
+            <Button
+              onClick={handleAddNumber}
+              disabled={!phoneNumber.trim()}
+            >
+              Add a number
+            </Button>
+            </ButtonWrapper>
+            <ul className="list-group mb-3">
+          {blockedNumbers.map((num, index) => (
+            <li
+              key={index}
+              className="list-group-item d-flex justify-content-between align-items-center"
+            >
+              {num}
+              <button
+                className="btn btn-sm btn-outline-danger"
+                onClick={() => handleRemoveNumber(num)}
+              >
+                &times;
+              </button>
+            </li>
+          ))}
+        </ul>
+          </>
+        )}
+      </>
+    )}
+
+    <p className="mt-4 text-muted">
+      There is no charge to block.{' '}
+      <Link
+                  to={`/viewlimitation`}
+
+                  className="text-primary text-decoration-underline"
+                >
+                  ViewLimitations
+                </Link>
+    </p>
+  </div>
+
+  );
+};
+const ButtonWrapper = styled.div`
+  align-items:center;
+  justify-content:center;
+  display:flex;
+`;
+
+
+export default BlockCallsAndMessages;

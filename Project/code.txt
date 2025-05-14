@@ -1,65 +1,501 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import "bootstrap/dist/css/bootstrap.min.css";
+import axios from 'axios';
+import apiUrl from '../../../../shared/utilities/apiUrl';
+import { getHttpClientRequest, postHttpClientRequest } from '../../../../shared/services/httpClient';
+// import { notifySuccess, notifyError } from "../../../utils/VendorScripts/VendorScripts"
 
-const ViewLimitations = () => {
-  const navigate = useNavigate();
+export const GET_CALLS_MESSAGES_BEGIN = "CallsMessages/GET_CALLS_MESSAGES_BEGIN"
+export const GET_CALLS_MESSAGES_SUCCESS =
+  "CallsMessages/GET_CALLS_MESSAGES_SUCCESS"
+export const GET_CALLS_MESSAGES_FAIL = "CallsMessages/GET_CALLS_MESSAGES_FAIL"
+ 
+export const POST_BLOCK_AGAIN_BEGIN = "CallsMessages/POST_BLOCK_AGAIN_BEGIN"
+export const POST_BLOCK_AGAIN_SUCCESS = "CallsMessages/POST_BLOCK_AGAIN_SUCCESS"
+export const POST_BLOCK_AGAIN_FAIL = "CallsMessages/POST_BLOCK_AGAIN_FAIL"
 
-  const handleDone = () => {
-    navigate(-1); // Go back to previous page
+export const POST_ADD_CALL_MSG_BEGIN = "CallsMessages/POST_ADD_CALL_MSG_BEGIN"
+export const POST_ADD_CALL_MSG_SUCCESS =
+  "CallsMessages/POST_ADD_CALL_MSG_SUCCESS"
+export const POST_ADD_CALL_MSG_FAIL = "CallsMessages/POST_ADD_CALL_MSG_FAIL"
+
+export const POST_EDIT_CALL_MSG_BEGIN = "CallsMessages/POST_EDIT_CALL_MSG_BEGIN"
+export const POST_EDIT_CALL_MSG_SUCCESS =
+  "CallsMessages/POST_EDIT_CALL_MSG_SUCCESS"
+export const POST_EDIT_CALL_MSG_FAIL = "CallsMessages/POST_EDIT_CALL_MSG_FAIL"
+
+export const POST_DELETE_CALL_MSG_BEGIN =
+  "CallsMessages/POST_DELETE_CALL_MSG_BEGIN"
+export const POST_DELETE_CALL_MSG_SUCCESS =
+  "CallsMessages/POST_DELETE_CALL_MSG_SUCCESS"
+export const POST_DELETE_CALL_MSG_FAIL =
+  "CallsMessages/POST_DELETE_CALL_MSG_FAIL"
+
+
+export const POST_EDIT_ALL_BEGIN = "CallsMessages/POST_EDIT_ALL_BEGIN"
+export const POST_EDIT_ALL_SUCCESS = "CallsMessages/POST_EDIT_ALL_SUCCESS"
+export const POST_EDIT_ALL_FAIL = "CallsMessages/POST_EDIT_ALL_FAIL"
+
+
+export const getCallsMessages = (payload) => async dispatch => {
+
+  dispatch(getCallsMessagesBegin())
+    
+
+    const onSuccess = (resp) => {
+      if (
+        resp &&
+        resp.data &&
+        resp.data.responseInfo &&
+        resp.data.responseInfo.responseCode == "00"
+      ) {
+        dispatch(getCallsMessagesSuccess(resp.data));
+      } else {
+        dispatch(getCallsMessagesError(resp.data));
+      }
+    };
+  
+    const onError = error => {
+      // below code is for redirecting to unauthorised screen for member account
+      let msResp = error && error.response && error.response.data;
+      let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
+      let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
+      if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
+        window.location.href = apiUrl().mvoLimitedAccessUrl;
+      }
+      else {
+        dispatch(getCallsMessagesError(error));
+      }
+    };
+  
+    const callMS = () => {
+      let axConfig = {
+        headers: {
+          flowName:'Blocks',
+          contentType: 'application/json',
+          // pageName: 'dsrDeviceLanding',
+          // flowName: 'Device',
+        },
+      }
+      return getHttpClientRequest(apiUrl().callsMessages, axConfig)
+    }
+  
+    callMS()
+      .then(msResp => {
+        console.log(msResp, 'msResp')
+        if (msResp && msResp.status == 200) {
+          onSuccess(msResp);
+        }
+      })
+      .catch((error)=>{console.log("error",error)});
+}
+
+
+export const postBlockAgain = (expiredBlockNumber) => async dispatch => {
+
+  dispatch(postBlockAgainBegin())
+  const onSuccess = (resp) => {
+    if (
+      resp &&
+      resp.data &&
+      resp.data.responseInfo &&
+      resp.data.responseInfo.responseCode == "00"
+    ) {
+      
+      dispatch(postBlockAgainSuccess(resp.data));
+    } else {
+      dispatch(postBlockAgainError(resp.data));
+    }
   };
+  
+  const onError = error => {
+    // below code is for redirecting to unauthorised screen for member account
+    let msResp = error && error.response && error.response.data;
+    let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
+    let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
+    if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
+      window.location.href = apiUrl().mvoLimitedAccessUrl;
+    }
+    else {
+      dispatch(postBlockAgainError(error));
+    }
+  };
+  
+  const callMS = () => {
+    let axConfig = {
+      headers: {
+        flowName:'Blocks',
+        contentType: 'application/json',
+        
+      },
+    }
+    if (apiUrl().expiredNumbers?.indexOf('ApiData') > -1) {
+      return getHttpClientRequest(
+        apiUrl().expiredNumbers,
+        axConfig
+      ) 
+    } else {
+      
+      return postHttpClientRequest(
+        apiUrl().expiredNumbers,
+        expiredBlockNumber,
+        axConfig
+      );
+    }
+  }
+  
+  callMS()
+    .then(msResp => {
+      if (msResp && msResp.status == 200) {
+        onSuccess(msResp);
+      }
+    })
+    .catch(onError);
 
-  return (
-    <div className="container mt-3">
-      {/* Back Arrow and Title */}
-      <div className="d-flex align-items-center mb-3">
-        <span
-          style={{ cursor: "pointer", fontSize: "1.5rem" }}
-          onClick={() => navigate(-1)}
-        >
-          ←
-        </span>
-        <h5 className="ms-3 mb-0">Block Calls & Messages</h5>
-      </div>
+}
 
-      {/* Heading */}
-      <h4 className="fw-bold mb-3">
-        What you need to know about call and text blocking.
-      </h4>
 
-      <hr />
+export const postaddBlockCallMsg = (blockNum) => async dispatch => {
 
-      {/* Content */}
-      <p>
-        Blocking a number for calls and text is easy, but there are a few
-        things you should know beforehand. You can't block numbers that are on
-        your account, emergency numbers that are not 10-digits (911, 411, etc.)
-        or #MIN (to check your used minutes).
-      </p>
+  dispatch(postaddBlockCallMsgBegin())
+  const onSuccess = (resp) => {
+    if (
+      resp &&
+      resp.data &&
+      resp.data.responseInfo &&
+      resp.data.responseInfo.responseCode == "00"
+    ) {
+      
+      dispatch(postaddBlockCallMsgSuccess(resp.data));
+    } else {
+      dispatch(postaddBlockCallMsgError(resp.data));
+    }
+  };
+  
+  const onError = error => {
+    // below code is for redirecting to unauthorised screen for member account
+    let msResp = error && error.response && error.response.data;
+    let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
+    let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
+    if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
+      window.location.href = apiUrl().mvoLimitedAccessUrl;
+    }
+    else {
+      dispatch(postaddBlockCallMsgError(error));
+    }
+  };
+  
+  const callMS = () => {
+    let axConfig = {
+      headers: {
+        flowName:'Blocks',
+        contentType: 'application/json',
+        
+      },
+    }
+    if (apiUrl().addNumber?.indexOf('ApiData') > -1) {
+      return getHttpClientRequest(
+        apiUrl().addNumber,
+        axConfig
+      ) 
+    } else {
+      
+      return postHttpClientRequest(
+        apiUrl().addNumber,
+        blockNum,
+        axConfig
+      );
+    }
+  }
+  
+  callMS()
+    .then(msResp => {
+      console.log(msResp, 'msResp')
+      if (msResp && msResp.status == 200) {
+        onSuccess(msResp);
+      }
+    })
+    .catch(onError);
 
-      <p>
-        Your blocks expire after 90 days. You can either block it again or
-        subscribe to FamilyBase* to block a number permanently.
-      </p>
+}
 
-      <p>
-        If you change your mind, you can review your blocked numbers and decide
-        to unblock it by tapping the red X.
-      </p>
 
-      <p>
-        *FamilyBase lets you permanently block incoming and outgoing calls for
-        up to 20 US or international numbers.
-      </p>
+export const postEditBlockCallMsg = (blockNum) => async dispatch => {
 
-      {/* Done Button */}
-      <div className="d-grid gap-2 mt-5">
-        <button className="btn btn-dark rounded-pill py-2" onClick={handleDone}>
-          Done
-        </button>
-      </div>
-    </div>
-  );
+  dispatch(postEditBlockCallMsgBegin())
+ const onSuccess = (resp) => {
+  if (
+    resp &&
+    resp.data &&
+    resp.data.responseInfo &&
+    resp.data.responseInfo.responseCode == "00"
+  ) {
+    
+    dispatch(postEditBlockCallMsgSuccess(resp.data));
+  } else {
+    dispatch(postEditBlockCallMsgError(resp.data));
+  }
 };
 
-export default ViewLimitations;
+const onError = error => {
+  // below code is for redirecting to unauthorised screen for member account
+  let msResp = error && error.response && error.response.data;
+  let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
+  let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
+  if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
+    window.location.href = apiUrl().mvoLimitedAccessUrl;
+  }
+  else {
+    dispatch(postEditBlockCallMsgError(error));
+  }
+};
+
+const callMS = () => {
+  let axConfig = {
+    headers: {
+      flowName:'Blocks',
+      contentType: 'application/json',
+      // pageName: 'dsrDeviceLanding',
+      // flowName: 'Device',
+    },
+  }
+  if (apiUrl().editNumber?.indexOf('ApiData') > -1) {
+    return getHttpClientRequest(
+      apiUrl().editNumber,
+      axConfig
+    ) 
+  } else {
+    
+    return postHttpClientRequest(
+      apiUrl().editNumber,
+      blockNum,
+      axConfig
+    );
+  }
+}
+
+callMS()
+  .then(msResp => {
+    console.log(msResp, 'msResp')
+    if (msResp && msResp.status == 200) {
+      onSuccess(msResp);
+    }
+  })
+  .catch(onError);
+        
+}
+
+
+
+export const postDeleteBlockCallMsg = (blockNum) => async dispatch => {
+
+  dispatch(postDeleteBlockCallMsgBegin())
+ //const response = await axios.get(reactGlobals.postdeleteBlockCallMsg)
+ const onSuccess = (resp) => {
+  if (
+    resp &&
+    resp.data &&
+    resp.data.responseInfo &&
+    resp.data.responseInfo.responseCode == "00"
+  ) {
+    
+    dispatch(postDeleteBlockCallMsgSuccess(resp.data));
+  } else {
+    dispatch(postDeleteBlockCallMsgError(resp.data));
+  }
+};
+
+const onError = error => {
+  // below code is for redirecting to unauthorised screen for member account
+  let msResp = error && error.response && error.response.data;
+  let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
+  let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
+  if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
+    window.location.href = apiUrl().mvoLimitedAccessUrl;
+  }
+  else {
+    dispatch(postDeleteBlockCallMsgError(error));
+  }
+};
+
+const callMS = () => {
+  let axConfig = {
+    headers: {
+      flowName:'Blocks',
+      contentType: 'application/json',
+      // pageName: 'dsrDeviceLanding',
+      // flowName: 'Device',
+    },
+  }
+  if (apiUrl().deleteNumber?.indexOf('ApiData') > -1) {
+    return getHttpClientRequest(
+      apiUrl().deleteNumber,
+      axConfig
+    ) 
+  } else {
+    
+    return postHttpClientRequest(
+      apiUrl().deleteNumber,
+      blockNum,
+      axConfig
+    );
+  }
+}
+
+callMS()
+  .then(msResp => {
+    console.log(msResp, 'msResp')
+    if (msResp && msResp.status == 200) {
+      onSuccess(msResp);
+    }
+  })
+  .catch(onError);
+   
+}
+
+
+export const postEditAll = (blockNums) => async dispatch => {
+
+  dispatch(postEditAllBegin())
+ // const response = await axios.get(reactGlobals.postEditAllCallMsg)
+ const onSuccess = (resp) => {
+  if (
+    resp &&
+    resp.data &&
+    resp.data.responseInfo &&
+    resp.data.responseInfo.responseCode == "00"
+  ) {
+    
+    dispatch(postEditAllSuccess(resp.data));
+  } else {
+    dispatch(postEditAllError(resp.data));
+  }
+};
+
+const onError = error => {
+  // below code is for redirecting to unauthorised screen for member account
+  let msResp = error && error.response && error.response.data;
+  let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
+  let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
+  if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
+    window.location.href = apiUrl().mvoLimitedAccessUrl;
+  }
+  else {
+    dispatch(postEditAllError(error));
+  }
+};
+
+const callMS = () => {
+  let axConfig = {
+    headers: {
+      flowName:'Blocks',
+      contentType: 'application/json',
+      // pageName: 'dsrDeviceLanding',
+      // flowName: 'Device',
+    },
+  }
+  if (apiUrl().editAllNumbers?.indexOf('ApiData') > -1) {
+    return getHttpClientRequest(
+      apiUrl().editAllNumbers,
+      axConfig
+    ) 
+  } else {
+    
+    return postHttpClientRequest(
+      apiUrl().editAllNumbers,
+      blockNums,
+      axConfig
+    );
+  }
+}
+
+callMS()
+  .then(msResp => {
+    console.log(msResp, 'msResp')
+    if (msResp && msResp.status == 200) {
+      onSuccess(msResp);
+    }
+  })
+  .catch(onError);
+
+}
+
+
+export const getCallsMessagesBegin = () => ({
+  type: GET_CALLS_MESSAGES_BEGIN
+})
+export const getCallsMessagesSuccess = (response) => ({
+  type: GET_CALLS_MESSAGES_SUCCESS,
+  payload: response.body,
+  blockedNumbers: response.body.blockedPhoneNumbers,
+  expiredBlockNumbers: response.body.expiredBlockedPhoneNumbers
+})
+export const getCallsMessagesError = (response) => ({
+  type: GET_CALLS_MESSAGES_FAIL,
+  payloadGetCMError: response.body
+})
+
+
+export const postBlockAgainBegin = () => ({
+  type: POST_BLOCK_AGAIN_BEGIN
+})
+export const postBlockAgainSuccess = (response) => ({
+  type: POST_BLOCK_AGAIN_SUCCESS,
+  payloadBlockAgain: response.body
+})
+export const postBlockAgainError = (response) => ({
+  type: POST_BLOCK_AGAIN_FAIL,
+  payloadBlockAgainError: response.body
+})
+
+
+export const postaddBlockCallMsgBegin = () => ({
+  type: POST_ADD_CALL_MSG_BEGIN
+})
+export const postaddBlockCallMsgSuccess = (response) => ({
+  type: POST_ADD_CALL_MSG_SUCCESS,
+  payloadAddCallMsg: response.body
+})
+export const postaddBlockCallMsgError = (response) => ({
+  type: POST_ADD_CALL_MSG_FAIL,
+  payloadAddCallMsgError: response.body
+})
+
+
+export const postEditBlockCallMsgBegin = () => ({
+  type: POST_EDIT_CALL_MSG_BEGIN
+})
+export const postEditBlockCallMsgSuccess = (response) => ({
+  type: POST_EDIT_CALL_MSG_SUCCESS,
+  payloadEditCallMsg: response.body
+})
+export const postEditBlockCallMsgError = (response) => ({
+  type: POST_EDIT_CALL_MSG_FAIL,
+  payloadEditCallMsgError: response.body
+})
+
+
+export const postDeleteBlockCallMsgBegin = () => ({
+  type: POST_DELETE_CALL_MSG_BEGIN
+})
+export const postDeleteBlockCallMsgSuccess = (response) => ({
+  type: POST_DELETE_CALL_MSG_SUCCESS,
+  payloadDeleteCallMsg: response.body
+})
+export const postDeleteBlockCallMsgError = (response) => ({
+  type: POST_DELETE_CALL_MSG_FAIL,
+  payloadDeleteCallMsgError: response.body
+})
+
+
+export const postEditAllBegin = () => ({
+  type: POST_EDIT_ALL_BEGIN
+})
+export const postEditAllSuccess = (response) => ({
+  type: POST_EDIT_ALL_SUCCESS,
+  payloadEditAll: response.body
+})
+export const postEditAllError = (response) => ({
+  type: POST_EDIT_ALL_FAIL,
+  payloadEditAllError: response.body
+})
+
+

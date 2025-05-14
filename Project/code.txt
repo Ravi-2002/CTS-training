@@ -15,17 +15,44 @@ import {
 const BlockCallsAndMessages = () => {
   const dispatch = useDispatch();
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [blockedList, setBlockedList] = useState([]);
 
-  const blockedNumbers = useSelector(
-    (state) => state.callsMessagesReducer.blockedNumbers
-  );
+  const {
+    blockedNumbers,
+    addBlockCallMsg,
+    deleteBlockCallMsg,
+  } = useSelector((state) => state.callsMessagesReducer);
 
+  // Initial fetch
   useEffect(() => {
     dispatch(getCallsMessages());
   }, [dispatch]);
 
+  // Sync blockedList with store initially
+  useEffect(() => {
+    if (blockedNumbers) {
+      setBlockedList(blockedNumbers);
+    }
+  }, [blockedNumbers]);
+
+  // Update local list after successful add
+  useEffect(() => {
+    if (addBlockCallMsg?.phoneNumber) {
+      setBlockedList((prev) => [...prev, addBlockCallMsg]);
+    }
+  }, [addBlockCallMsg]);
+
+  // Update local list after successful delete
+  useEffect(() => {
+    if (deleteBlockCallMsg?.phoneNumber) {
+      setBlockedList((prev) =>
+        prev.filter((num) => num.phoneNumber !== deleteBlockCallMsg.phoneNumber)
+      );
+    }
+  }, [deleteBlockCallMsg]);
+
   const handleAddNumber = () => {
-    if (phoneNumber.trim() && blockedNumbers.length < 5) {
+    if (phoneNumber.trim() && blockedList.length < 5) {
       const payload = {
         phoneNumber: phoneNumber.trim(),
         reason: "Blocked manually",
@@ -36,10 +63,7 @@ const BlockCallsAndMessages = () => {
   };
 
   const handleRemoveNumber = (number) => {
-    const payload = {
-      phoneNumber: number,
-    };
-    dispatch(postDeleteBlockCallMsg(payload));
+    dispatch(postDeleteBlockCallMsg({ phoneNumber: number }));
   };
 
   return (
@@ -49,7 +73,7 @@ const BlockCallsAndMessages = () => {
       </Title>
       <p className="text-muted mb-4">732.609.9414</p>
 
-      {blockedNumbers.length === 0 ? (
+      {blockedList.length === 0 ? (
         <>
           <div className="mb-3">
             <Body>Enter phone number</Body>
@@ -75,72 +99,14 @@ const BlockCallsAndMessages = () => {
         <>
           <TextWrapper>
             <Body>
-              You are blocking {blockedNumbers.length} of 5 numbers.
+              You are blocking {blockedList.length} of 5 numbers.
             </Body>
           </TextWrapper>
 
-          {blockedNumbers.length < 5 && (
+          {blockedList.length < 5 && (
             <>
               <div className="mb-3">
                 <Input
                   type="text"
                   className="form-control"
                   placeholder="Enter phone number"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                />
-              </div>
-              <ButtonWrapper>
-                <Button
-                  onClick={handleAddNumber}
-                  disabled={!phoneNumber.trim()}
-                >
-                  Add a number
-                </Button>
-              </ButtonWrapper>
-            </>
-          )}
-
-          <ul className="list-group mb-3">
-            {blockedNumbers.map((num, index) => (
-              <li
-                key={index}
-                className="list-group-item d-flex justify-content-between align-items-center"
-              >
-                {num.phoneNumber}
-                <button
-                  className="btn btn-sm btn-outline-danger"
-                  onClick={() => handleRemoveNumber(num.phoneNumber)}
-                >
-                  &times;
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      <p className="mt-4 text-muted">
-        There is no charge to block.{" "}
-        <Link
-          to={`/viewlimitation`}
-          className="text-primary text-decoration-underline"
-        >
-          View Limitations
-        </Link>
-      </p>
-    </div>
-  );
-};
-
-const ButtonWrapper = styled.div`
-  align-items: center;
-  justify-content: center;
-  display: flex;
-`;
-
-const TextWrapper = styled.div`
-  margin-bottom: 16px;
-`;
-
-export default BlockCallsAndMessages;

@@ -1,100 +1,65 @@
-import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { getServices, postServices } from "../actions";
+import React from "react";
+import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-const BlockServices = ({ encryptedMtn }) => {
-  const dispatch = useDispatch();
+const ViewLimitations = () => {
+  const navigate = useNavigate();
 
-  const serviceDetailsMap = useSelector((state) => state.Home.services);
-  const loading = useSelector((state) => state.Home.isFetching);
-  const loadError = useSelector((state) => state.Home.serviceFail);
-  const confirmServices = useSelector((state) => state.Home.confirmServices);
-
-  const [formState, setFormState] = useState({});
-  const [pendingToggle, setPendingToggle] = useState(null);
-
-  useEffect(() => {
-    dispatch(getServices(encryptedMtn));
-  }, [dispatch, encryptedMtn]);
-
-  useEffect(() => {
-    const updatedState = {};
-    for (const category in serviceDetailsMap) {
-      serviceDetailsMap[category].forEach((service) => {
-        updatedState[service.serviceName] = service.sfoEnabled === "Y";
-      });
-    }
-    setFormState(updatedState);
-  }, [serviceDetailsMap]);
-
-  useEffect(() => {
-    if (
-      confirmServices?.responseCode === "00" &&
-      pendingToggle?.serviceName
-    ) {
-      const { serviceName, currentValue } = pendingToggle;
-      setFormState((prev) => ({
-        ...prev,
-        [serviceName]: currentValue === "Y" ? false : true,
-      }));
-    }
-    setPendingToggle(null);
-  }, [confirmServices]);
-
-  const handleToggle = (serviceName, currentValue, sfoCode) => {
-    const newStatus = currentValue === "Y" ? "N" : "Y";
-    setPendingToggle({ serviceName, currentValue });
-
-    const payload = [
-      {
-        encryptedMtn,
-        sfoEnabled: newStatus,
-        sfoCode: sfoCode,
-      },
-    ];
-
-    dispatch(postServices(payload));
+  const handleDone = () => {
+    navigate(-1); // Go back to previous page
   };
 
-  if (loading) return <p className="text-center mt-4">Loading...</p>;
-  if (loadError) return <p className="text-center text-danger mt-4">Failed to fetch services.</p>;
-
   return (
-    <div className="container mt-4">
-      <h1 className="h4 mb-1">Be in charge of who does what on your account.</h1>
-      <p className="text-muted mb-4">732.609.9414</p>
+    <div className="container mt-3">
+      {/* Back Arrow and Title */}
+      <div className="d-flex align-items-center mb-3">
+        <span
+          style={{ cursor: "pointer", fontSize: "1.5rem" }}
+          onClick={() => navigate(-1)}
+        >
+          ←
+        </span>
+        <h5 className="ms-3 mb-0">Block Calls & Messages</h5>
+      </div>
 
-      {Object.entries(serviceDetailsMap).map(([category, services]) => (
-        <div key={category} className="mb-4">
-          <h5 className="text-primary mb-3">{category}</h5>
-          {services.map(({ serviceName, shortDescription, sfoEnabled, sfoCode }) => (
-            <div
-              key={serviceName}
-              className="d-flex justify-content-between align-items-center border-bottom py-3"
-            >
-              <div>
-                <p className="mb-1 fw-medium">{serviceName}</p>
-                <small className="text-muted">{shortDescription}</small>
-              </div>
-              <div className="form-check form-switch">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  role="switch"
-                  id={serviceName}
-                  checked={formState[serviceName] || false}
-                  onChange={() =>
-                    handleToggle(serviceName, sfoEnabled, sfoCode)
-                  }
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      ))}
+      {/* Heading */}
+      <h4 className="fw-bold mb-3">
+        What you need to know about call and text blocking.
+      </h4>
+
+      <hr />
+
+      {/* Content */}
+      <p>
+        Blocking a number for calls and text is easy, but there are a few
+        things you should know beforehand. You can't block numbers that are on
+        your account, emergency numbers that are not 10-digits (911, 411, etc.)
+        or #MIN (to check your used minutes).
+      </p>
+
+      <p>
+        Your blocks expire after 90 days. You can either block it again or
+        subscribe to FamilyBase* to block a number permanently.
+      </p>
+
+      <p>
+        If you change your mind, you can review your blocked numbers and decide
+        to unblock it by tapping the red X.
+      </p>
+
+      <p>
+        *FamilyBase lets you permanently block incoming and outgoing calls for
+        up to 20 US or international numbers.
+      </p>
+
+      {/* Done Button */}
+      <div className="d-grid gap-2 mt-5">
+        <button className="btn btn-dark rounded-pill py-2" onClick={handleDone}>
+          Done
+        </button>
+      </div>
     </div>
   );
 };
 
-export default BlockServices;
+export default ViewLimitations;

@@ -110,3 +110,62 @@ const BlockCallsAndMessages = () => {
                   type="text"
                   className="form-control"
                   placeholder="Enter phone number"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  maxLength={10}
+                />
+              </div>
+              <ButtonWrapper>
+                <Button
+                  onClick={handleAddNumber}
+                  disabled={!phoneNumber.trim()}
+                >
+                  Add a number
+                </Button>
+              </ButtonWrapper>
+            </>
+          )}
+
+          <ul className="list-group mb-3">
+            {blockedList.map((item, index) => (
+              <li
+                key={index}
+                className="list-group-item d-flex justify-content-between align-items-center"
+              >
+                {item.phoneNumber}
+                <button
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => handleRemoveNumber(item.phoneNumber)}
+                >
+                  &times;
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <p className="mt-4 text-muted">
+        There is no charge to block.{" "}
+        <Link
+          to={`/viewlimitation`}
+          className="text-primary text-decoration-underline"
+        >
+          View Limitations
+        </Link>
+      </p>
+    </div>
+  );
+};
+
+const ButtonWrapper = styled.div`
+  align-items: center;
+  justify-content: center;
+  display: flex;
+`;
+
+const TextWrapper = styled.div`
+  margin-bottom: 16px;
+`;
+
+export default BlockCallsAndMessages;

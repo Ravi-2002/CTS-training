@@ -1,155 +1,214 @@
-import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { getServices, postServices } from "../actions/index";
-import { Link, useHistory } from "react-router-dom/cjs/react-router-dom.min";
-import { Line } from '@vds/lines';
+import React, { useState, useEffect, Fragment } from "react";
+import { Button, TextLink } from "@vds/buttons";
+import { ButtonIcon } from '@vds/button-icons';
 import styled from "styled-components";
-import { Notification } from "@vds/notifications";
+import { Body, Title } from "@vds/typography";
+import { Input } from "@vds/inputs";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getCallsMessages,
+  postaddBlockCallMsg,
+  postDeleteBlockCallMsg,
+} from "../actions/fetchCallsMessages";
 import { Loader } from "@vds/loaders";
-import { Toggle } from "@vds/toggles"
-import { TextLink } from "@vds/buttons";
+import { Icon } from "@vds/icons";
+import { ListGroup, ListGroupItem, ListGroupItemTitle, ListItem, UnorderedList } from "@vds/lists";
+import { Line } from "@vds/lines";
 
-const BlockServices = (props) => {
+const BlockCallsAndMessages = () => {
   const dispatch = useDispatch();
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [blockedList, setBlockedList] = useState([]);
 
-  const serviceDetailsMap = useSelector((state) => state.Home.services);
-  const isFetching = useSelector((state) => state.Home.isFetching);
-  const loadError = useSelector((state) => state.Home.serviceFail);
-  const confirmServices = useSelector((state) => state.Home.confirmServices);
-  const postError = useSelector((state) => state.Home.serviceErrorFlag);
-  const [formState, setFormState] = useState({});
-  const [lastToggledService, setLastToggledService] = useState(null);
-  const history = useHistory();
+  const {
+    blockedNumbers,
+    addBlockCallMsg,
+    deleteBlockCallMsg,
+  } = useSelector((state) => state.Detail);
+  const isFetching = useSelector((state) => state.Detail.isFetching);
+
+
   useEffect(() => {
-    dispatch(getServices());
+    dispatch(getCallsMessages());
   }, [dispatch]);
 
   useEffect(() => {
-    const updatedState = {};
-    for (const category in serviceDetailsMap) {
-      serviceDetailsMap[category].forEach((service) => {
-        updatedState[service.serviceName] = service.sfoEnabled === "Y";
-      });
+    if (blockedNumbers) {
+      setBlockedList(blockedNumbers);
     }
-    setFormState(updatedState);
-  }, [serviceDetailsMap]);
+  }, [blockedNumbers]);
 
   useEffect(() => {
     if (
-      confirmServices?.responseInfo?.responseCode === "00" &&
-      lastToggledService?.serviceName
+      addBlockCallMsg?.blockedPhoneNumbers &&
+      Array.isArray(addBlockCallMsg.blockedPhoneNumbers)
     ) {
-      const { serviceName, toggledValue } = lastToggledService;
-      setFormState((prev) => ({
-        ...prev,
-        [serviceName]: toggledValue,
-      }));
-      setLastToggledService(null);
+      setBlockedList(addBlockCallMsg.blockedPhoneNumbers);
     }
-  }, [confirmServices]);
-  
-  const handleToggle = (serviceName, sfoCode) => {
-    const toggledValue = !formState[serviceName];
-    setLastToggledService({ serviceName, toggledValue });
+  }, [addBlockCallMsg]);
 
-    const payload = [
-      {
-        
-        sfoEnabled: toggledValue ? "Y" : "N",
-        sfoCode,
-      },
-    ];
+  useEffect(() => {
+    if (
+      deleteBlockCallMsg?.blockedPhoneNumbers &&
+      Array.isArray(deleteBlockCallMsg.blockedPhoneNumbers)
+    ) {
+      setBlockedList(deleteBlockCallMsg.blockedPhoneNumbers);
+    }
+  }, [deleteBlockCallMsg]);
 
-    dispatch(postServices(payload));
+  const handleAddNumber = () => {
+    if (phoneNumber.trim() && blockedList.length < 5) {
+      const payload = {
+        phoneNumber: phoneNumber.trim(),
+        reason: "Blocked manually",
+      };
+      dispatch(postaddBlockCallMsg(payload));
+      setPhoneNumber("");
+    }
   };
 
-  if (loadError) return <p className="text-center text-danger mt-4">Failed to fetch services.</p>;
+  const handleRemoveNumber = (number) => {
+    dispatch(postDeleteBlockCallMsg({ phoneNumber: number }));
+  };
 
   return (
-    <PageContent>
+    <PageWrapper>
       <Loader active={isFetching} fullscreen />
-      {confirmServices?.responseInfo?.responseCode === "00" && (
-        <Notification
-          type="success"
-          title="Service updated successfully!"
-          fullBleed={false}
-          inline={false}
-          disableFocus={true}
-        />
-      )}
-      <h1 className="h4 mb-1">Be in charge of who does what on your account.</h1>
-      {/* <p className="text-muted mb-4">{encryptedMtn}</p> */}
+      <Title size="large" bold>
+        Block calls and messages from up to 5 numbers.
+      </Title>
+      <p className="text-muted mb-4">732.609.9414</p>
 
-
-      {postError && (
-        <div className="alert alert-danger">Failed to update service. Please try again.</div>
-      )}
-
-      {Object.entries(serviceDetailsMap).map(([category, services]) => (
-        <div >
-
-          {services.map(({ serviceName, sfoCode }) => (
-            <div
-              key={serviceName}
+      {blockedList.length === 0 ? (
+        <>
+          <div className="mb-3">
+            <Body>Enter phone number</Body>
+            <Input
+              type="text"
+              className="form-control"
+              id="phoneInput"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              maxLength={10}
+            />
+          </div>
+          <ButtonWrapper>
+            <Button
+              disabled={!phoneNumber.trim()}
+              onClick={handleAddNumber}
             >
+              Block number
+            </Button>
+          </ButtonWrapper>
+        </>
+      ) : (
+        <>
+          <TextWrapper>
+            <Body>
+              You are blocking {blockedList.length} of 5 numbers.
+            </Body>
+          </TextWrapper>
 
-              <div> <div>
-                <p className="mb-1 fw-medium">{serviceName}</p>
-                <ToggleWrapper>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <Toggle
-                      value="default"
-                      surface="light"
-                      surfaceType="colorFill"
-                      showText={false}
-                      textWeight="regular"
-                      textSize="small"
-                      textPosition="left"
-                      on={formState[serviceName] || false}
-                      data-track={serviceName}
-                      statusText={(e) => e ? 'On' : 'Off'}
-                      onChange={() => handleToggle(serviceName, sfoCode)}
-                    />
-                  </div>
-                </ToggleWrapper>
+          {blockedList.length < 5 && (
+            <>
+              <div className="mb-3">
+                <Input
+                  type="text"
+                  className="form-control"
+                  placeholder="Enter phone number"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  maxLength={10}
+                />
               </div>
-                <TextLink
-                  type="standAlone"
-                  surface="light"
-                  disabled={false}
-                  onClick={() => {
-                    history.push(`/service-details/${encodeURIComponent(serviceName)}`);
-                  }}
+              <ButtonWrapper>
+                <Button
+                  onClick={handleAddNumber}
+                  disabled={!phoneNumber.trim()}
                 >
-                  Tell me more
-                </TextLink>
-                <TextLink
-                  type="standAlone"
-                  surface="light"
-                  disabled={false}
-                  onClick={() => {
-                    history.push(`/callsandmessages/`);
-                  }}
-                >
-                  Tell me more
-                </TextLink>
-              </div>
+                  Add a number
+                </Button>
+              </ButtonWrapper>
+            </>
+          )}
 
-              <Line />
-            </div>
+          {blockedList.map((item, index) => (
+            <ListGroupWrapper>
+              <ListGroup
+                key={index}
+              >
+                <RemoveButton>
+                  <Body size="large">{item.phoneNumber}</Body>
+
+                  <ButtonIcon
+                    kind="ghost"
+                    size="small"
+                    onClick={() => handleRemoveNumber(item.phoneNumber)}
+
+                    renderIcon={(props) => <Icon name="close" {...props} />}
+                  />
+                </RemoveButton>
+                <Line
+                  type="secondary"
+                  surface="light"
+                />
+              </ListGroup>
+            </ListGroupWrapper>
+
+
+            //       <ListGroup topLine={false} bottomLine={true} surface='light' viewport='mobile' key={index}>
+            //   <ListGroupItem
+
+            //   >
+            //     <ListGroupItemTitle>
+            //     {item.phoneNumber}
+            //     </ListGroupItemTitle>
+
+            //   </ListGroupItem>
+            // </ListGroup>
           ))}
-        </div>
-      ))}
-    </PageContent>
+        </>
+      )}
+
+      <p className="mt-4 text-muted">
+        There is no charge to block.{" "}
+        <TextLink
+          type="standAlone"
+          surface="light"
+          disabled={false}
+          onClick={() => {
+            history.push(`/viewlimitation`);
+          }}
+        >
+          View Limitations
+        </TextLink>
+      </p>
+    </PageWrapper>
   );
 };
 
-const ToggleWrapper = styled.div`
+const ButtonWrapper = styled.div`
+  align-items: center;
+  justify-content: center;
   display: flex;
-  justify-content: flex-end;
+  padding-top:20px;
+  padding-bottom:20px;
 `;
-const PageContent = styled.div`
-  padding-right:10px;
-  padding-left:10px;
+const PageWrapper = styled.div`
+  padding:20px;
 `;
-export default BlockServices;
+const ListGroupWrapper = styled.div`
+  padding-bottom:10px;
+`;
+const RemoveButton = styled.div`
+  justify-content: space-between;
+  display: flex;
+  align-items:center;
+
+`;
+
+const TextWrapper = styled.div`
+  margin-bottom: 16px;
+`;
+
+export default BlockCallsAndMessages;

@@ -1,60 +1,155 @@
-import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { getServices, postServices } from "../actions/index";
+import { Link, useHistory } from "react-router-dom/cjs/react-router-dom.min";
+import { Line } from '@vds/lines';
 import styled from "styled-components";
-import { useSelector } from "react-redux";
-import { Button } from "@vds/buttons";
-import { Title } from "@vds/typography";
+import { Notification } from "@vds/notifications";
+import { Loader } from "@vds/loaders";
+import { Toggle } from "@vds/toggles"
+import { TextLink } from "@vds/buttons";
 
-const ServiceDetails = () => {
-  const { serviceName } = useParams();
-  const navigate = useNavigate();
+const BlockServices = (props) => {
+  const dispatch = useDispatch();
+
   const serviceDetailsMap = useSelector((state) => state.Home.services);
+  const isFetching = useSelector((state) => state.Home.isFetching);
+  const loadError = useSelector((state) => state.Home.serviceFail);
+  const confirmServices = useSelector((state) => state.Home.confirmServices);
+  const postError = useSelector((state) => state.Home.serviceErrorFlag);
+  const [formState, setFormState] = useState({});
+  const [lastToggledService, setLastToggledService] = useState(null);
+  const history = useHistory();
+  useEffect(() => {
+    dispatch(getServices());
+  }, [dispatch]);
 
-  let longDescription = "Description not found.";
-  for (const category in serviceDetailsMap) {
-    const service = serviceDetailsMap[category].find(
-      (svc) => svc.serviceName === serviceName
-    );
-    if (service) {
-      longDescription = service.longDescription || "No additional details available.";
-      break;
+  useEffect(() => {
+    const updatedState = {};
+    for (const category in serviceDetailsMap) {
+      serviceDetailsMap[category].forEach((service) => {
+        updatedState[service.serviceName] = service.sfoEnabled === "Y";
+      });
     }
-  }
+    setFormState(updatedState);
+  }, [serviceDetailsMap]);
+
+  useEffect(() => {
+    if (
+      confirmServices?.responseInfo?.responseCode === "00" &&
+      lastToggledService?.serviceName
+    ) {
+      const { serviceName, toggledValue } = lastToggledService;
+      setFormState((prev) => ({
+        ...prev,
+        [serviceName]: toggledValue,
+      }));
+      setLastToggledService(null);
+    }
+  }, [confirmServices]);
+  
+  const handleToggle = (serviceName, sfoCode) => {
+    const toggledValue = !formState[serviceName];
+    setLastToggledService({ serviceName, toggledValue });
+
+    const payload = [
+      {
+        
+        sfoEnabled: toggledValue ? "Y" : "N",
+        sfoCode,
+      },
+    ];
+
+    dispatch(postServices(payload));
+  };
+
+  if (loadError) return <p className="text-center text-danger mt-4">Failed to fetch services.</p>;
 
   return (
-    <PageWrapper>
-      <div>
-        <Title size="XLarge" bold>{serviceName}</Title>
-        <p dangerouslySetInnerHTML={{ __html: longDescription }}></p>
-      </div>
+    <PageContent>
+      <Loader active={isFetching} fullscreen />
+      {confirmServices?.responseInfo?.responseCode === "00" && (
+        <Notification
+          type="success"
+          title="Service updated successfully!"
+          fullBleed={false}
+          inline={false}
+          disableFocus={true}
+        />
+      )}
+      <h1 className="h4 mb-1">Be in charge of who does what on your account.</h1>
+      {/* <p className="text-muted mb-4">{encryptedMtn}</p> */}
 
-      <ButtonWrapper>
-        <Button
-          size="large"
-          surface="light"
-          use="primary"
-          onClick={() => navigate(-1)}
-        >
-          Done
-        </Button>
-      </ButtonWrapper>
-    </PageWrapper>
+
+      {postError && (
+        <div className="alert alert-danger">Failed to update service. Please try again.</div>
+      )}
+
+      {Object.entries(serviceDetailsMap).map(([category, services]) => (
+        <div >
+
+          {services.map(({ serviceName, sfoCode }) => (
+            <div
+              key={serviceName}
+            >
+
+              <div> <div>
+                <p className="mb-1 fw-medium">{serviceName}</p>
+                <ToggleWrapper>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Toggle
+                      value="default"
+                      surface="light"
+                      surfaceType="colorFill"
+                      showText={false}
+                      textWeight="regular"
+                      textSize="small"
+                      textPosition="left"
+                      on={formState[serviceName] || false}
+                      data-track={serviceName}
+                      statusText={(e) => e ? 'On' : 'Off'}
+                      onChange={() => handleToggle(serviceName, sfoCode)}
+                    />
+                  </div>
+                </ToggleWrapper>
+              </div>
+                <TextLink
+                  type="standAlone"
+                  surface="light"
+                  disabled={false}
+                  onClick={() => {
+                    history.push(`/service-details/${encodeURIComponent(serviceName)}`);
+                  }}
+                >
+                  Tell me more
+                </TextLink>
+                <TextLink
+                  type="standAlone"
+                  surface="light"
+                  disabled={false}
+                  onClick={() => {
+                    history.push(`/callsandmessages/`);
+                  }}
+                >
+                  Tell me more
+                </TextLink>
+              </div>
+
+              <Line />
+            </div>
+          ))}
+        </div>
+      ))}
+    </PageContent>
   );
 };
 
-const PageWrapper = styled.div`
-  padding: 20px;
-  min-height: 100vh;
+const ToggleWrapper = styled.div`
   display: flex;
-  flex-direction: column;
+  justify-content: flex-end;
 `;
-
-const ButtonWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-top: auto;
-  padding-top: 2rem;
-  padding-bottom: 2rem;
+const PageContent = styled.div`
+  padding-right:10px;
+  padding-left:10px;
 `;
-
-export default ServiceDetails;
+export default BlockServices;

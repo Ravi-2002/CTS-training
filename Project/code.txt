@@ -1,214 +1,75 @@
-import React, { useState, useEffect, Fragment } from "react";
-import { Button, TextLink } from "@vds/buttons";
-import { ButtonIcon } from '@vds/button-icons';
-import styled from "styled-components";
-import { Body, Title } from "@vds/typography";
-import { Input } from "@vds/inputs";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Title, Body } from "@vds/typography";
+import { Input } from "@vds/inputs";
+import { Button, TextLink } from "@vds/buttons";
+import { Loader } from "@vds/loaders";
+import styled from "styled-components";
 import {
   getCallsMessages,
   postaddBlockCallMsg,
-  postDeleteBlockCallMsg,
 } from "../actions/fetchCallsMessages";
-import { Loader } from "@vds/loaders";
-import { Icon } from "@vds/icons";
-import { ListGroup, ListGroupItem, ListGroupItemTitle, ListItem, UnorderedList } from "@vds/lists";
-import { Line } from "@vds/lines";
 
-const BlockCallsAndMessages = () => {
+const BlockCallsEmpty = ({ history }) => {
   const dispatch = useDispatch();
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [blockedList, setBlockedList] = useState([]);
 
-  const {
-    blockedNumbers,
-    addBlockCallMsg,
-    deleteBlockCallMsg,
-  } = useSelector((state) => state.Detail);
-  const isFetching = useSelector((state) => state.Detail.isFetching);
-
+  const { blockedNumbers, addBlockCallMsg, isFetching } = useSelector((state) => state.Detail);
 
   useEffect(() => {
     dispatch(getCallsMessages());
   }, [dispatch]);
 
   useEffect(() => {
-    if (blockedNumbers) {
-      setBlockedList(blockedNumbers);
-    }
-  }, [blockedNumbers]);
-
-  useEffect(() => {
     if (
-      addBlockCallMsg?.blockedPhoneNumbers &&
-      Array.isArray(addBlockCallMsg.blockedPhoneNumbers)
+      addBlockCallMsg?.blockedPhoneNumbers?.length > 0
     ) {
-      setBlockedList(addBlockCallMsg.blockedPhoneNumbers);
+      history.push("/call-message-blocking");
     }
-  }, [addBlockCallMsg]);
+  }, [addBlockCallMsg, history]);
 
-  useEffect(() => {
-    if (
-      deleteBlockCallMsg?.blockedPhoneNumbers &&
-      Array.isArray(deleteBlockCallMsg.blockedPhoneNumbers)
-    ) {
-      setBlockedList(deleteBlockCallMsg.blockedPhoneNumbers);
-    }
-  }, [deleteBlockCallMsg]);
-
-  const handleAddNumber = () => {
-    if (phoneNumber.trim() && blockedList.length < 5) {
-      const payload = {
-        phoneNumber: phoneNumber.trim(),
-        reason: "Blocked manually",
-      };
-      dispatch(postaddBlockCallMsg(payload));
-      setPhoneNumber("");
-    }
-  };
-
-  const handleRemoveNumber = (number) => {
-    dispatch(postDeleteBlockCallMsg({ phoneNumber: number }));
+  const handleAdd = () => {
+    dispatch(postaddBlockCallMsg({ phoneNumber, reason: "Blocked manually" }));
+    setPhoneNumber("");
   };
 
   return (
     <PageWrapper>
       <Loader active={isFetching} fullscreen />
-      <Title size="large" bold>
-        Block calls and messages from up to 5 numbers.
-      </Title>
+      <Title size="large" bold>Block calls and messages from up to 5 numbers.</Title>
       <p className="text-muted mb-4">732.609.9414</p>
 
-      {blockedList.length === 0 ? (
-        <>
-          <div className="mb-3">
-            <Body>Enter phone number</Body>
-            <Input
-              type="text"
-              className="form-control"
-              id="phoneInput"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              maxLength={10}
-            />
-          </div>
-          <ButtonWrapper>
-            <Button
-              disabled={!phoneNumber.trim()}
-              onClick={handleAddNumber}
-            >
-              Block number
-            </Button>
-          </ButtonWrapper>
-        </>
-      ) : (
-        <>
-          <TextWrapper>
-            <Body>
-              You are blocking {blockedList.length} of 5 numbers.
-            </Body>
-          </TextWrapper>
+      <Body>Enter phone number</Body>
+      <Input
+        value={phoneNumber}
+        maxLength={10}
+        onChange={(e) => setPhoneNumber(e.target.value)}
+      />
 
-          {blockedList.length < 5 && (
-            <>
-              <div className="mb-3">
-                <Input
-                  type="text"
-                  className="form-control"
-                  placeholder="Enter phone number"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  maxLength={10}
-                />
-              </div>
-              <ButtonWrapper>
-                <Button
-                  onClick={handleAddNumber}
-                  disabled={!phoneNumber.trim()}
-                >
-                  Add a number
-                </Button>
-              </ButtonWrapper>
-            </>
-          )}
+      <ButtonWrapper>
+        <Button
+          disabled={!phoneNumber.trim()}
+          onClick={handleAdd}
+        >
+          Block number
+        </Button>
+      </ButtonWrapper>
 
-          {blockedList.map((item, index) => (
-            <ListGroupWrapper>
-              <ListGroup
-                key={index}
-              >
-                <RemoveButton>
-                  <Body size="large">{item.phoneNumber}</Body>
-
-                  <ButtonIcon
-                    kind="ghost"
-                    size="small"
-                    onClick={() => handleRemoveNumber(item.phoneNumber)}
-
-                    renderIcon={(props) => <Icon name="close" {...props} />}
-                  />
-                </RemoveButton>
-                <Line
-                  type="secondary"
-                  surface="light"
-                />
-              </ListGroup>
-            </ListGroupWrapper>
-
-
-            //       <ListGroup topLine={false} bottomLine={true} surface='light' viewport='mobile' key={index}>
-            //   <ListGroupItem
-
-            //   >
-            //     <ListGroupItemTitle>
-            //     {item.phoneNumber}
-            //     </ListGroupItemTitle>
-
-            //   </ListGroupItem>
-            // </ListGroup>
-          ))}
-        </>
-      )}
-
-      <p className="mt-4 text-muted">
+      <Body className="mt-4 text-muted">
         There is no charge to block.{" "}
         <TextLink
           type="standAlone"
           surface="light"
-          disabled={false}
-          onClick={() => {
-            history.push(`/viewlimitation`);
-          }}
+          onClick={() => history.push("/viewlimitation")}
         >
           View Limitations
         </TextLink>
-      </p>
+      </Body>
     </PageWrapper>
   );
 };
 
-const ButtonWrapper = styled.div`
-  align-items: center;
-  justify-content: center;
-  display: flex;
-  padding-top:20px;
-  padding-bottom:20px;
-`;
-const PageWrapper = styled.div`
-  padding:20px;
-`;
-const ListGroupWrapper = styled.div`
-  padding-bottom:10px;
-`;
-const RemoveButton = styled.div`
-  justify-content: space-between;
-  display: flex;
-  align-items:center;
+const PageWrapper = styled.div` padding: 20px; `;
+const ButtonWrapper = styled.div` display: flex; justify-content: center; padding: 20px 0; `;
 
-`;
-
-const TextWrapper = styled.div`
-  margin-bottom: 16px;
-`;
-
-export default BlockCallsAndMessages;
+export default BlockCallsEmpty;

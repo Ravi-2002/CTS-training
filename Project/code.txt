@@ -1,66 +1,86 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Title, Body } from "@vds/typography";
-import { Input } from "@vds/inputs";
 import { Button, TextLink } from "@vds/buttons";
+import { ButtonIcon} from "@vds/button-icons";
+import { Icon } from "@vds/icons";
 import { Loader } from "@vds/loaders";
 import styled from "styled-components";
 import {
   getCallsMessages,
   postaddBlockCallMsg,
+  postDeleteBlockCallMsg,
 } from "../actions/fetchCallsMessages";
-import { useLocation } from "react-router-dom/cjs/react-router-dom.min";
+import { Line } from "@vds/lines";
+import { ListGroup } from "@vds/lists";
 
-const BlockCallsEmpty = ({ history }) => {
+const BlockCallsList = ({ history }) => {
   const dispatch = useDispatch();
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [blockedList, setBlockedList] = useState([]);
 
-  const { blockedNumbers, addBlockCallMsg, isFetching } = useSelector((state) => state.Detail);
-
+  const {
+    blockedNumbers,
+    addBlockCallMsg,
+    deleteBlockCallMsg,
+    isFetching,
+  } = useSelector((state) => state.Detail);
+  console.log(blockedNumbers,'blocknumber')
   useEffect(() => {
     dispatch(getCallsMessages());
   }, [dispatch]);
-  const location = useLocation();
-  console.log(location,'location')
-  const allowInput = location.state?.allowInput??false;
-  useEffect(() => {
-    if (
-      (!allowInput&&blockedNumbers.length > 0 )
-    ) {
-      history.push("/call-message-blocking");
-    }
-  }, [blockedNumbers,allowInput, history]);
 
-  const handleAdd = () => {
-    dispatch(postaddBlockCallMsg({ phoneNumber, reason: "Blocked manually" }));
-    console.log(addBlockCallMsg,'addblock')
-    history.push('/call-message-blocking')
-    setPhoneNumber("");
+  useEffect(() => {
+    if (blockedNumbers) setBlockedList(blockedNumbers);
+  }, [blockedNumbers]);
+  console.log(blockedList,'blocked')
+  useEffect(() => {
+    if (addBlockCallMsg?.blockedPhoneNumbers) {
+      setBlockedList(addBlockCallMsg.blockedPhoneNumbers);
+    }
+  }, [addBlockCallMsg]);
+
+  useEffect(() => {
+    if (deleteBlockCallMsg?.blockedPhoneNumbers) {
+      setBlockedList(deleteBlockCallMsg.blockedPhoneNumbers);
+    }
+  }, [deleteBlockCallMsg]);
+
+  
+
+  const handleRemove = (num) => {
+    dispatch(postDeleteBlockCallMsg({ phoneNumber: num }));
   };
 
   return (
     <PageWrapper>
       <Loader active={isFetching} fullscreen />
       <Title size="large" bold>Block calls and messages from up to 5 numbers.</Title>
-      <p className="text-muted mb-4">732.609.9414</p>
-
-      <Body>Enter phone number</Body>
-      <Input
-        value={phoneNumber}
-        maxLength={10}
-        onChange={(e) => setPhoneNumber(e.target.value)}
-      />
-
-      <ButtonWrapper>
-        <Button
-          disabled={!phoneNumber.trim()}
-          onClick={handleAdd}
-        >
-          Block number
-        </Button>
-      </ButtonWrapper>
-
-      <Body className="mt-4 text-muted">
+      <MdnWrapper>
+      <Body size='large'>732.609.9414</Body>
+      </MdnWrapper>
+      <TextWrapper>
+        <Body bold size='large'>You are blocking {blockedList.length} of 5 numbers.</Body>
+      </TextWrapper>
+      {blockedList.map((item, idx) => (
+          <ListGroupWrapper key={idx}>
+          <ListGroup>
+            <RemoveWrapper>
+              <Body size="large">{item.phoneNumber}</Body>
+              <ButtonIcon
+                kind="ghost"
+                size="small"
+                onClick={() => handleRemove(item.phoneNumber)}
+                renderIcon={(props) => <Icon name="close" {...props} />}
+              />
+            </RemoveWrapper>
+            <Line type="secondary" surface="light" />
+          </ListGroup>
+        </ListGroupWrapper>
+      ))}
+      
+    <LimitationWrapper>
+      <Body>
         There is no charge to block.{" "}
         <TextLink
           type="standAlone"
@@ -70,11 +90,23 @@ const BlockCallsEmpty = ({ history }) => {
           View Limitations
         </TextLink>
       </Body>
+      </LimitationWrapper>
+          <ButtonWrapper>
+            <Button disabled={blockedList.length>=5} 
+                onClick={() => history.push("/callsandmessages",{allowInput:true})}>
+              Add a number
+            </Button>
+          </ButtonWrapper>
     </PageWrapper>
   );
 };
 
 const PageWrapper = styled.div` padding: 20px; `;
+const MdnWrapper = styled.div` padding-top: 7px; padding-bottom:7px`;
+const LimitationWrapper = styled.div` padding-top: 7px; padding-bottom:7px; display: flex; justify-content: center;`;
 const ButtonWrapper = styled.div` display: flex; justify-content: center; padding: 20px 0; `;
+const TextWrapper = styled.div` margin-bottom: 1rem; display: flex; justify-content: center; padding-top:30px; padding-bottom:20px `;
+const ListGroupWrapper = styled.div` padding-bottom: 10px; `;
+const RemoveWrapper = styled.div` display: flex; justify-content: space-between; align-items: center; `;
 
-export default BlockCallsEmpty;
+export default BlockCallsList;

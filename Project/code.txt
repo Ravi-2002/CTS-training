@@ -33,7 +33,6 @@ const BlockCallsList = ({ history }) => {
   useEffect(() => {
     if (blockedNumbers) setBlockedList(blockedNumbers);
   }, [blockedNumbers]);
-  console.log(blockedList,'blocked')
   useEffect(() => {
     if (addBlockCallMsg?.blockedPhoneNumbers) {
       setBlockedList(addBlockCallMsg.blockedPhoneNumbers);

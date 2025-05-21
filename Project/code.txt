@@ -9,6 +9,7 @@ import {
   getCallsMessages,
   postaddBlockCallMsg,
 } from "../actions/fetchCallsMessages";
+import { useLocation } from "react-router-dom/cjs/react-router-dom.min";
 
 const BlockCallsEmpty = ({ history }) => {
   const dispatch = useDispatch();
@@ -19,17 +20,21 @@ const BlockCallsEmpty = ({ history }) => {
   useEffect(() => {
     dispatch(getCallsMessages());
   }, [dispatch]);
-
+  const location = useLocation();
+  console.log(location,'location')
+  const allowInput = location.state?.allowInput??false;
   useEffect(() => {
     if (
-      addBlockCallMsg?.blockedPhoneNumbers?.length > 0
+      (!allowInput&&blockedNumbers.length > 0 )
     ) {
       history.push("/call-message-blocking");
     }
-  }, [addBlockCallMsg, history]);
+  }, [blockedNumbers,allowInput, history]);
 
   const handleAdd = () => {
     dispatch(postaddBlockCallMsg({ phoneNumber, reason: "Blocked manually" }));
+    console.log(addBlockCallMsg,'addblock')
+    history.push('/call-message-blocking')
     setPhoneNumber("");
   };
 

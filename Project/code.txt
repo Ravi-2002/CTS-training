@@ -1,249 +1,113 @@
-import axios from 'axios';
-import apiUrl from '../../../../shared/utilities/apiUrl';
-import { getHttpClientRequest, postHttpClientRequest } from '../../../../shared/services/httpClient';
-// import { notifySuccess, notifyError } from "../../../utils/VendorScripts/VendorScripts"
+// __tests__/callsMessagesActions.test.js
+import * as actions from '../../redux/actions/fetchCallsMessages';
+import configureStore from 'redux-mock-store';
+import thunk from 'redux-thunk';
+import * as httpClient from '../../../../shared/services/httpClient';
 
-export const GET_CALLS_MESSAGES_BEGIN = "CallsMessages/GET_CALLS_MESSAGES_BEGIN"
-export const GET_CALLS_MESSAGES_SUCCESS =
-  "CallsMessages/GET_CALLS_MESSAGES_SUCCESS"
-export const GET_CALLS_MESSAGES_FAIL = "CallsMessages/GET_CALLS_MESSAGES_FAIL"
+const middlewares = [thunk];
+const mockStore = configureStore(middlewares);
 
-export const POST_ADD_CALL_MSG_BEGIN = "CallsMessages/POST_ADD_CALL_MSG_BEGIN"
-export const POST_ADD_CALL_MSG_SUCCESS =
-  "CallsMessages/POST_ADD_CALL_MSG_SUCCESS"
-export const POST_ADD_CALL_MSG_FAIL = "CallsMessages/POST_ADD_CALL_MSG_FAIL"
+jest.mock('../../../../shared/services/httpClient', () => ({
+  getHttpClientRequest: jest.fn(),
+  postHttpClientRequest: jest.fn(),
+}));
 
-export const POST_DELETE_CALL_MSG_BEGIN =
-  "CallsMessages/POST_DELETE_CALL_MSG_BEGIN"
-export const POST_DELETE_CALL_MSG_SUCCESS =
-  "CallsMessages/POST_DELETE_CALL_MSG_SUCCESS"
-export const POST_DELETE_CALL_MSG_FAIL =
-  "CallsMessages/POST_DELETE_CALL_MSG_FAIL"
-
-
-
-export const getCallsMessages = (payload) => async dispatch => {
-
-  dispatch(getCallsMessagesBegin())
-    
-
-    const onSuccess = (resp) => {
-      if (
-        resp &&
-        resp.data &&
-        resp.data.responseInfo &&
-        resp.data.responseInfo.responseCode == "00"
-      ) {
-        dispatch(getCallsMessagesSuccess(resp.data));
-      } else {
-        dispatch(getCallsMessagesError(resp.data));
-      }
-    };
-  
-    const onError = error => {
-      // below code is for redirecting to unauthorised screen for member account
-      let msResp = error && error.response && error.response.data;
-      let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-      let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-      if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-        window.location.href = apiUrl().mvoLimitedAccessUrl;
-      }
-      else {
-        dispatch(getCallsMessagesError(error));
-      }
-    };
-  
-    const callMS = () => {
-      let axConfig = {
-        headers: {
-          flowName:'Blocks',
-          contentType: 'application/json',
-          // pageName: 'dsrDeviceLanding',
-          // flowName: 'Device',
-        },
-      }
-      return getHttpClientRequest(apiUrl().callsMessages, axConfig)
-    }
-  
-    callMS()
-      .then(msResp => {
-        console.log(msResp, 'msResp')
-        if (msResp && msResp.status == 200) {
-          onSuccess(msResp);
-        }
-      })
-      .catch((error)=>{console.log("error",error)});
-}
-
-export const postaddBlockCallMsg = (blockNum) => async dispatch => {
-
-  dispatch(postaddBlockCallMsgBegin())
-  const onSuccess = (resp) => {
-    if (
-      resp &&
-      resp.data &&
-      resp.data.responseInfo &&
-      resp.data.responseInfo.responseCode == "00"
-    ) {
-      
-      dispatch(postaddBlockCallMsgSuccess(resp.data));
-    } else {
-      dispatch(postaddBlockCallMsgError(resp.data));
-    }
-  };
-  
-  const onError = error => {
-    // below code is for redirecting to unauthorised screen for member account
-    let msResp = error && error.response && error.response.data;
-    let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-    let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-    if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-      window.location.href = apiUrl().mvoLimitedAccessUrl;
-    }
-    else {
-      dispatch(postaddBlockCallMsgError(error));
-    }
-  };
-  
-  const callMS = () => {
-    let axConfig = {
-      headers: {
-        flowName:'Blocks',
-        contentType: 'application/json',
-        
-      },
-    }
-    if (apiUrl().addNumber?.indexOf('ApiData') > -1) {
-      return postHttpClientRequest(
-        apiUrl().addNumber,blockNum,
-        axConfig
-      ) 
-    } else {
-      
-      return postHttpClientRequest(
-        apiUrl().addNumber,
-        blockNum,
-        axConfig
-      );
-    }
-  }
-  
-  callMS()
-    .then(msResp => {
-      console.log(msResp, 'msResp')
-      if (msResp && msResp.status == 200) {
-        onSuccess(msResp);
-      }
-    })
-    .catch(onError);
-
-}
-
-
-export const postDeleteBlockCallMsg = (blockNum) => async dispatch => {
-
-  dispatch(postDeleteBlockCallMsgBegin())
- //const response = await axios.get(reactGlobals.postdeleteBlockCallMsg)
- const onSuccess = (resp) => {
-  if (
-    resp &&
-    resp.data &&
-    resp.data.responseInfo &&
-    resp.data.responseInfo.responseCode == "00"
-  ) {
-    
-    dispatch(postDeleteBlockCallMsgSuccess(resp.data));
-  } else {
-    dispatch(postDeleteBlockCallMsgError(resp.data));
-  }
-};
-
-const onError = error => {
-  // below code is for redirecting to unauthorised screen for member account
-  let msResp = error && error.response && error.response.data;
-  let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-  let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-  if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-    window.location.href = apiUrl().mvoLimitedAccessUrl;
-  }
-  else {
-    dispatch(postDeleteBlockCallMsgError(error));
-  }
-};
-
-const callMS = () => {
-  let axConfig = {
-    headers: {
-      flowName:'Blocks',
-      contentType: 'application/json',
-      // pageName: 'dsrDeviceLanding',
-      // flowName: 'Device',
+const mockSuccessResponse = {
+  status: 200,
+  data: {
+    responseInfo: { responseCode: '00' },
+    body: {
+      blockedPhoneNumbers: [{ phoneNumber: '1234567890' }],
+      expiredBlockedPhoneNumbers: [{ phoneNumber: '0987654321' }],
     },
-  }
-  if (apiUrl().deleteNumber?.indexOf('ApiData') > -1) {
-    return postHttpClientRequest(
-      apiUrl().deleteNumber,blockNum,
-      axConfig
-    ) 
-  } else {
-    
-    return postHttpClientRequest(
-      apiUrl().deleteNumber,
-      blockNum,
-      axConfig
-    );
-  }
-}
+  },
+};
 
-callMS()
-  .then(msResp => {
-    console.log(msResp, 'msResp')
-    if (msResp && msResp.status == 200) {
-      onSuccess(msResp);
-    }
-  })
-  .catch(onError);
-   
-}
+const mockFailureResponse = {
+  status: 400,
+  data: {
+    responseInfo: { responseCode: '99' },
+    body: { error: 'Some error' },
+  },
+};
 
+describe('Calls & Messages Actions', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
+  it('should create GET_CALLS_MESSAGES_BEGIN', () => {
+    expect(actions.getCallsMessagesBegin()).toEqual({ type: actions.GET_CALLS_MESSAGES_BEGIN });
+  });
 
+  it('should create GET_CALLS_MESSAGES_SUCCESS', () => {
+    const action = actions.getCallsMessagesSuccess(mockSuccessResponse.data);
+    expect(action).toEqual({
+      type: actions.GET_CALLS_MESSAGES_SUCCESS,
+      payload: mockSuccessResponse.data.body,
+      blockedNumbers: mockSuccessResponse.data.body.blockedPhoneNumbers,
+      expiredBlockNumbers: mockSuccessResponse.data.body.expiredBlockedPhoneNumbers,
+    });
+  });
 
+  it('should create GET_CALLS_MESSAGES_FAIL', () => {
+    expect(actions.getCallsMessagesError(mockFailureResponse.data)).toEqual({
+      type: actions.GET_CALLS_MESSAGES_FAIL,
+      payloadGetCMError: mockFailureResponse.data.body,
+    });
+  });
 
-export const getCallsMessagesBegin = () => ({
-  type: GET_CALLS_MESSAGES_BEGIN
-})
-export const getCallsMessagesSuccess = (response) => ({
-  type: GET_CALLS_MESSAGES_SUCCESS,
-  payload: response.body,
-  blockedNumbers: response.body.blockedPhoneNumbers,
-  expiredBlockNumbers: response.body.expiredBlockedPhoneNumbers
-})
-export const getCallsMessagesError = (response) => ({
-  type: GET_CALLS_MESSAGES_FAIL,
-  payloadGetCMError: response.body
-})
+  it('should dispatch getCallsMessages success flow', async () => {
+    const store = mockStore({});
+    httpClient.getHttpClientRequest.mockResolvedValue(mockSuccessResponse);
+    await store.dispatch(actions.getCallsMessages());
+    const dispatched = store.getActions();
+    expect(dispatched[0]).toEqual({ type: actions.GET_CALLS_MESSAGES_BEGIN });
+    expect(dispatched[1].type).toEqual(actions.GET_CALLS_MESSAGES_SUCCESS);
+  });
 
-export const postaddBlockCallMsgBegin = () => ({
-  type: POST_ADD_CALL_MSG_BEGIN
-})
-export const postaddBlockCallMsgSuccess = (response) => ({
-  type: POST_ADD_CALL_MSG_SUCCESS,
-  payloadAddCallMsg: response.body
-})
-export const postaddBlockCallMsgError = (response) => ({
-  type: POST_ADD_CALL_MSG_FAIL,
-  payloadAddCallMsgError: response.body
-})
+  it('should dispatch getCallsMessages fail flow', async () => {
+    const store = mockStore({});
+    httpClient.getHttpClientRequest.mockRejectedValue({ response: mockFailureResponse });
+    await store.dispatch(actions.getCallsMessages());
+    const dispatched = store.getActions();
+    expect(dispatched[0]).toEqual({ type: actions.GET_CALLS_MESSAGES_BEGIN });
+    expect(dispatched[1].type).toEqual(actions.GET_CALLS_MESSAGES_FAIL);
+  });
 
-export const postDeleteBlockCallMsgBegin = () => ({
-  type: POST_DELETE_CALL_MSG_BEGIN
-})
-export const postDeleteBlockCallMsgSuccess = (response) => ({
-  type: POST_DELETE_CALL_MSG_SUCCESS,
-  payloadDeleteCallMsg: response.body
-})
-export const postDeleteBlockCallMsgError = (response) => ({
-  type: POST_DELETE_CALL_MSG_FAIL,
-  payloadDeleteCallMsgError: response.body
-})
+  it('should dispatch postaddBlockCallMsg success', async () => {
+    const store = mockStore({});
+    httpClient.postHttpClientRequest.mockResolvedValue(mockSuccessResponse);
+    await store.dispatch(actions.postaddBlockCallMsg({ phoneNumber: '123' }));
+    const dispatched = store.getActions();
+    expect(dispatched[0].type).toBe(actions.POST_ADD_CALL_MSG_BEGIN);
+    expect(dispatched[1].type).toBe(actions.POST_ADD_CALL_MSG_SUCCESS);
+  });
+
+  it('should dispatch postaddBlockCallMsg fail', async () => {
+    const store = mockStore({});
+    httpClient.postHttpClientRequest.mockRejectedValue({ response: mockFailureResponse });
+    await store.dispatch(actions.postaddBlockCallMsg({ phoneNumber: '123' }));
+    const dispatched = store.getActions();
+    expect(dispatched[0].type).toBe(actions.POST_ADD_CALL_MSG_BEGIN);
+    expect(dispatched[1].type).toBe(actions.POST_ADD_CALL_MSG_FAIL);
+  });
+
+  it('should dispatch postDeleteBlockCallMsg success', async () => {
+    const store = mockStore({});
+    httpClient.postHttpClientRequest.mockResolvedValue(mockSuccessResponse);
+    await store.dispatch(actions.postDeleteBlockCallMsg({ phoneNumber: '123' }));
+    const dispatched = store.getActions();
+    expect(dispatched[0].type).toBe(actions.POST_DELETE_CALL_MSG_BEGIN);
+    expect(dispatched[1].type).toBe(actions.POST_DELETE_CALL_MSG_SUCCESS);
+  });
+
+  it('should dispatch postDeleteBlockCallMsg fail', async () => {
+    const store = mockStore({});
+    httpClient.postHttpClientRequest.mockRejectedValue({ response: mockFailureResponse });
+    await store.dispatch(actions.postDeleteBlockCallMsg({ phoneNumber: '123' }));
+    const dispatched = store.getActions();
+    expect(dispatched[0].type).toBe(actions.POST_DELETE_CALL_MSG_BEGIN);
+    expect(dispatched[1].type).toBe(actions.POST_DELETE_CALL_MSG_FAIL);
+  });
+});

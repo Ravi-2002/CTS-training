@@ -1,92 +1,169 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Provider, useDispatch } from 'react-redux';
-import { createMemoryHistory } from 'history';
-import { Router } from 'react-router-dom';
-import configureStore from 'redux-mock-store';
-import '@testing-library/jest-dom';
+import React, { Fragment, useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { getServices, postServices } from "../actions/index";
+import { Link, useHistory, useLocation } from "react-router-dom/cjs/react-router-dom.min";
+import {useSearchParam} from "react-router-dom";
+import { Line } from '@vds/lines';
+import styled from "styled-components";
+import { Notification } from "@vds/notifications";
+import { Loader } from "@vds/loaders";
+import { Toggle } from "@vds/toggles"
+import { TextLink } from "@vds/buttons";
+import { Body, Title } from "@vds/typography";
 
-import BlockCallsEmpty from '../../components/index';
+const BlockServices = (props) => {
+  const dispatch = useDispatch();
+  const location = useLocation();
+  const query = location.search.slice(1);
+  const MDN = query.split("&").find(q=>q.startsWith("mdn="))?.split("=")[1];
+  const serviceDetailsMap = useSelector((state) => state.Home.services);
+  const isFetching = useSelector((state) => state.Home.isFetching);
+  const loadError = useSelector((state) => state.Home.serviceFail);
+  const confirmServices = useSelector((state) => state.Home.confirmServices);
+  const postError = useSelector((state) => state.Home.servicesError);
+  const [formState, setFormState] = useState({});
+  const [ErrorMsg, setErrorMsg] = useState({});
+  const [lastToggledService, setLastToggledService] = useState(null);
+  console.log(postError?.responseInfo?.responseCode,'posterror22')
+  const history = useHistory();
+  useEffect(() => {
+    dispatch(getServices());
+  }, [dispatch]);
 
-jest.mock('react-redux', () => ({
-  ...jest.requireActual('react-redux'),
-  useDispatch: jest.fn()
-}));
+  useEffect(() => {
+    const updatedState = {};
+    for (const category in serviceDetailsMap) {
+      serviceDetailsMap[category].forEach((service) => {
+        updatedState[service.serviceName] = service.sfoEnabled === "Y";
+      });
+    }
+    setFormState(updatedState);
+  }, [serviceDetailsMap]);
+  useEffect(()=>{
+    if(postError?.responseInfo?.responseCode!=='00'){
+    setErrorMsg(postError.libErrorInfo?.internalErrors?.[0]?.errorMessage)}
+  },[postError]);
+console.log(ErrorMsg,'error')
+  useEffect(() => {
+    if (
+      confirmServices?.responseInfo?.responseCode === "00" &&
+      lastToggledService?.serviceName
+    ) {
+      const { serviceName, toggledValue } = lastToggledService;
+      setFormState((prev) => ({
+        ...prev,
+        [serviceName]: toggledValue,
+      }));
+      setLastToggledService(null);
+    }
+  }, [confirmServices]);
+  console.log(postError,'post')
+  const handleToggle = (serviceName, sfoCode) => {
+    const toggledValue = !formState[serviceName];
+    setLastToggledService({ serviceName, toggledValue });
 
-const mockStore = configureStore([]);
+    const payload = [
+      {
+        mdn:MDN,
+        sfoEnabled: toggledValue ? "Y" : "N",
+        sfoCode,
+      },
+    ];
 
-describe('BlockCallsEmpty Component', () => {
-  let store;
-  let history;
-  const mockDispatch = jest.fn();
-
-  beforeEach(() => {
-    localStorage.setItem('mdn', '1234567890');
-    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
-  });
-
-  const setup = (stateOverrides, routeState = {}) => {
-    const initialState = {
-      Detail: {
-        blockedNumbers: [],
-        addBlockCallMsg: {},
-        isFetching: false,
-        ...stateOverrides
-      }
-    };
-
-    store = mockStore(initialState);
-    history = createMemoryHistory();
-    history.push('/block-calls', routeState);
-
-    render(
-      <Provider store={store}>
-        <Router history={history}>
-          <BlockCallsEmpty history={history} />
-        </Router>
-      </Provider>
-    );
-
-    return { store, history };
+    dispatch(postServices(payload));
   };
 
-  it('renders and disables the button initially', () => {
-    setup();
-    expect(screen.getByText(/Block calls and messages/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Block number/i })).toBeDisabled();
-  });
+  if (loadError) return <p className="text-center text-danger mt-4">Failed to fetch services.</p>;
+  return (
+    <Fragment>
+      {confirmServices?.responseInfo?.responseCode === "00" && (
+      <Notification
+        type="success"
+        title="Service updated successfully!"
+        fullBleed={true}
+        inline={false}
+        disableFocus={true}
+      />
+    )}
+    {postError?.responseInfo?.responseCode === "99"  && (
+        <Notification
+        type="error"
+        title={"Error"}
+        fullBleed={false}
+        inline={false}
+        disableFocus={true}
+      />
+      )}
+      <Loader active={isFetching} fullscreen />
+    <PageContent>
+      
+      <Title size='2XLarge' bold='true'>Be in charge of who does what on your account.</Title>
+      <br></br>
+      <Body size="large">770.346.3247</Body>
 
-  it('enables the button when number is typed', () => {
-    setup();
-    fireEvent.change(screen.getByRole('textbox'), {
-      target: { value: '1234567890' }
-    });
-    expect(screen.getByRole('button', { name: /Block number/i })).not.toBeDisabled();
-  });
 
-  it('redirects to list page if blockedNumbers > 0 and allowInput is false', () => {
-    const { history } = setup(
-      { blockedNumbers: [{ phoneNumber: '1112223333' }] },
-      { allowInput: false }
-    );
-    expect(history.location.pathname).toBe('/call-message-blocking');
-  });
+      
+      <br></br>
+      {Object.entries(serviceDetailsMap).map(([category, services]) => (
+        <div >
 
-  it('does not redirect if allowInput is true', () => {
-    const { history } = setup(
-      { blockedNumbers: [{ phoneNumber: '1112223333' }] },
-      { allowInput: true }
-    );
-    expect(history.location.pathname).toBe('/block-calls');
-  });
+          {services.map(({ serviceName, sfoCode }) => (
+            <div
+              key={serviceName}
+            >
+              
+               <ServiceWrapper>
+                <Title size='medium'>{serviceName}</Title>
+                
+                    <Toggle
+                      value="default"
+                      surface="light"
+                      surfaceType="colorFill"
+                      showText={false}
+                      textWeight="regular"
+                      textSize="small"
+                      textPosition="left"
+                      on={formState[serviceName] || false}
+                      data-track={serviceName}
+                      statusText={(e) => e ? 'On' : 'Off'}
+                      onChange={() => handleToggle(serviceName, sfoCode)}
+                    />
+                
+                </ServiceWrapper>
+                <TextLinkWrapper>
+                <TextLink
+                  type="standAlone"
+                  surface="light"
+                  disabled={false}
+                  onClick={() => {
+                    history.push(`/service-details/${encodeURIComponent(serviceName)}`);
+                  }}
+                >
+                  Tell me more
+                </TextLink>
+                </TextLinkWrapper>
+              <Line />
+            </div>
+          ))}
+        </div>
+      ))}
+    </PageContent>
+    </Fragment>
+  );
+};
 
-  it('redirects after successful block', () => {
-    const { history } = setup({
-      blockedNumbers: [],
-      addBlockCallMsg: {
-        responseInfo: { responseCode: '00' }
-      }
-    });
-    expect(history.location.pathname).toBe('/call-message-blocking');
-  });
-});
+
+const ServiceWrapper = styled.div`
+  padding-top:15px;
+  align-items:center;
+  display:flex;
+  justify-content:space-between;  
+`;
+const TextLinkWrapper = styled.div`
+  padding-bottom:15px;
+`;
+const PageContent = styled.div`
+  padding-right:10px;
+  padding-left:10px;
+`;
+export default BlockServices;

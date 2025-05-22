@@ -1,70 +1,55 @@
-import React, { useEffect } from "react";
-import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
-import { Button } from "@vds/buttons";
-import { Title } from "@vds/typography";
-import { nativeSetTitle } from "../../../../shared/utilities/native";
-import styled from "styled-components";
-import { Line } from "@vds/lines";
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Router } from 'react-router-dom';
+import { createMemoryHistory } from 'history';
+import ViewLimitations from '../ViewLimitations';
 
-const ViewLimitations = () => {
-  const history = useHistory();
-  const handleDone = () => {
-    history.goBack(); // Go back to previous page
-  };
- 
-  useEffect(() => {
-    nativeSetTitle('Block Calls & Messages');
+jest.mock('../../../../shared/utilities/native', () => ({
+  nativeSetTitle: jest.fn()
+}));
+
+import { nativeSetTitle } from '../../../../shared/utilities/native';
+
+describe('ViewLimitations Component', () => {
+  it('renders all text content and Done button', () => {
+    const history = createMemoryHistory();
+    render(
+      <Router history={history}>
+        <ViewLimitations />
+      </Router>
+    );
+
+    expect(screen.getByText(/What you need to know about call and text blocking/i)).toBeInTheDocument();
+    expect(screen.getByText(/Blocking a number for calls and text is easy/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your blocks expire after 90 days/i)).toBeInTheDocument();
+    expect(screen.getByText(/you can review your blocked numbers/i)).toBeInTheDocument();
+    expect(screen.getByText(/FamilyBase lets you permanently block/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Done/i })).toBeInTheDocument();
   });
 
-  return (
-    <PageContent>
-      <br></br>
-      <Title size='large' bold>
-         What you need to know about call  and text blocking.
-      </Title>
-      <br></br>
-      <Line/>
-        <br></br><br></br>
-        <p>
-          Blocking a number for calls and text is easy, but there are a few
-          things you should know beforehand. You can't block numbers that are on
-          your account, emergency numbers that are not 10-digits (911, 411, etc.)
-          or #MIN (to check your used minutes).
-        </p>
-      <br></br>
-        <p>
-          Your blocks expire after 90 days. You can either block it again or
-          subscribe to FamilyBase* to block a number permanently.
-        </p>
-        <br></br>
-        <p>
-          If you change your mind, you can review your blocked numbers and decide
-          to unblock it by tapping the red X.
-        </p>
-        <br></br>
-        <p>
-          *FamilyBase lets you permanently block incoming and outgoing calls for
-          up to 20 US or international numbers.
-        </p>
-        <ButtonWrapper>
-        <Button  onClick={handleDone}>
-          Done
-        </Button>
-        </ButtonWrapper>
-    </PageContent>
-  );
-};
+  it('sets the native title on mount', () => {
+    const history = createMemoryHistory();
+    render(
+      <Router history={history}>
+        <ViewLimitations />
+      </Router>
+    );
 
-const PageContent = styled.div`
-  padding-right:10px;
-  padding-left:10px;
-  padding-top:20px;
-`;
-const ButtonWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-top: auto;
-  padding-top: 100px;
-`;
+    expect(nativeSetTitle).toHaveBeenCalledWith('Block Calls & Messages');
+  });
 
-export default ViewLimitations;
+  it('goes back in history on Done button click', () => {
+    const history = createMemoryHistory();
+    history.push('/viewlimitation');
+    const spy = jest.spyOn(history, 'goBack');
+
+    render(
+      <Router history={history}>
+        <ViewLimitations />
+      </Router>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Done/i }));
+    expect(spy).toHaveBeenCalled();
+  });
+});

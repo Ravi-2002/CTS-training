@@ -1,126 +1,49 @@
-// blockServices.test.js
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Provider, useDispatch, useSelector } from 'react-redux';
-import { Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
-import configureStore from 'redux-mock-store';
-import '@testing-library/jest-dom';
-
-import BlockServices from '../../components/index';
-import servicesReducer from '../../reducers/index';
-import * as actions from '../../actions/pageActions';
-
-jest.mock('react-redux', () => ({
-  ...jest.requireActual('react-redux'),
-  useDispatch: jest.fn(),
-  useSelector: jest.fn(),
-}));
-
-const mockStore = configureStore([]);
-const mockDispatch = jest.fn();
-
-describe('BlockServices Component', () => {
-  let store;
-  let history;
-
-  beforeEach(() => {
-    useDispatch.mockReturnValue(mockDispatch);
-  });
-
-  const setup = (selectorData) => {
-    store = mockStore({});
-    history = createMemoryHistory();
-    history.push('/block-services?mdn=1234567890');
-    useSelector.mockImplementation((cb) => cb({ Home: selectorData }));
-
-    render(
-      <Provider store={store}>
-        <Router history={history}>
-          <BlockServices />
-        </Router>
-      </Provider>
-    );
-
-    return { store, history };
+it('updates formState when confirmServices has responseCode "00" and toggled service', () => {
+  const initialServices = {
+    Category1: [
+      { serviceName: 'Test Service', sfoEnabled: 'N', sfoCode: '003' },
+    ]
   };
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  setup({
+    services: initialServices,
+    isFetching: false,
+    serviceFail: false,
+    confirmServices: null,
+    servicesError: {},
   });
 
-  it('renders and toggles service correctly', () => {
-    setup({
-      services: {
-        Category1: [
-          { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' },
-          { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' },
-        ],
-      },
-      isFetching: false,
-      serviceFail: false,
-      confirmServices: {},
-      servicesError: {},
-    });
+  // Initial state should be Off (N = false)
+  const toggleButton = screen.getByTestId('Test Service');
+  expect(toggleButton).toHaveTextContent('Off');
 
-    expect(screen.getByText('Service A')).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('checkbox')[1]);
-    expect(mockDispatch).toHaveBeenCalled();
-  });
+  // Simulate toggle click
+  fireEvent.click(toggleButton);
 
-  it('shows success notification when confirmServices responseCode is 00', () => {
-    setup({
-      services: { Category1: [] },
-      isFetching: false,
-      serviceFail: false,
-      confirmServices: { responseInfo: { responseCode: '00' } },
-      servicesError: {},
-    });
-
-    expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
-  });
-
-  it('shows error notification when responseCode is 99', () => {
-    setup({
-      services: { Category1: [] },
-      isFetching: false,
-      serviceFail: false,
-      confirmServices: {},
-      servicesError: {
-        responseInfo: { responseCode: '99' },
-        libErrorInfo: {
-          internalErrors: [{ errorMessage: 'Some error occurred' }],
+  // Simulate updated confirmServices in the next render
+  useSelector.mockImplementation((cb) =>
+    cb({
+      Home: {
+        services: initialServices,
+        isFetching: false,
+        serviceFail: false,
+        confirmServices: {
+          responseInfo: { responseCode: '00' }
         },
+        servicesError: {},
       },
-    });
+    })
+  );
 
-    expect(screen.getByText(/Error/i)).toBeInTheDocument();
-  });
+  // Re-render with updated selector (simulate redux update)
+  render(
+    <Provider store={store}>
+      <Router history={history}>
+        <BlockServices />
+      </Router>
+    </Provider>
+  );
 
-  it('renders failure message if service load fails', () => {
-    setup({
-      services: {},
-      isFetching: false,
-      serviceFail: true,
-      confirmServices: {},
-      servicesError: {},
-    });
-
-    expect(screen.getByText(/Failed to fetch services/i)).toBeInTheDocument();
-  });
-
-  it('navigates to service details on TextLink click', () => {
-    const { history } = setup({
-      services: {
-        Category1: [{ serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' }],
-      },
-      isFetching: false,
-      serviceFail: false,
-      confirmServices: {},
-      servicesError: {},
-    });
-
-    fireEvent.click(screen.getByText(/Tell me more/i));
-    expect(history.location.pathname).toContain('/service-details/Service A');
-  });
+  // Toggle should now say On
+  expect(screen.getByTestId('Test Service')).toHaveTextContent('On');
 });

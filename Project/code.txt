@@ -8,45 +8,33 @@ import '@testing-library/jest-dom';
 
 import BlockServices from '../../components/BlockServices';
 
-// Safe dispatch and selector mock
-jest.mock('react-redux', () => {
-  const ActualRedux = jest.requireActual('react-redux');
-  return {
-    ...ActualRedux,
-    useDispatch: () => jest.fn(),
-    useSelector: jest.fn()
-  };
-});
-
-import { useSelector } from 'react-redux';
+import * as reactRedux from 'react-redux';
 
 const mockStore = configureStore([]);
 
-describe('BlockServices', () => {
-  let store, history;
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useDispatch: jest.fn(),
+  useSelector: jest.fn()
+}));
 
-  const baseState = {
-    Home: {
-      services: {
-        Category1: [
-          { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' },
-          { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' }
-        ]
-      },
-      isFetching: false,
-      serviceFail: false,
-      confirmServices: {},
-      servicesError: {}
-    }
-  };
+describe('BlockServices Component', () => {
+  let store;
+  let history;
+  const mockDispatch = jest.fn();
 
-  const setup = (overrideState = {}) => {
-    const state = { Home: { ...baseState.Home, ...overrideState } };
-    store = mockStore(state);
+  beforeEach(() => {
+    reactRedux.useDispatch.mockReturnValue(mockDispatch);
+  });
+
+  const setup = (selectorData) => {
+    store = mockStore({});
     history = createMemoryHistory();
     history.push('/block-services?mdn=1234567890');
 
-    useSelector.mockImplementation((selector) => selector({ Home: state.Home }));
+    reactRedux.useSelector.mockImplementation(cb =>
+      cb({ Home: selectorData })
+    );
 
     render(
       <Provider store={store}>
@@ -63,43 +51,92 @@ describe('BlockServices', () => {
     jest.clearAllMocks();
   });
 
-  it('renders services and toggles', () => {
-    setup();
+  it('renders and toggles service correctly', () => {
+    setup({
+      services: {
+        Category1: [
+          { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' },
+          { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' }
+        ]
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {},
+      servicesError: {}
+    });
+
     expect(screen.getByText(/Be in charge of who does what/i)).toBeInTheDocument();
     expect(screen.getByText('Service A')).toBeInTheDocument();
     expect(screen.getByText('Service B')).toBeInTheDocument();
-    expect(screen.getAllByRole('switch')).toHaveLength(2);
+
+    fireEvent.click(screen.getAllByRole('switch')[1]);
+    expect(mockDispatch).toHaveBeenCalled();
   });
 
-  it('navigates to service detail on Tell me more click', () => {
-    const { history } = setup();
-    fireEvent.click(screen.getAllByText(/Tell me more/i)[0]);
-    expect(history.location.pathname).toContain('/service-details/Service%20A');
-  });
-
-  it('shows success notification when responseCode is 00', () => {
+  it('shows success notification when confirmServices responseCode is 00', () => {
     setup({
+      services: {
+        Category1: []
+      },
+      isFetching: false,
+      serviceFail: false,
       confirmServices: {
         responseInfo: { responseCode: '00' }
-      }
+      },
+      servicesError: {}
     });
+
     expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
   });
 
-  it('shows error when responseCode is 99', () => {
+  it('shows error notification when responseCode is 99', () => {
     setup({
+      services: {
+        Category1: []
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {},
       servicesError: {
         responseInfo: { responseCode: '99' },
         libErrorInfo: {
-          internalErrors: [{ errorMessage: 'Sample error' }]
+          internalErrors: [
+            { errorMessage: 'Sample error' }
+          ]
         }
       }
     });
+
     expect(screen.getByText(/Error/i)).toBeInTheDocument();
   });
 
-  it('shows failure message if service load fails', () => {
-    setup({ serviceFail: true });
+  it('renders failure message if service load fails', () => {
+    setup({
+      services: {},
+      isFetching: false,
+      serviceFail: true,
+      confirmServices: {},
+      servicesError: {}
+    });
+
     expect(screen.getByText(/Failed to fetch services/i)).toBeInTheDocument();
+  });
+
+  it('navigates to service details on TextLink click', () => {
+    const { history } = setup({
+      services: {
+        Category1: [
+          { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' }
+        ]
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {},
+      servicesError: {}
+    });
+
+    const tellMeMore = screen.getByText(/Tell me more/i);
+    fireEvent.click(tellMeMore);
+    expect(history.location.pathname).toContain('/service-details/Service%20A');
   });
 });

@@ -1,26 +1,52 @@
-import React, { lazy, Fragment } from 'react'
-import ScrollToTop from './ScrollToTop'
-import { BrowserRouter, Route} from 'react-router-dom/cjs/react-router-dom.min'
-const Home = lazy(() => import('./home/components'))
-const DeviceDetail = lazy(() => import('./deviceDetail/components'))
-const ServiceDetails =lazy(() =>import('./home/components/servicedetails'))
-const ViewLimitations = lazy(() =>import('./deviceDetail/components/ViewLimitation'))
-const callsmessages = lazy(() =>import('./deviceDetail/components/callsandmessages'))
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import { MemoryRouter } from 'react-router-dom';
+import Routes from '../routes'; // adjust path if needed
 
-const Routes = ({ reduxStore }) => {
-  const routeConfig = (
-    <div>
-      <ScrollToTop />
-      <BrowserRouter>
-      <Route exact path="/blockService" component={Home} />
-      <Route exact path="/service-details/:serviceName" component = {ServiceDetails} />
-      <Route exact path="/call-message-blocking" component = {callsmessages} />
-      <Route exact path="/callsandmessages" component={DeviceDetail} />
-      <Route exact path="/viewlimitation" component={ViewLimitations} />
-      </BrowserRouter>
-    </div>
-  )
-  return <Fragment>{routeConfig}</Fragment>
-}
+// Mock all lazy-loaded components with minimal components that have test IDs
+jest.mock('../home/components', () => () => <div data-testid="HomeComponent" />);
+jest.mock('../deviceDetail/components', () => () => <div data-testid="DeviceDetailComponent" />);
+jest.mock('../home/components/servicedetails', () => () => <div data-testid="ServiceDetailsComponent" />);
+jest.mock('../deviceDetail/components/ViewLimitation', () => () => <div data-testid="ViewLimitationsComponent" />);
+jest.mock('../deviceDetail/components/callsandmessages', () => () => <div data-testid="CallsMessagesComponent" />);
 
-export default Routes
+const mockStore = configureStore([]);
+const store = mockStore({});
+
+describe('Routes', () => {
+  const renderWithPath = (path) =>
+    render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes />
+        </MemoryRouter>
+      </Provider>
+    );
+
+  it('renders Home route for /blockService', () => {
+    renderWithPath('/blockService');
+    expect(screen.getByTestId('HomeComponent')).toBeInTheDocument();
+  });
+
+  it('renders ServiceDetails route for /service-details/:serviceName', () => {
+    renderWithPath('/service-details/TestService');
+    expect(screen.getByTestId('ServiceDetailsComponent')).toBeInTheDocument();
+  });
+
+  it('renders CallsMessages route for /call-message-blocking', () => {
+    renderWithPath('/call-message-blocking');
+    expect(screen.getByTestId('CallsMessagesComponent')).toBeInTheDocument();
+  });
+
+  it('renders DeviceDetail route for /callsandmessages', () => {
+    renderWithPath('/callsandmessages');
+    expect(screen.getByTestId('DeviceDetailComponent')).toBeInTheDocument();
+  });
+
+  it('renders ViewLimitations route for /viewlimitation', () => {
+    renderWithPath('/viewlimitation');
+    expect(screen.getByTestId('ViewLimitationsComponent')).toBeInTheDocument();
+  });
+});

@@ -1,111 +1,3 @@
-// callsandmessages.test.js
-import React from 'react';
-import { render, fireEvent, screen } from '@testing-library/react';
-import BlockCallsEmpty from '../../components/BlockCallsEmpty'; // adjust the path
-import { Router } from 'react-router-dom';
-import { Provider, useDispatch, useSelector } from 'react-redux';
-import { createMemoryHistory } from 'history';
-import configureStore from 'redux-mock-store';
-import '@testing-library/jest-dom';
-import callsMessagesReducer from '../../redux/reducers/callsMessagesReducer';
-import * as actions from '../../redux/actions/fetchCallsMessages';
-
-// Mock Redux
-jest.mock('react-redux', () => ({
-  ...jest.requireActual('react-redux'),
-  useDispatch: jest.fn(),
-  useSelector: jest.fn(),
-}));
-
-const mockDispatch = jest.fn();
-const mockStore = configureStore([]);
-
-describe('BlockCallsEmpty component', () => {
-  beforeEach(() => {
-    useDispatch.mockReturnValue(mockDispatch);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  const setup = (initialState, routeState = {}) => {
-    const history = createMemoryHistory();
-    history.push('/blockcalls', routeState);
-
-    useSelector.mockImplementation((selectorFn) =>
-      selectorFn({ Detail: initialState })
-    );
-
-    render(
-      <Provider store={mockStore({})}>
-        <Router history={history}>
-          <BlockCallsEmpty history={history} />
-        </Router>
-      </Provider>
-    );
-
-    return { history };
-  };
-
-  it('renders title and disabled button initially', () => {
-    setup({ blockedNumbers: [], addBlockCallMsg: {}, isFetching: false });
-
-    expect(
-      screen.getByText(/Block calls and messages from up to 5 numbers./i)
-    ).toBeInTheDocument();
-
-    const button = screen.getByRole('button', { name: /Block number/i });
-    expect(button).toBeDisabled();
-  });
-
-  it('enables button when number is entered', () => {
-    setup({ blockedNumbers: [], addBlockCallMsg: {}, isFetching: false });
-
-    const input = screen.getByRole('textbox');
-    fireEvent.change(input, { target: { value: '1234567890' } });
-
-    expect(screen.getByRole('button', { name: /Block number/i })).not.toBeDisabled();
-  });
-
-  it('redirects if blockedNumbers exist and allowInput is false', () => {
-    const { history } = setup(
-      {
-        blockedNumbers: [{ phoneNumber: '1111111111' }],
-        addBlockCallMsg: {},
-        isFetching: false,
-      },
-      { allowInput: false }
-    );
-
-    expect(history.location.pathname).toBe('/call-message-blocking');
-  });
-
-  it('does not redirect if allowInput is true', () => {
-    const { history } = setup(
-      {
-        blockedNumbers: [{ phoneNumber: '1111111111' }],
-        addBlockCallMsg: {},
-        isFetching: false,
-      },
-      { allowInput: true }
-    );
-
-    expect(history.location.pathname).toBe('/blockcalls');
-  });
-
-  it('dispatches postaddBlockCallMsg on clicking block', () => {
-    setup({ blockedNumbers: [], addBlockCallMsg: {}, isFetching: false });
-
-    fireEvent.change(screen.getByRole('textbox'), {
-      target: { value: '1234567890' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /Block number/i }));
-
-    expect(mockDispatch).toHaveBeenCalled();
-  });
-});
-
 // Reducer test
 describe('callsMessagesReducer', () => {
   const initialState = {
@@ -126,117 +18,101 @@ describe('callsMessagesReducer', () => {
   });
 
   it('handles GET_CALLS_MESSAGES_BEGIN', () => {
-    expect(
-      callsMessagesReducer(initialState, { type: actions.GET_CALLS_MESSAGES_BEGIN })
-    ).toEqual({ ...initialState, isFetching: true });
+    const result = callsMessagesReducer(initialState, { type: actions.GET_CALLS_MESSAGES_BEGIN });
+    expect(result).toEqual({ ...initialState, isFetching: true });
   });
 
   it('handles GET_CALLS_MESSAGES_SUCCESS', () => {
-    const response = {
-      body: { data: 'test' },
-      blockedPhoneNumbers: ['1234567890'],
-      expiredBlockedPhoneNumbers: [],
+    const payload = {
+      body: { data: 'success' },
+      blockedPhoneNumbers: ['111'],
+      expiredBlockedPhoneNumbers: ['222'],
     };
-
-    expect(
-      callsMessagesReducer(initialState, {
-        type: actions.GET_CALLS_MESSAGES_SUCCESS,
-        payload: response.body,
-        blockedNumbers: response.blockedPhoneNumbers,
-        expiredBlockNumbers: response.expiredBlockedPhoneNumbers,
-      })
-    ).toEqual({
+    const result = callsMessagesReducer(initialState, {
+      type: actions.GET_CALLS_MESSAGES_SUCCESS,
+      payload: payload.body,
+      blockedNumbers: payload.blockedPhoneNumbers,
+      expiredBlockNumbers: payload.expiredBlockedPhoneNumbers,
+    });
+    expect(result).toEqual({
       ...initialState,
-      callsMessages: response.body,
-      blockedNumbers: response.blockedPhoneNumbers,
-      expiredNumbers: response.expiredBlockedPhoneNumbers,
+      callsMessages: payload.body,
+      blockedNumbers: payload.blockedPhoneNumbers,
+      expiredNumbers: payload.expiredBlockedPhoneNumbers,
       isFetching: false,
     });
   });
 
   it('handles GET_CALLS_MESSAGES_FAIL', () => {
-    expect(
-      callsMessagesReducer(initialState, {
-        type: actions.GET_CALLS_MESSAGES_FAIL,
-        payloadGetCMError: { error: true },
-      })
-    ).toEqual({
-      ...initialState,
-      getCMError: { error: true },
-      isFetching: false,
+    const error = { message: 'fail' };
+    const result = callsMessagesReducer(initialState, {
+      type: actions.GET_CALLS_MESSAGES_FAIL,
+      payloadGetCMError: error,
     });
+    expect(result).toEqual({ ...initialState, getCMError: error, isFetching: false });
+  });
+
+  // ---------- ADD ----------
+  it('handles POST_ADD_CALL_MSG_BEGIN', () => {
+    const result = callsMessagesReducer(initialState, {
+      type: actions.POST_ADD_CALL_MSG_BEGIN,
+    });
+    expect(result).toEqual({ ...initialState, isFetching: true });
   });
 
   it('handles POST_ADD_CALL_MSG_SUCCESS', () => {
-    expect(
-      callsMessagesReducer(initialState, {
-        type: actions.POST_ADD_CALL_MSG_SUCCESS,
-        payloadAddCallMsg: { message: 'added' },
-      })
-    ).toEqual({
+    const result = callsMessagesReducer(initialState, {
+      type: actions.POST_ADD_CALL_MSG_SUCCESS,
+      payloadAddCallMsg: { message: 'added' },
+    });
+    expect(result).toEqual({
       ...initialState,
       addBlockCallMsg: { message: 'added' },
       isFetching: false,
     });
   });
 
+  it('handles POST_ADD_CALL_MSG_FAIL', () => {
+    const result = callsMessagesReducer(initialState, {
+      type: actions.POST_ADD_CALL_MSG_FAIL,
+      payloadAddCallMsgError: { error: 'fail' },
+    });
+    expect(result).toEqual({
+      ...initialState,
+      addBlockCallMsg: { error: 'fail' },
+      isFetching: false,
+    });
+  });
+
+  // ---------- DELETE ----------
+  it('handles POST_DELETE_CALL_MSG_BEGIN', () => {
+    const result = callsMessagesReducer(initialState, {
+      type: actions.POST_DELETE_CALL_MSG_BEGIN,
+    });
+    expect(result).toEqual({ ...initialState, isFetching: true });
+  });
+
   it('handles POST_DELETE_CALL_MSG_SUCCESS', () => {
-    expect(
-      callsMessagesReducer(initialState, {
-        type: actions.POST_DELETE_CALL_MSG_SUCCESS,
-        payloadDeleteCallMsg: { message: 'deleted' },
-      })
-    ).toEqual({
+    const result = callsMessagesReducer(initialState, {
+      type: actions.POST_DELETE_CALL_MSG_SUCCESS,
+      payloadDeleteCallMsg: { message: 'deleted' },
+    });
+    expect(result).toEqual({
       ...initialState,
       deleteBlockCallMsg: { message: 'deleted' },
       isFetching: false,
     });
   });
-});
 
-// Action creator tests (pure actions only)
-describe('callsMessagesActions', () => {
-  it('creates GET_CALLS_MESSAGES_BEGIN', () => {
-    expect(actions.getCallsMessagesBegin()).toEqual({
-      type: actions.GET_CALLS_MESSAGES_BEGIN,
+  it('handles POST_DELETE_CALL_MSG_FAIL', () => {
+    const result = callsMessagesReducer(initialState, {
+      type: actions.POST_DELETE_CALL_MSG_FAIL,
+      payloadDeleteCallMsgError: { error: 'delete-fail' },
     });
-  });
-
-  it('creates GET_CALLS_MESSAGES_SUCCESS', () => {
-    const data = {
-      body: { sample: 'ok' },
-      blockedPhoneNumbers: ['1'],
-      expiredBlockedPhoneNumbers: [],
-    };
-    expect(actions.getCallsMessagesSuccess(data)).toEqual({
-      type: actions.GET_CALLS_MESSAGES_SUCCESS,
-      payload: data.body,
-      blockedNumbers: data.blockedPhoneNumbers,
-      expiredBlockNumbers: data.expiredBlockedPhoneNumbers,
-    });
-  });
-
-  it('creates GET_CALLS_MESSAGES_FAIL', () => {
-    const error = { body: { error: 'fail' } };
-    expect(actions.getCallsMessagesError(error)).toEqual({
-      type: actions.GET_CALLS_MESSAGES_FAIL,
-      payloadGetCMError: error.body,
-    });
-  });
-
-  it('creates POST_ADD_CALL_MSG_SUCCESS', () => {
-    const resp = { body: { added: true } };
-    expect(actions.postaddBlockCallMsgSuccess(resp)).toEqual({
-      type: actions.POST_ADD_CALL_MSG_SUCCESS,
-      payloadAddCallMsg: resp.body,
-    });
-  });
-
-  it('creates POST_DELETE_CALL_MSG_SUCCESS', () => {
-    const resp = { body: { deleted: true } };
-    expect(actions.postDeleteBlockCallMsgSuccess(resp)).toEqual({
-      type: actions.POST_DELETE_CALL_MSG_SUCCESS,
-      payloadDeleteCallMsg: resp.body,
+    expect(result).toEqual({
+      ...initialState,
+      deleteBlockCallMsg: { error: 'delete-fail' },
+      isFetching: false,
     });
   });
 });

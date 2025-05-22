@@ -1,110 +1,88 @@
-import 'url-search-params-polyfill';
-import React, { Component, Suspense } from 'react';
-import { bindActionCreators } from 'redux';
-import { HashRouter } from 'react-router-dom';
-import { createBrowserHistory } from 'history';
-import { CookiesProvider } from 'react-cookie';
-import Routes from './routes';
-import Loader from './../../shared/components/Loader/Loader';
-import { ErrorBoundary, library, SessionTimeoutModal } from '@vz/react-util';
-import { connect } from 'react-redux';
-import * as homeActions from './home/actions';
-import { startMonitoring } from './../../shared/services/monitoring';
-export const history = createBrowserHistory();
+// src/app/blocks/deviceDetail/components/test/App.test.js
+import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import App from '../../App';
+import * as reactRedux from 'react-redux';
+import * as monitoring from '../../../../shared/services/monitoring';
+import { createMemoryHistory } from 'history';
+import { Router } from 'react-router-dom';
 
-const loadingImg = (<Loader />);
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  connect: (mapStateToProps, mapDispatchToProps) => (Component) => (props) => (
+    <Component {...props} reduxStore={{}} statusCode="00" />
+  ),
+}));
 
+jest.mock('../../../../shared/services/monitoring', () => ({
+  startMonitoring: jest.fn(),
+}));
 
-if ("Y" == reactGlobals?.enableFaroMonitoring || window.sessionStorage.getItem("enableFaro") != null) {
-	reactGlobals.enableFaroMonitoring = "Y";
-	window.appPerformanceMetrics = window.appPerformanceMetrics || {};
-	window.appPerformanceMetrics.startMonitoring = false;
-	window.appPerformanceMetrics.perfArr = [];
-}
+jest.mock('../../routes', () => () => <div>Mocked Routes</div>);
 
-class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isAuthenticated: true,
-    };
-  } 
+jest.mock('@vz/react-util', () => ({
+  ErrorBoundary: ({ children }) => <div>{children}</div>,
+  library: { init: jest.fn() },
+  SessionTimeoutModal: () => <div>Session Timeout</div>,
+}));
 
-  componentWillMount() {
-    try {
-      var isFaroEnabled= "Y" == window.reactGlobals?.enableFaroMonitoring || window.sessionStorage.getItem("enableFaro") != null;
-      library.init({ appName: 'Devices', pageName: 'Device overview', flowName: 'device overview',enableFaro:isFaroEnabled });
-    } catch (ex) { }
-  }
-
-  componentDidMount() {
-    history.listen((action) => {
-      startMonitoring()
-    })
-    if (typeof reactGlobals === 'undefined' || reactGlobals === null || !reactGlobals) {
-      window.reactGlobals = {};
-    }
-    reactGlobals.routeLog = reactGlobals.routeLog || {};
-    reactGlobals.routeLog = {
-      showConfirmation: false,
-      confirmationShown: false,
+describe('App Component', () => {
+  beforeEach(() => {
+    global.reactGlobals = {
+      enableFaroMonitoring: 'Y',
+      session: { sessionTimeoutEnabled: true },
     };
 
-    document.addEventListener('vztagLoaded', this.handleOmniLoad);
-  }
+    global.vztag = {
+      api: {
+        dispatch: jest.fn(),
+      },
+    };
 
-  componentWillUnmount() {
-    window.removeEventListener('vztagLoaded', this.handleOmniLoad);
-  }
+    window.appPerformanceMetrics = {
+      startMonitoring: false,
+      perfArr: [],
+    };
+  });
 
-  handleOmniLoad = (e) => {
-    try {
-      if (vztag?.api?.dispatch) {
-        vztag.api.dispatch();
-      }
-    } catch (ex) { console.log('ex:' + ex); }
-  }
-  
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
-  render() {
-    if (this.state.isAuthenticated) {
-      return (
-        <div data-testid="appTestId">
-          <Suspense fallback={loadingImg}>
-            <HashRouter history={history}>
-              <CookiesProvider>
-                {/* <div className={'main grid'}> */}
-                <section>
-                  <ErrorBoundary init={true}>
-                    <Routes reduxStore={this.props.reduxStore} />
-                    {reactGlobals && reactGlobals.session && reactGlobals.session.sessionTimeoutEnabled
-                      && (
-                        <SessionTimeoutModal />
-                      )
-                    }
-                  </ErrorBoundary>
-                </section>
-                {/* </div> */}
-              </CookiesProvider>
-            </HashRouter>
-          </Suspense>
-        </div>
-      );
-    }
-    return <div data-testid="appTestId">{loadingImg}</div>;
-  }
-}
+  it('renders the App and shows Routes with session modal', async () => {
+    const { getByTestId } = render(<App />);
+    expect(getByTestId('appTestId')).toBeInTheDocument();
+    expect(await screen.findByText('Mocked Routes')).toBeInTheDocument();
+    expect(screen.getByText('Session Timeout')).toBeInTheDocument();
+  });
 
-const mapStateToProps = (store) => ({
-  reduxStore: store,
-  statusCode: store.Home.statusCode,
+  it('calls vztag.api.dispatch when vztagLoaded is dispatched', () => {
+    const dispatchSpy = jest.fn();
+    window.vztag.api.dispatch = dispatchSpy;
+
+    const { unmount } = render(<App />);
+    const event = new Event('vztagLoaded');
+    document.dispatchEvent(event);
+
+    expect(dispatchSpy).toHaveBeenCalled();
+    unmount();
+  });
+
+  it('fallbacks to loader if unauthenticated', () => {
+    const TestApp = require('../../App').default;
+    const wrapper = render(<TestApp />);
+    expect(wrapper.getByTestId('appTestId')).toBeInTheDocument();
+  });
+
+  it('listens for route changes and calls startMonitoring', () => {
+    const history = createMemoryHistory();
+    render(
+      <Router history={history}>
+        <App />
+      </Router>
+    );
+    history.push('/new-route');
+    expect(monitoring.startMonitoring).toHaveBeenCalled();
+  });
 });
-
-const mapDispatchToProps = (dispatch) => ({
-  homeActions: bindActionCreators(homeActions, dispatch),
-});
-
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(App);

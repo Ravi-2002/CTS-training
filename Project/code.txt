@@ -1,100 +1,50 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Title, Body } from "@vds/typography";
-import { Input } from "@vds/inputs";
-import { Button, TextLink } from "@vds/buttons";
-import { Loader } from "@vds/loaders";
-import styled from "styled-components";
-import {
-  getCallsMessages,
-  postaddBlockCallMsg,
-} from "../actions/fetchCallsMessages";
-import { useLocation } from "react-router-dom/cjs/react-router-dom.min";
+// tests/BlockCallsEmpty.test.jsx
 
-const BlockCallsEmpty = ({ history }) => {
-  const dispatch = useDispatch();
-  const [phoneNumber, setPhoneNumber] = useState("");
+import React from 'react'; import { render, screen, fireEvent } from '@testing-library/react'; import { Provider } from 'react-redux'; import { createMemoryHistory } from 'history'; import { Router } from 'react-router-dom'; import configureStore from 'redux-mock-store'; import BlockCallsEmpty from '../BlockCallsEmpty';
 
-  const { blockedNumbers, addBlockCallMsg, isFetching } = useSelector((state) => state.Detail);
-  
-  useEffect(() => {
-    dispatch(getCallsMessages());
-  }, [dispatch]);
-  const location = useLocation();
-  const allowInput = location.state?.allowInput??false;
-  const query = location.search.slice(1);
-  const MDN = query.split("&").find(q=>q.startsWith("mdn="))?.split("=")[1];
-  if(MDN){
-  localStorage.setItem('mdn',MDN);
-  }
-  let mdn = MDN?MDN:location.state?.mtn;
-  useEffect(() => {
-    if (
-      (!allowInput&&blockedNumbers.length > 0 )
-    ) {
-      history.push("/call-message-blocking");
-    }
-  }, [blockedNumbers,allowInput, history]);
+const mockStore = configureStore([]);
 
-  const handleAdd = () => {
-    let payload = {
-      mtn: mdn,
-      blockNumber: phoneNumber,
-      oldPhoneNumber: phoneNumber,
-      memo: "",
-      expiredPhoneNumber: "",
-      blockedNumbers: [],
-      applyAll: false,
-      onlyMemo: false
-    }
-    dispatch(postaddBlockCallMsg(payload));
-    console.log(addBlockCallMsg,'addblock')
-    setPhoneNumber("");
-    history.push('/call-message-blocking')
-  };
+const setup = (initialState, routeState = {}) => { const store = mockStore(initialState); const history = createMemoryHistory(); history.push('/block-calls', routeState);
 
-  return (
-    <PageWrapper>
-      <Loader active={isFetching} fullscreen />
-      <Title size="large" bold>Block calls and messages from up to 5 numbers.</Title>
-      <br></br>
-      <p className="text-muted mb-4">732.609.9414</p>
-      <br></br><br></br>
-      <Body>Enter phone number</Body>
-      
-      <Input
-        value={phoneNumber}
-        maxLength={10}
-        onChange={(e) => setPhoneNumber(e.target.value)}
-      />
-      <br></br>
-      <Body size="large">
-        There is no charge to block.{" "}
-        <TextLink
-          type="standAlone"
-          surface="light"
-          onClick={() => history.push("/viewlimitation")}
-        >
-          View Limitations
-        </TextLink>
-      </Body>
-      <ButtonWrapper>
-        <Button
-          disabled={!phoneNumber.trim()}
-          onClick={handleAdd}
-        >
-          Block number
-        </Button>
-      </ButtonWrapper>
-    </PageWrapper>
-  );
-};
+render( <Provider store={store}> <Router history={history}> <BlockCallsEmpty history={history} /> </Router> </Provider> );
 
-const PageWrapper = styled.div` padding: 20px; `;
-const ButtonWrapper = styled.div` display: flex;
-  justify-content: center;
-  margin-top: auto;
-  padding-top: 450px;
-  `;
+return { store, history }; };
 
-export default BlockCallsEmpty;
+describe('BlockCallsEmpty', () => { it('renders input and disabled button initially', () => { setup({ Detail: { blockedNumbers: [], addBlockCallMsg: {}, isFetching: false, }, });
+
+expect(screen.getByText(/Block calls and messages/i)).toBeInTheDocument();
+expect(screen.getByRole('button', { name: /Block number/i })).toBeDisabled();
+
+});
+
+it('enables the button when a number is typed', () => { setup({ Detail: { blockedNumbers: [], addBlockCallMsg: {}, isFetching: false, }, });
+
+const input = screen.getByRole('textbox');
+fireEvent.change(input, { target: { value: '1234567890' } });
+
+const button = screen.getByRole('button', { name: /Block number/i });
+expect(button).not.toBeDisabled();
+
+});
+
+it('redirects if blockedNumbers > 0 and allowInput is false', () => { const initialState = { Detail: { blockedNumbers: [{ phoneNumber: '1112223333' }], addBlockCallMsg: {}, isFetching: false, }, };
+
+const { history } = setup(initialState, { allowInput: false });
+expect(history.location.pathname).toBe('/call-message-blocking');
+
+});
+
+it('does not redirect if allowInput is true even when blockedNumbers > 0', () => { const initialState = { Detail: { blockedNumbers: [{ phoneNumber: '1112223333' }], addBlockCallMsg: {}, isFetching: false, }, };
+
+const { history } = setup(initialState, { allowInput: true });
+expect(history.location.pathname).toBe('/block-calls');
+
+});
+
+it('redirects to list page after successful block', () => { const initialState = { Detail: { blockedNumbers: [], addBlockCallMsg: { responseInfo: { responseCode: '00', }, }, isFetching: false, }, };
+
+const { history } = setup(initialState);
+expect(history.location.pathname).toBe('/call-message-blocking');
+
+}); });
+

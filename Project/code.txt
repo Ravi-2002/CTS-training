@@ -1,20 +1,5 @@
-it('renders service toggle and toggles it correctly', () => {
-  setup({
-    services: {
-      Category1: [
-        { serviceName: 'Service A', sfoEnabled: 'N', sfoCode: '001' }, // Initially Off
-      ]
-    },
-    isFetching: false,
-    serviceFail: false,
-    confirmServices: {},
-    servicesError: {}
-  });
+const { serviceName, toggledValue } lastToggledService; setFormState((prev) => ({ .prev, [serviceName]: toggledValue, }));
 
-  const toggle = screen.getByTestId('test-toggle');
-  expect(toggle).not.toBeChecked(); // initially off
+setLast ToggledService(null);
 
-  fireEvent.click(toggle); // toggle it
-
-  expect(mockDispatch).toHaveBeenCalled(); // or any specific dispatched action
-});
+}

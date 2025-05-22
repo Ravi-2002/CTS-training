@@ -1,30 +1,31 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Provider } from 'react-redux';
+import { Provider, useDispatch, useSelector } from 'react-redux';
 import { Router } from 'react-router-dom';
 import { createMemoryHistory } from 'history';
 import configureStore from 'redux-mock-store';
 import '@testing-library/jest-dom';
-
 import BlockServices from '../../components/index';
+import servicesReducer from '../../redux/reducers/servicesReducer'; // adjust path if needed
+import * as actions from '../../redux/actions/blockServicesActions'; // adjust path
 
-import * as reactRedux from 'react-redux';
-
-const mockStore = configureStore([]);
-
+// ---------- MOCKS ----------
 jest.mock('react-redux', () => ({
   ...jest.requireActual('react-redux'),
   useDispatch: jest.fn(),
-  useSelector: jest.fn()
+  useSelector: jest.fn(),
 }));
 
+const mockStore = configureStore([]);
+const mockDispatch = jest.fn();
+
+// ---------- COMPONENT TEST ----------
 describe('BlockServices Component', () => {
   let store;
   let history;
-  const mockDispatch = jest.fn();
 
   beforeEach(() => {
-    reactRedux.useDispatch.mockReturnValue(mockDispatch);
+    useDispatch.mockReturnValue(mockDispatch);
   });
 
   const setup = (selectorData) => {
@@ -32,9 +33,7 @@ describe('BlockServices Component', () => {
     history = createMemoryHistory();
     history.push('/block-services?mdn=1234567890');
 
-    reactRedux.useSelector.mockImplementation(cb =>
-      cb({ Home: selectorData })
-    );
+    useSelector.mockImplementation((cb) => cb({ Home: selectorData }));
 
     render(
       <Provider store={store}>
@@ -56,13 +55,13 @@ describe('BlockServices Component', () => {
       services: {
         Category1: [
           { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' },
-          { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' }
-        ]
+          { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' },
+        ],
       },
       isFetching: false,
       serviceFail: false,
       confirmServices: {},
-      servicesError: {}
+      servicesError: {},
     });
 
     expect(screen.getByText(/Be in charge of who does what/i)).toBeInTheDocument();
@@ -75,15 +74,11 @@ describe('BlockServices Component', () => {
 
   it('shows success notification when confirmServices responseCode is 00', () => {
     setup({
-      services: {
-        Category1: []
-      },
+      services: { Category1: [] },
       isFetching: false,
       serviceFail: false,
-      confirmServices: {
-        responseInfo: { responseCode: '00' }
-      },
-      servicesError: {}
+      confirmServices: { responseInfo: { responseCode: '00' } },
+      servicesError: {},
     });
 
     expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
@@ -91,20 +86,16 @@ describe('BlockServices Component', () => {
 
   it('shows error notification when responseCode is 99', () => {
     setup({
-      services: {
-        Category1: []
-      },
+      services: { Category1: [] },
       isFetching: false,
       serviceFail: false,
       confirmServices: {},
       servicesError: {
         responseInfo: { responseCode: '99' },
         libErrorInfo: {
-          internalErrors: [
-            { errorMessage: 'Sample error' }
-          ]
-        }
-      }
+          internalErrors: [{ errorMessage: 'Sample error' }],
+        },
+      },
     });
 
     expect(screen.getByText(/Error/i)).toBeInTheDocument();
@@ -116,7 +107,7 @@ describe('BlockServices Component', () => {
       isFetching: false,
       serviceFail: true,
       confirmServices: {},
-      servicesError: {}
+      servicesError: {},
     });
 
     expect(screen.getByText(/Failed to fetch services/i)).toBeInTheDocument();
@@ -125,18 +116,152 @@ describe('BlockServices Component', () => {
   it('navigates to service details on TextLink click', () => {
     const { history } = setup({
       services: {
-        Category1: [
-          { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' }
-        ]
+        Category1: [{ serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' }],
       },
       isFetching: false,
       serviceFail: false,
       confirmServices: {},
-      servicesError: {}
+      servicesError: {},
     });
 
-    const tellMeMore = screen.getByText(/Tell me more/i);
-    fireEvent.click(tellMeMore);
+    fireEvent.click(screen.getByText(/Tell me more/i));
     expect(history.location.pathname).toContain('/service-details/Service A');
+  });
+});
+
+// ---------- REDUCER TEST ----------
+describe('servicesReducer', () => {
+  const initialState = {
+    isFetching: false,
+    services: {},
+    confirmServices: {},
+    servicesError: {},
+    serviceErrorFlag: false,
+    confirmServiceFlag: false,
+    failServices: {},
+    getServices: false,
+    serviceFail: false,
+  };
+
+  it('should return initial state', () => {
+    expect(servicesReducer(undefined, {})).toEqual(initialState);
+  });
+
+  it('should handle GET_SERVICES_BEGIN', () => {
+    const action = { type: actions.GET_SERVICES_BEGIN };
+    const expected = {
+      ...initialState,
+      isFetching: true,
+    };
+    expect(servicesReducer(initialState, action)).toEqual(expected);
+  });
+
+  it('should handle GET_SERVICES_SUCCESS', () => {
+    const mockServices = { Category1: [] };
+    const action = {
+      type: actions.GET_SERVICES_SUCCESS,
+      services: mockServices,
+      serviceStatus: {},
+    };
+    const expected = {
+      ...initialState,
+      services: mockServices,
+      serviceStatus: {},
+      getServices: true,
+      isFetching: false,
+    };
+    expect(servicesReducer(initialState, action)).toEqual(expected);
+  });
+
+  it('should handle GET_SERVICES_FAIL', () => {
+    const action = {
+      type: actions.GET_SERVICES_FAIL,
+      failServices: { error: 'Failed' },
+    };
+    const expected = {
+      ...initialState,
+      serviceFail: true,
+      isFetching: false,
+      failServices: { error: 'Failed' },
+    };
+    expect(servicesReducer(initialState, action)).toEqual(expected);
+  });
+
+  it('should handle POST_SERVICES_SUCCESS', () => {
+    const action = {
+      type: actions.POST_SERVICES_SUCCESS,
+      confirmServices: { message: 'success' },
+    };
+    const expected = {
+      ...initialState,
+      confirmServices: { message: 'success' },
+      confirmServiceFlag: true,
+      isFetching: false,
+    };
+    expect(servicesReducer(initialState, action)).toEqual(expected);
+  });
+
+  it('should handle POST_SERVICES_FAIL', () => {
+    const action = {
+      type: actions.POST_SERVICES_FAIL,
+      servicesError: { message: 'error' },
+    };
+    const expected = {
+      ...initialState,
+      servicesError: { message: 'error' },
+      serviceErrorFlag: true,
+      isFetching: false,
+    };
+    expect(servicesReducer(initialState, action)).toEqual(expected);
+  });
+});
+
+// ---------- ACTION CREATOR TEST ----------
+describe('blockServicesActions', () => {
+  it('should create GET_SERVICES_BEGIN action', () => {
+    expect(actions.getServicesBegin()).toEqual({ type: actions.GET_SERVICES_BEGIN });
+  });
+
+  it('should create GET_SERVICES_SUCCESS action', () => {
+    const mockResp = {
+      body: {
+        sections: [{ sections: [{ data: { serviceDetailsMap: { a: [] } } }] }],
+      },
+    };
+    const expected = {
+      type: actions.GET_SERVICES_SUCCESS,
+      services: { a: [] },
+      serviceStatus: mockResp,
+    };
+    expect(actions.getServicesSuccess(mockResp)).toEqual(expected);
+  });
+
+  it('should create GET_SERVICES_FAIL action', () => {
+    const response = { body: { error: true } };
+    const expected = {
+      type: actions.GET_SERVICES_FAIL,
+      failServices: response.body,
+    };
+    expect(actions.getServicesFail(response)).toEqual(expected);
+  });
+
+  it('should create POST_SERVICES_BEGIN action', () => {
+    expect(actions.postServicesBegin()).toEqual({ type: actions.POST_SERVICES_BEGIN });
+  });
+
+  it('should create POST_SERVICES_SUCCESS action', () => {
+    const response = { success: true };
+    expect(actions.postServicesSuccess(response)).toEqual({
+      type: actions.POST_SERVICES_SUCCESS,
+      confirmServices: response,
+    });
+  });
+
+  it('should create POST_SERVICES_FAIL action', () => {
+    const response = { error: true };
+    expect(actions.postServicesFail(response)).toEqual({
+      type: actions.POST_SERVICES_FAIL,
+      servicesError: response,
+    });
   });
 });

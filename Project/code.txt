@@ -1,52 +1,81 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
+import '../../../../config/jest/test-setup';
+import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import Routes from '../routes'; // adjust path if needed
+import { Provider } from 'react-redux';
+import configureStore from '../../../shared/store/configureStore';
+import rootReducer from '../reducers';
+import Routes from '../routes';
 
-// Mock all lazy-loaded components with minimal components that have test IDs
-jest.mock('../home/components', () => () => <div data-testid="HomeComponent" />);
-jest.mock('../deviceDetail/components', () => () => <div data-testid="DeviceDetailComponent" />);
-jest.mock('../home/components/servicedetails', () => () => <div data-testid="ServiceDetailsComponent" />);
-jest.mock('../deviceDetail/components/ViewLimitation', () => () => <div data-testid="ViewLimitationsComponent" />);
-jest.mock('../deviceDetail/components/callsandmessages', () => () => <div data-testid="CallsMessagesComponent" />);
-
-const mockStore = configureStore([]);
-const store = mockStore({});
+jest.mock('../home/components', () => () => <div data-testid="HomeTestId" />);
+jest.mock('../deviceDetail/components', () => () => <div data-testid="DeviceDetailTestId" />);
+jest.mock('../home/components/servicedetails', () => () => <div data-testid="ServiceDetailsTestId" />);
+jest.mock('../deviceDetail/components/ViewLimitation', () => () => <div data-testid="ViewLimitationTestId" />);
+jest.mock('../deviceDetail/components/callsandmessages', () => () => <div data-testid="CallsMessagesTestId" />);
 
 describe('Routes', () => {
-  const renderWithPath = (path) =>
-    render(
+  const store = configureStore(rootReducer);
+  const originalConsoleLog = console.log;
+
+  beforeEach(() => {
+    console.log = jest.fn();
+  });
+
+  afterEach(() => {
+    console.log = originalConsoleLog;
+  });
+
+  test('renders Home component for /blockService', () => {
+    const { getByTestId } = render(
       <Provider store={store}>
-        <MemoryRouter initialEntries={[path]}>
+        <MemoryRouter initialEntries={['/blockService']}>
           <Routes />
         </MemoryRouter>
       </Provider>
     );
-
-  it('renders Home route for /blockService', () => {
-    renderWithPath('/blockService');
-    expect(screen.getByTestId('HomeComponent')).toBeInTheDocument();
+    expect(getByTestId('HomeTestId')).toBeInTheDocument();
   });
 
-  it('renders ServiceDetails route for /service-details/:serviceName', () => {
-    renderWithPath('/service-details/TestService');
-    expect(screen.getByTestId('ServiceDetailsComponent')).toBeInTheDocument();
+  test('renders ServiceDetails component for /service-details/:serviceName', () => {
+    const { getByTestId } = render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/service-details/TestService']}>
+          <Routes />
+        </MemoryRouter>
+      </Provider>
+    );
+    expect(getByTestId('ServiceDetailsTestId')).toBeInTheDocument();
   });
 
-  it('renders CallsMessages route for /call-message-blocking', () => {
-    renderWithPath('/call-message-blocking');
-    expect(screen.getByTestId('CallsMessagesComponent')).toBeInTheDocument();
+  test('renders callsmessages component for /call-message-blocking', () => {
+    const { getByTestId } = render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/call-message-blocking']}>
+          <Routes />
+        </MemoryRouter>
+      </Provider>
+    );
+    expect(getByTestId('CallsMessagesTestId')).toBeInTheDocument();
   });
 
-  it('renders DeviceDetail route for /callsandmessages', () => {
-    renderWithPath('/callsandmessages');
-    expect(screen.getByTestId('DeviceDetailComponent')).toBeInTheDocument();
+  test('renders DeviceDetail component for /callsandmessages', () => {
+    const { getByTestId } = render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/callsandmessages']}>
+          <Routes />
+        </MemoryRouter>
+      </Provider>
+    );
+    expect(getByTestId('DeviceDetailTestId')).toBeInTheDocument();
   });
 
-  it('renders ViewLimitations route for /viewlimitation', () => {
-    renderWithPath('/viewlimitation');
-    expect(screen.getByTestId('ViewLimitationsComponent')).toBeInTheDocument();
+  test('renders ViewLimitation component for /viewlimitation', () => {
+    const { getByTestId } = render(
+      <Provider store={store}>
+        <MemoryRouter initialEntries={['/viewlimitation']}>
+          <Routes />
+        </MemoryRouter>
+      </Provider>
+    );
+    expect(getByTestId('ViewLimitationTestId')).toBeInTheDocument();
   });
 });

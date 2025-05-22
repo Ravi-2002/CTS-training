@@ -1,71 +1,92 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Provider } from 'react-redux';
+import { Provider, useDispatch } from 'react-redux';
 import { createMemoryHistory } from 'history';
 import { Router } from 'react-router-dom';
 import configureStore from 'redux-mock-store';
 import '@testing-library/jest-dom';
 
-// Important: mock useDispatch BEFORE component import
-import * as reactRedux from 'react-redux';
-const mockDispatch = jest.fn();
-jest.spyOn(reactRedux, 'useDispatch').mockReturnValue(mockDispatch);
+import BlockCallsEmpty from '../../components/index';
 
-import BlockCallsEmpty from '../../components/index'; // Adjust path as needed
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useDispatch: jest.fn()
+}));
 
 const mockStore = configureStore([]);
 
-const setup = (initialState, routeState = {}) => {
-  const store = mockStore(initialState);
-  const history = createMemoryHistory();
-  history.push('/block-calls', routeState);
+describe('BlockCallsEmpty Component', () => {
+  let store;
+  let history;
+  const mockDispatch = jest.fn();
 
-  render(
-    <Provider store={store}>
-      <Router history={history}>
-        <BlockCallsEmpty history={history} />
-      </Router>
-    </Provider>
-  );
-
-  return { store, history };
-};
-
-describe('BlockCallsEmpty', () => {
-  it('renders input and disabled button initially', () => {
-    setup({
-      Detail: { blockedNumbers: [], addBlockCallMsg: {}, isFetching: false },
-    });
-
-    expect(screen.getByText(/Block calls and messages/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /Block number/i })
-    ).toBeDisabled();
+  beforeEach(() => {
+    localStorage.setItem('mdn', '1234567890');
+    require('react-redux').useDispatch.mockReturnValue(mockDispatch);
   });
 
-  it('enables the button when a number is typed', () => {
-    setup({
-      Detail: { blockedNumbers: [], addBlockCallMsg: {}, isFetching: false },
-    });
-
-    const input = screen.getByRole('textbox');
-    fireEvent.change(input, { target: { value: '1234567890' } });
-
-    const button = screen.getByRole('button', { name: /Block number/i });
-    expect(button).not.toBeDisabled();
-  });
-
-  it('redirects if blockedNumbers > 0 and allowInput is false', () => {
+  const setup = (stateOverrides, routeState = {}) => {
     const initialState = {
       Detail: {
-        blockedNumbers: [{ phoneNumber: '1112223333' }],
+        blockedNumbers: [],
         addBlockCallMsg: {},
         isFetching: false,
-      },
+        ...stateOverrides
+      }
     };
 
-    const { history } = setup(initialState, { allowInput: false });
+    store = mockStore(initialState);
+    history = createMemoryHistory();
+    history.push('/block-calls', routeState);
+
+    render(
+      <Provider store={store}>
+        <Router history={history}>
+          <BlockCallsEmpty history={history} />
+        </Router>
+      </Provider>
+    );
+
+    return { store, history };
+  };
+
+  it('renders and disables the button initially', () => {
+    setup();
+    expect(screen.getByText(/Block calls and messages/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Block number/i })).toBeDisabled();
+  });
+
+  it('enables the button when number is typed', () => {
+    setup();
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: '1234567890' }
+    });
+    expect(screen.getByRole('button', { name: /Block number/i })).not.toBeDisabled();
+  });
+
+  it('redirects to list page if blockedNumbers > 0 and allowInput is false', () => {
+    const { history } = setup(
+      { blockedNumbers: [{ phoneNumber: '1112223333' }] },
+      { allowInput: false }
+    );
     expect(history.location.pathname).toBe('/call-message-blocking');
   });
 
-  it('does not redirect if allowInput is true even when blockedNumbers > 0', () =>
+  it('does not redirect if allowInput is true', () => {
+    const { history } = setup(
+      { blockedNumbers: [{ phoneNumber: '1112223333' }] },
+      { allowInput: true }
+    );
+    expect(history.location.pathname).toBe('/block-calls');
+  });
+
+  it('redirects after successful block', () => {
+    const { history } = setup({
+      blockedNumbers: [],
+      addBlockCallMsg: {
+        responseInfo: { responseCode: '00' }
+      }
+    });
+    expect(history.location.pathname).toBe('/call-message-blocking');
+  });
+});

@@ -1,50 +1,129 @@
-// tests/BlockServices.test.jsx
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { Router } from 'react-router-dom';
+import { createMemoryHistory } from 'history';
+import configureStore from 'redux-mock-store';
+import BlockServices from '../../components/BlockServices';
+import '@testing-library/jest-dom';
 
-import React from 'react'; import { render, screen, fireEvent } from '@testing-library/react'; import { Provider } from 'react-redux'; import { Router } from 'react-router-dom'; import { createMemoryHistory } from 'history'; import configureStore from 'redux-mock-store'; import BlockServices from '../../components/BlockServices'; import '@testing-library/jest-dom';
+import * as reactRedux from 'react-redux';
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useDispatch: jest.fn(),
+  useSelector: jest.fn()
+}));
 
-import * as reactRedux from 'react-redux'; jest.mock('react-redux', () => ({ ...jest.requireActual('react-redux'), useDispatch: jest.fn(), useSelector: jest.fn() }));
-
-const mockDispatch = jest.fn(); reactRedux.useDispatch.mockReturnValue(mockDispatch);
+const mockDispatch = jest.fn();
+reactRedux.useDispatch.mockReturnValue(mockDispatch);
 
 const mockStore = configureStore([]);
 
-describe('BlockServices', () => { let store; let history;
+describe('BlockServices', () => {
+  let store;
+  let history;
 
-const mockState = { Home: { services: { Category1: [ { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' }, { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' } ] }, isFetching: false, serviceFail: false, confirmServices: {}, servicesError: {} } };
+  const mockState = {
+    Home: {
+      services: {
+        Category1: [
+          { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' },
+          { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' }
+        ]
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {},
+      servicesError: {}
+    }
+  };
 
-const renderComponent = (state = mockState) => { store = mockStore(state); history = createMemoryHistory(); history.push('/block-services?mdn=1234567890');
+  const renderComponent = (state = mockState) => {
+    store = mockStore(state);
+    history = createMemoryHistory();
+    history.push('/block-services?mdn=1234567890');
 
-reactRedux.useSelector.mockImplementation(callback => callback(state));
+    reactRedux.useSelector.mockImplementation(callback => callback(state));
 
-render(
-  <Provider store={store}>
-    <Router history={history}>
-      <BlockServices />
-    </Router>
-  </Provider>
-);
+    render(
+      <Provider store={store}>
+        <Router history={history}>
+          <BlockServices />
+        </Router>
+      </Provider>
+    );
+  };
 
-};
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
-afterEach(() => { jest.clearAllMocks(); });
+  it('renders all services and toggles correctly', () => {
+    renderComponent();
 
-it('renders all services and toggles correctly', () => { renderComponent();
+    expect(screen.getByText('Be in charge of who does what on your account.')).toBeInTheDocument();
+    expect(screen.getByText('770.346.3247')).toBeInTheDocument();
+    expect(screen.getByText('Service A')).toBeInTheDocument();
+    expect(screen.getByText('Service B')).toBeInTheDocument();
+    expect(screen.getAllByRole('switch')).toHaveLength(2);
+  });
 
-expect(screen.getByText('Be in charge of who does what on your account.')).toBeInTheDocument();
-expect(screen.getByText('770.346.3247')).toBeInTheDocument();
-expect(screen.getByText('Service A')).toBeInTheDocument();
-expect(screen.getByText('Service B')).toBeInTheDocument();
-expect(screen.getAllByRole('switch')).toHaveLength(2);
+  it('calls dispatch on toggle change', () => {
+    renderComponent();
+    const toggle = screen.getAllByRole('switch')[1];
+    fireEvent.click(toggle);
+    expect(mockDispatch).toHaveBeenCalled();
+  });
 
+  it('displays success notification when confirmServices responseCode is 00', () => {
+    const successState = {
+      ...mockState,
+      Home: {
+        ...mockState.Home,
+        confirmServices: {
+          responseInfo: { responseCode: '00' }
+        }
+      }
+    };
+    renderComponent(successState);
+    expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
+  });
+
+  it('displays error notification when postError responseCode is 99', () => {
+    const errorState = {
+      ...mockState,
+      Home: {
+        ...mockState.Home,
+        servicesError: {
+          responseInfo: { responseCode: '99' },
+          libErrorInfo: {
+            internalErrors: [
+              { errorMessage: 'Some internal error' }
+            ]
+          }
+        }
+      }
+    };
+    renderComponent(errorState);
+    expect(screen.getByText(/Error/i)).toBeInTheDocument();
+  });
+
+  it('renders failure message if service load fails', () => {
+    const failState = {
+      ...mockState,
+      Home: {
+        ...mockState.Home,
+        serviceFail: true
+      }
+    };
+    renderComponent(failState);
+    expect(screen.getByText(/Failed to fetch services/i)).toBeInTheDocument();
+  });
+
+  it('navigates to service details page when TextLink is clicked', () => {
+    renderComponent();
+    const tellMeMore = screen.getAllByText(/Tell me more/i)[0];
+    fireEvent.click(tellMeMore);
+    expect(history.location.pathname).toContain('/service-details/Service%20A');
+  });
 });
-
-it('calls dispatch on toggle change', () => { renderComponent(); const toggle = screen.getAllByRole('switch')[1]; fireEvent.click(toggle); expect(mockDispatch).toHaveBeenCalled(); });
-
-it('displays success notification when confirmServices responseCode is 00', () => { const successState = { ...mockState, Home: { ...mockState.Home, confirmServices: { responseInfo: { responseCode: '00' } } } }; renderComponent(successState); expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument(); });
-
-it('displays error notification when postError responseCode is 99', () => { const errorState = { ...mockState, Home: { ...mockState.Home, servicesError: { responseInfo: { responseCode: '99' }, libErrorInfo: { internalErrors: [ { errorMessage: 'Some internal error' } ] } } } }; renderComponent(errorState); expect(screen.getByText(/Error/i)).toBeInTheDocument(); });
-
-it('renders failure message if service load fails', () => { const failState = { ...mockState, Home: { ...mockState.Home, serviceFail: true } }; renderComponent(failState); expect(screen.getByText(/Failed to fetch services/i)).toBeInTheDocument(); });
-
-it('navigates to service details page when TextLink is clicked', () => { renderComponent(); const tellMeMore = screen.getAllByText(/Tell me more/i)[0]; fireEvent.click(tellMeMore); expect(history.location.pathname).toContain('/service-details/Service%20A'); }); });
-

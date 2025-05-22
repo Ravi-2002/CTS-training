@@ -19,9 +19,11 @@ jest.mock('../../actions', () => ({
 jest.mock('@vds/notifications', () => ({
   Notification: ({ title, type }) => <div>{`${type}: ${title}`}</div>
 }));
+
 jest.mock('@vds/loaders', () => ({
-  Loader: ({ active }) => active ? <div>Loading...</div> : null
+  Loader: ({ active }) => (active ? <div>Loading...</div> : null)
 }));
+
 jest.mock('@vds/toggles', () => ({
   Toggle: ({ on, onChange, 'data-track': name }) => (
     <button data-testid={name} onClick={onChange}>
@@ -29,13 +31,16 @@ jest.mock('@vds/toggles', () => ({
     </button>
   )
 }));
+
 jest.mock('@vds/buttons', () => ({
   TextLink: ({ onClick, children }) => <button onClick={onClick}>{children}</button>
 }));
+
 jest.mock('@vds/typography', () => ({
   Title: ({ children }) => <h1>{children}</h1>,
   Body: ({ children }) => <p>{children}</p>
 }));
+
 jest.mock('@vds/lines', () => ({
   Line: () => <hr />
 }));
@@ -43,12 +48,13 @@ jest.mock('@vds/lines', () => ({
 const mockState = {
   Home: {
     services: {
-      General: [{ serviceName: 'Call Blocking', sfoEnabled: 'Y', sfoCode: 'CB01' }],
+      General: [{ serviceName: 'Call Blocking', sfoEnabled: 'Y', sfoCode: 'CB01' }]
     },
     isFetching: false,
     serviceFail: false,
     confirmServices: null,
     servicesError: null,
+    lastToggledService: null
   }
 };
 
@@ -60,6 +66,7 @@ describe('BlockServices Component', () => {
     dispatch = jest.fn();
     useDispatch.mockReturnValue(dispatch);
     history = createMemoryHistory();
+    history.push('/block-services?mdn=1234567890');
   });
 
   afterEach(() => {
@@ -68,7 +75,13 @@ describe('BlockServices Component', () => {
 
   const setup = (stateOverrides = {}) => {
     useSelector.mockImplementation((cb) =>
-      cb({ ...mockState, Home: { ...mockState.Home, ...stateOverrides } })
+      cb({
+        ...mockState,
+        Home: {
+          ...mockState.Home,
+          ...stateOverrides
+        }
+      })
     );
 
     return render(
@@ -88,7 +101,7 @@ describe('BlockServices Component', () => {
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
-  test('renders error message on loadError', () => {
+  test('renders error message on serviceFail', () => {
     setup({ serviceFail: true });
     expect(screen.getByText('Failed to fetch services.')).toBeInTheDocument();
   });
@@ -105,13 +118,16 @@ describe('BlockServices Component', () => {
   test('renders error notification when responseCode is 99', () => {
     setup({
       servicesError: {
-        responseInfo: { responseCode: '99' }
+        responseInfo: { responseCode: '99' },
+        libErrorInfo: {
+          internalErrors: [{ errorMessage: 'Some error' }]
+        }
       }
     });
-    expect(screen.getByText('error: Error')).toBeInTheDocument();
+    expect(screen.getByText('error: Some error')).toBeInTheDocument();
   });
 
-  test('renders toggles with correct state and handles toggle click', async () => {
+  test('renders toggle and handles click', async () => {
     setup();
 
     const toggle = screen.getByTestId('Call Blocking');
@@ -124,21 +140,37 @@ describe('BlockServices Component', () => {
       expect(dispatch).toHaveBeenCalledWith(
         postServices([
           {
-            mdn: undefined,
-            sfoEnabled: 'N',
-            sfoCode: 'CB01'
+            mdn: '1234567890',
+            sfoCode: 'CB01',
+            sfoEnabled: 'N'
           }
         ])
       );
     });
   });
 
-  test('redirects to service details page on Tell me more click', () => {
+  test('navigates to service details on TextLink click', () => {
     setup();
+
     const button = screen.getByText('Tell me more');
     fireEvent.click(button);
 
     expect(history.location.pathname).toBe('/service-details/Call%20Blocking');
+  });
+
+  test('renders service again if confirmServices has responseCode 08 and matches lastToggledService', () => {
+    setup({
+      confirmServices: {
+        responseInfo: { responseCode: '08' }
+      },
+      lastToggledService: {
+        sfoCode: 'CB01',
+        sfoEnabled: 'N'
+      }
+    });
+
+    const toggle = screen.getByTestId('Call Blocking');
+    expect(toggle).toHaveTextContent('Off');
   });
 
   test('renders all services from serviceDetailsMap', () => {

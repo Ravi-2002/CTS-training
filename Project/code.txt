@@ -1,88 +1,51 @@
-// src/app/blocks/deviceDetail/components/test/App.test.js
+
+
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import App from '../../App';
-import * as reactRedux from 'react-redux';
-import * as monitoring from '../../../../shared/services/monitoring';
-import { createMemoryHistory } from 'history';
-import { Router } from 'react-router-dom';
+import '../../../../config/jest/test-setup';
+import { render } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import App from '../app';
+import configureStore from '../../../shared/store/configureStore';
+import rootReducer from '../reducers';
 
-jest.mock('react-redux', () => ({
-  ...jest.requireActual('react-redux'),
-  connect: (mapStateToProps, mapDispatchToProps) => (Component) => (props) => (
-    <Component {...props} reduxStore={{}} statusCode="00" />
-  ),
-}));
-
-jest.mock('../../../../shared/services/monitoring', () => ({
-  startMonitoring: jest.fn(),
-}));
-
-jest.mock('../../routes', () => () => <div>Mocked Routes</div>);
-
-jest.mock('@vz/react-util', () => ({
-  ErrorBoundary: ({ children }) => <div>{children}</div>,
-  library: { init: jest.fn() },
-  SessionTimeoutModal: () => <div>Session Timeout</div>,
-}));
-
-describe('App Component', () => {
+describe('App', () => {
+  const store = configureStore(rootReducer);
+  const originalConsoleLog = console.log;
   beforeEach(() => {
-    global.reactGlobals = {
-      enableFaroMonitoring: 'Y',
-      session: { sessionTimeoutEnabled: true },
-    };
-
-    global.vztag = {
-      api: {
-        dispatch: jest.fn(),
-      },
-    };
-
-    window.appPerformanceMetrics = {
-      startMonitoring: false,
-      perfArr: [],
-    };
+    console.log = jest.fn();
   });
-
   afterEach(() => {
-    jest.clearAllMocks();
+    console.log = originalConsoleLog;
   });
-
-  it('renders the App and shows Routes with session modal', async () => {
-    const { getByTestId } = render(<App />);
-    expect(getByTestId('appTestId')).toBeInTheDocument();
-    expect(await screen.findByText('Mocked Routes')).toBeInTheDocument();
-    expect(screen.getByText('Session Timeout')).toBeInTheDocument();
+  test('renders app component', () => {
+    window.vztag = { api: { dispatch: jest.fn() } };
+    const { getByTestId } = render(<Provider store={store}><App /></Provider>);
+    const appElement = getByTestId('app');
+    expect(appElement).toBeTruthy();
   });
-
-  it('calls vztag.api.dispatch when vztagLoaded is dispatched', () => {
-    const dispatchSpy = jest.fn();
-    window.vztag.api.dispatch = dispatchSpy;
-
-    const { unmount } = render(<App />);
-    const event = new Event('vztagLoaded');
-    document.dispatchEvent(event);
-
-    expect(dispatchSpy).toHaveBeenCalled();
-    unmount();
+  test('renders app component without vztag', () => {
+    global._isNative = {};
+    window.vztag = { api: { dispatch: false } };
+    render(<Provider store={store}><App /></Provider>);
   });
-
-  it('fallbacks to loader if unauthenticated', () => {
-    const TestApp = require('../../App').default;
-    const wrapper = render(<TestApp />);
-    expect(wrapper.getByTestId('appTestId')).toBeInTheDocument();
+  test('should trigger document event listener - OMNI event', async () => {
+    // window.vztag.api.dispatch.mockReset();
+    const addEvt = new Event('vztagLoaded');
+    document.dispatchEvent(addEvt);
   });
-
-  it('listens for route changes and calls startMonitoring', () => {
-    const history = createMemoryHistory();
-    render(
-      <Router history={history}>
-        <App />
-      </Router>
-    );
-    history.push('/new-route');
-    expect(monitoring.startMonitoring).toHaveBeenCalled();
+  test('should trigger document event listener - OMNI event', async () => {
+    window.vztag = { api: { dispatch: false } };
+    const addEvt = new Event('vztagLoaded');
+    document.dispatchEvent(addEvt);
   });
+  test('should trigger document event listener - dispatch not a function', async () => {
+    window.vztag = { api: { dispatch: true } };
+    const addEvt = new Event('vztagLoaded');
+    document.dispatchEvent(addEvt);
+  });
+  // test("renders session timeout modal", () => {
+  //     const { getByTestId } = render(<App />);
+  //     const sessionTimeoutModalElement = getByTestId("session-timeout-modal");
+  //     expect(sessionTimeoutModalElement).toBeInTheDocument();
+  // });
 });

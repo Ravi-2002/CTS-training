@@ -1,81 +1,24 @@
-import '../../../../config/jest/test-setup';
-import { render } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import { Provider } from 'react-redux';
-import configureStore from '../../../shared/store/configureStore';
-import rootReducer from '../reducers';
-import Routes from '../routes';
+import { combineReducers } from "redux";
+import landingReducer from "./home/reducers";
+import deviceDetailReducer from "./deviceDetail/reducers";
+import { PURGE, REHYDRATE } from 'redux-persist';
 
-jest.mock('../home/components', () => () => <div data-testid="HomeTestId" />);
-jest.mock('../deviceDetail/components', () => () => <div data-testid="DeviceDetailTestId" />);
-jest.mock('../home/components/servicedetails', () => () => <div data-testid="ServiceDetailsTestId" />);
-jest.mock('../deviceDetail/components/ViewLimitation', () => () => <div data-testid="ViewLimitationTestId" />);
-jest.mock('../deviceDetail/components/callsandmessages', () => () => <div data-testid="CallsMessagesTestId" />);
+const initialState = {};
 
-describe('Routes', () => {
-  const store = configureStore(rootReducer);
-  const originalConsoleLog = console.log;
-
-  beforeEach(() => {
-    console.log = jest.fn();
-  });
-
-  afterEach(() => {
-    console.log = originalConsoleLog;
-  });
-
-  test('renders Home component for /blockService', () => {
-    const { getByTestId } = render(
-      <Provider store={store}>
-        <MemoryRouter initialEntries={['/blockService']}>
-          <Routes />
-        </MemoryRouter>
-      </Provider>
-    );
-    expect(getByTestId('HomeTestId')).toBeInTheDocument();
-  });
-
-  test('renders ServiceDetails component for /service-details/:serviceName', () => {
-    const { getByTestId } = render(
-      <Provider store={store}>
-        <MemoryRouter initialEntries={['/service-details/TestService']}>
-          <Routes />
-        </MemoryRouter>
-      </Provider>
-    );
-    expect(getByTestId('ServiceDetailsTestId')).toBeInTheDocument();
-  });
-
-  test('renders callsmessages component for /call-message-blocking', () => {
-    const { getByTestId } = render(
-      <Provider store={store}>
-        <MemoryRouter initialEntries={['/call-message-blocking']}>
-          <Routes />
-        </MemoryRouter>
-      </Provider>
-    );
-    expect(getByTestId('CallsMessagesTestId')).toBeInTheDocument();
-  });
-
-  test('renders DeviceDetail component for /callsandmessages', () => {
-    const { getByTestId } = render(
-      <Provider store={store}>
-        <MemoryRouter initialEntries={['/callsandmessages']}>
-          <Routes />
-        </MemoryRouter>
-      </Provider>
-    );
-    expect(getByTestId('DeviceDetailTestId')).toBeInTheDocument();
-  });
-
-  test('renders ViewLimitation component for /viewlimitation', () => {
-    const { getByTestId } = render(
-      <Provider store={store}>
-        <MemoryRouter initialEntries={['/viewlimitation']}>
-          <Routes />
-        </MemoryRouter>
-      </Provider>
-    );
-    expect(getByTestId('ViewLimitationTestId')).toBeInTheDocument();
-  });
+const appReducer = combineReducers({
+  Home: landingReducer,
+  Detail: deviceDetailReducer
 });
+
+const rootReducer = (state = initialState, action) => {
+  if(action.type === REHYDRATE){
+  }
+  else if(action.type === PURGE){
+    sessionStorage.removeItem('persist:root');      
+    sessionStorage.clear();    
+    state = initialState;      
+  }
+  return appReducer(state, action);
+};
+
+export default rootReducer;

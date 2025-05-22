@@ -1,198 +1,153 @@
-import * as actions from '../../actions/callsMessagesActions';
-import httpClient, {
+import * as callsMessagesActions from '../../actions/callsMessagesActions';
+import configureStore from '../../../../../shared/store/configureStore';
+import rootReducer from '../../../reducers';
+import {
   getHttpClientRequest,
   postHttpClientRequest
-} from "../../../../../shared/services/httpClient";
-import configureStore from "../../../../../shared/store/configureStore";
-import rootReducer from "../../../reducers";
+} from '../../../../../shared/services/httpClient';
 
-jest.mock("../../../../../shared/services/httpClient", () => ({
-  ...jest.requireActual("../../../../../shared/services/httpClient"),
-  getHttpClientRequest: jest.fn(),
-  postHttpClientRequest: jest.fn()
+jest.mock('../../../../../shared/services/httpClient', () => ({
+  postHttpClientRequest: jest.fn(),
+  getHttpClientRequest: jest.fn()
 }));
 
 const store = configureStore(rootReducer);
 
-describe('CallsMessagesActions', () => {
-  let responseData;
-
+describe('CallsMessages Actions', () => {
   beforeEach(() => {
-    responseData = {
+    store.clearActions?.();
+    jest.clearAllMocks();
+  });
+
+  const successResponse = {
+    status: 200,
+    data: {
       responseInfo: {
-        responseCode: "00"
+        responseCode: '00'
       },
       body: {
         blockedPhoneNumbers: ['123'],
-        expiredBlockedPhoneNumbers: ['456']
+        expiredBlockedPhoneNumbers: ['456'],
       }
-    };
-  });
+    }
+  };
 
-  test("getCallsMessages success - responseCode 00", async () => {
-    getHttpClientRequest.mockImplementationOnce(() =>
-      Promise.resolve({ status: 200, data: responseData })
-    );
+  const errorResponse = {
+    responseInfo: { responseCode: '01' },
+    body: { message: 'Failed' }
+  };
 
-    await store.dispatch(actions.getCallsMessages());
+  test('getCallsMessages success', async () => {
+    getHttpClientRequest.mockResolvedValueOnce(successResponse);
+
+    await store.dispatch(callsMessagesActions.getCallsMessages());
 
     expect(getHttpClientRequest).toHaveBeenCalled();
   });
 
-  test("getCallsMessages success - responseCode not 00", async () => {
-    const failedData = {
-      responseInfo: { responseCode: "99" },
-      body: { error: "error" }
-    };
+  test('getCallsMessages error', async () => {
+    getHttpClientRequest.mockRejectedValueOnce({ body: 'Error' });
 
-    getHttpClientRequest.mockImplementationOnce(() =>
-      Promise.resolve({ status: 200, data: failedData })
-    );
+    await store.dispatch(callsMessagesActions.getCallsMessages());
 
-    await store.dispatch(actions.getCallsMessages());
     expect(getHttpClientRequest).toHaveBeenCalled();
   });
 
-  test("getCallsMessages failure", async () => {
-    getHttpClientRequest.mockImplementationOnce(() =>
-      Promise.reject({ body: { error: "fail" } })
-    );
+  test('postaddBlockCallMsg success', async () => {
+    postHttpClientRequest.mockResolvedValueOnce(successResponse);
 
-    await store.dispatch(actions.getCallsMessages());
-    expect(getHttpClientRequest).toHaveBeenCalled();
-  });
+    await store.dispatch(callsMessagesActions.postaddBlockCallMsg({ phone: '9999' }));
 
-  test("postaddBlockCallMsg success - responseCode 00", async () => {
-    postHttpClientRequest.mockImplementationOnce(() =>
-      Promise.resolve({ status: 200, data: responseData })
-    );
-
-    await store.dispatch(actions.postaddBlockCallMsg({ number: "123" }));
     expect(postHttpClientRequest).toHaveBeenCalled();
   });
 
-  test("postaddBlockCallMsg success - responseCode not 00", async () => {
-    const failData = {
-      responseInfo: { responseCode: "99" },
-      body: { msg: "error" }
-    };
-    postHttpClientRequest.mockImplementationOnce(() =>
-      Promise.resolve({ status: 200, data: failData })
-    );
+  test('postaddBlockCallMsg error', async () => {
+    postHttpClientRequest.mockRejectedValueOnce({ body: 'Post error' });
 
-    await store.dispatch(actions.postaddBlockCallMsg({ number: "123" }));
+    await store.dispatch(callsMessagesActions.postaddBlockCallMsg({ phone: '8888' }));
+
     expect(postHttpClientRequest).toHaveBeenCalled();
   });
 
-  test("postaddBlockCallMsg failure", async () => {
-    postHttpClientRequest.mockImplementationOnce(() =>
-      Promise.reject({ body: { msg: "fail" } })
-    );
+  test('postDeleteBlockCallMsg success', async () => {
+    postHttpClientRequest.mockResolvedValueOnce(successResponse);
 
-    await store.dispatch(actions.postaddBlockCallMsg({ number: "123" }));
+    await store.dispatch(callsMessagesActions.postDeleteBlockCallMsg({ phone: '1234' }));
+
     expect(postHttpClientRequest).toHaveBeenCalled();
   });
 
-  test("postDeleteBlockCallMsg success - responseCode 00", async () => {
-    postHttpClientRequest.mockImplementationOnce(() =>
-      Promise.resolve({ status: 200, data: responseData })
-    );
+  test('postDeleteBlockCallMsg error', async () => {
+    postHttpClientRequest.mockRejectedValueOnce({ body: 'Delete error' });
 
-    await store.dispatch(actions.postDeleteBlockCallMsg({ number: "123" }));
+    await store.dispatch(callsMessagesActions.postDeleteBlockCallMsg({ phone: '5678' }));
+
     expect(postHttpClientRequest).toHaveBeenCalled();
   });
 
-  test("postDeleteBlockCallMsg success - responseCode not 00", async () => {
-    const failData = {
-      responseInfo: { responseCode: "99" },
-      body: { msg: "error" }
-    };
-    postHttpClientRequest.mockImplementationOnce(() =>
-      Promise.resolve({ status: 200, data: failData })
-    );
-
-    await store.dispatch(actions.postDeleteBlockCallMsg({ number: "123" }));
-    expect(postHttpClientRequest).toHaveBeenCalled();
-  });
-
-  test("postDeleteBlockCallMsg failure", async () => {
-    postHttpClientRequest.mockImplementationOnce(() =>
-      Promise.reject({ body: { msg: "fail" } })
-    );
-
-    await store.dispatch(actions.postDeleteBlockCallMsg({ number: "123" }));
-    expect(postHttpClientRequest).toHaveBeenCalled();
-  });
-
-  // Individual Action Creators
-  test("getCallsMessagesBegin", () => {
-    expect(actions.getCallsMessagesBegin()).toEqual({ type: actions.GET_CALLS_MESSAGES_BEGIN });
-  });
-
-  test("getCallsMessagesSuccess", () => {
-    const payload = {
-      body: {
-        blockedPhoneNumbers: ['123'],
-        expiredBlockedPhoneNumbers: ['456']
-      }
-    };
-    expect(actions.getCallsMessagesSuccess(payload)).toEqual({
-      type: actions.GET_CALLS_MESSAGES_SUCCESS,
-      payload: payload.body,
-      blockedNumbers: payload.body.blockedPhoneNumbers,
-      expiredBlockNumbers: payload.body.expiredBlockedPhoneNumbers
+  // Plain action creators
+  test('getCallsMessagesBegin', () => {
+    expect(callsMessagesActions.getCallsMessagesBegin()).toEqual({
+      type: 'CallsMessages/GET_CALLS_MESSAGES_BEGIN'
     });
   });
 
-  test("getCallsMessagesError", () => {
-    const payload = { body: { error: "fail" } };
-    expect(actions.getCallsMessagesError(payload)).toEqual({
-      type: actions.GET_CALLS_MESSAGES_FAIL,
-      payloadGetCMError: payload.body
+  test('getCallsMessagesSuccess', () => {
+    const response = successResponse.data;
+    expect(callsMessagesActions.getCallsMessagesSuccess(response)).toEqual({
+      type: 'CallsMessages/GET_CALLS_MESSAGES_SUCCESS',
+      payload: response.body,
+      blockedNumbers: response.body.blockedPhoneNumbers,
+      expiredBlockNumbers: response.body.expiredBlockedPhoneNumbers
     });
   });
 
-  test("postaddBlockCallMsgBegin", () => {
-    expect(actions.postaddBlockCallMsgBegin()).toEqual({
-      type: actions.POST_ADD_CALL_MSG_BEGIN
+  test('getCallsMessagesError', () => {
+    expect(callsMessagesActions.getCallsMessagesError(errorResponse)).toEqual({
+      type: 'CallsMessages/GET_CALLS_MESSAGES_FAIL',
+      payloadGetCMError: errorResponse.body
     });
   });
 
-  test("postaddBlockCallMsgSuccess", () => {
-    const payload = { body: { data: "ok" } };
-    expect(actions.postaddBlockCallMsgSuccess(payload)).toEqual({
-      type: actions.POST_ADD_CALL_MSG_SUCCESS,
-      payloadAddCallMsg: payload.body
+  test('postaddBlockCallMsgBegin', () => {
+    expect(callsMessagesActions.postaddBlockCallMsgBegin()).toEqual({
+      type: 'CallsMessages/POST_ADD_CALL_MSG_BEGIN'
     });
   });
 
-  test("postaddBlockCallMsgError", () => {
-    const payload = { body: { err: "fail" } };
-    expect(actions.postaddBlockCallMsgError(payload)).toEqual({
-      type: actions.POST_ADD_CALL_MSG_FAIL,
-      payloadAddCallMsgError: payload.body
+  test('postaddBlockCallMsgSuccess', () => {
+    const response = successResponse.data;
+    expect(callsMessagesActions.postaddBlockCallMsgSuccess(response)).toEqual({
+      type: 'CallsMessages/POST_ADD_CALL_MSG_SUCCESS',
+      payloadAddCallMsg: response.body
     });
   });
 
-  test("postDeleteBlockCallMsgBegin", () => {
-    expect(actions.postDeleteBlockCallMsgBegin()).toEqual({
-      type: actions.POST_DELETE_CALL_MSG_BEGIN
+  test('postaddBlockCallMsgError', () => {
+    expect(callsMessagesActions.postaddBlockCallMsgError(errorResponse)).toEqual({
+      type: 'CallsMessages/POST_ADD_CALL_MSG_FAIL',
+      payloadAddCallMsgError: errorResponse.body
     });
   });
 
-  test("postDeleteBlockCallMsgSuccess", () => {
-    const payload = { body: { data: "deleted" } };
-    expect(actions.postDeleteBlockCallMsgSuccess(payload)).toEqual({
-      type: actions.POST_DELETE_CALL_MSG_SUCCESS,
-      payloadDeleteCallMsg: payload.body
+  test('postDeleteBlockCallMsgBegin', () => {
+    expect(callsMessagesActions.postDeleteBlockCallMsgBegin()).toEqual({
+      type: 'CallsMessages/POST_DELETE_CALL_MSG_BEGIN'
     });
   });
 
-  test("postDeleteBlockCallMsgError", () => {
-    const payload = { body: { msg: "error" } };
-    expect(actions.postDeleteBlockCallMsgError(payload)).toEqual({
-      type: actions.POST_DELETE_CALL_MSG_FAIL,
-      payloadDeleteCallMsgError: payload.body
+  test('postDeleteBlockCallMsgSuccess', () => {
+    const response = successResponse.data;
+    expect(callsMessagesActions.postDeleteBlockCallMsgSuccess(response)).toEqual({
+      type: 'CallsMessages/POST_DELETE_CALL_MSG_SUCCESS',
+      payloadDeleteCallMsg: response.body
+    });
+  });
+
+  test('postDeleteBlockCallMsgError', () => {
+    expect(callsMessagesActions.postDeleteBlockCallMsgError(errorResponse)).toEqual({
+      type: 'CallsMessages/POST_DELETE_CALL_MSG_FAIL',
+      payloadDeleteCallMsgError: errorResponse.body
     });
   });
 });

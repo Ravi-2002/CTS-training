@@ -1,92 +1,26 @@
-import '../../../../config/jest/test-setup';
-import { render, waitForElementToBeRemoved, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route } from 'react-router-dom';
-import { Provider } from 'react-redux';
-import Routes, {getClassName} from '../routes';
-import configureStore from '../../../shared/store/configureStore';
-import rootReducer from '../reducers';
+import React, { lazy, Fragment } from 'react'
+import ScrollToTop from './ScrollToTop'
+import { BrowserRouter, Route} from 'react-router-dom/cjs/react-router-dom.min'
+const Home = lazy(() => import('./home/components'))
+const DeviceDetail = lazy(() => import('./deviceDetail/components'))
+const ServiceDetails =lazy(() =>import('./home/components/servicedetails'))
+const ViewLimitations = lazy(() =>import('./deviceDetail/components/ViewLimitation'))
+const callsmessages = lazy(() =>import('./deviceDetail/components/callsandmessages'))
 
+const Routes = ({ reduxStore }) => {
+  const routeConfig = (
+    <div>
+      <ScrollToTop />
+      <BrowserRouter>
+      <Route exact path="/blockService" component={Home} />
+      <Route exact path="/service-details/:serviceName" component = {ServiceDetails} />
+      <Route exact path="/call-message-blocking" component = {callsmessages} />
+      <Route exact path="/callsandmessages" component={DeviceDetail} />
+      <Route exact path="/viewlimitation" component={ViewLimitations} />
+      </BrowserRouter>
+    </div>
+  )
+  return <Fragment>{routeConfig}</Fragment>
+}
 
-describe('Routes', () => {
-    const store = configureStore(rootReducer);
-    const originalConsoleLog = console.log;
-    beforeEach(() => {
-        console.log = jest.fn();
-    });
-    afterEach(() => {
-        console.log = originalConsoleLog;
-    });
-    test('renders home component when path is /', async () => {
-        const { getByTestId } = render(
-            <Provider store={store}>
-                <MemoryRouter initialEntries={['/']}>
-                    <Routes />
-                </MemoryRouter>
-            </Provider>
-        );
-
-        //await waitFor(()=> expect(screen.getByTestId("deviceOverview")).toBeInTheDocument());
-        expect(1).toBeTruthy();
-    });
-
-    test('renders device detail component when path is /deviceDetail', async () => {
-        reactGlobals.transitionFallback = true;
-        global._currentPageUrl = "deviceDetail";
-        delete window.location;
-        window = Object.create(window);        
-        Object.defineProperty(window, 'location', {
-            value: {
-                href: 'http://localhost:3000/#/landing?flow=devices'
-            },
-            writable: true // possibility to override
-        });
-        render(
-            <Provider store={store}>
-                <MemoryRouter initialEntries={['/deviceDetail']}>
-                    <Routes />
-                </MemoryRouter>
-            </Provider>
-        );
-        expect(1).toBeTruthy();
-        //await waitFor(()=> expect(screen.getByTestId("DeviceDetailTestId")).toBeInTheDocument());
-    });
-
-    test('renders device detail component when path is /deviceDetail/:mtn', async () => {
-        reactGlobals.transitionFallback = true;
-        global._currentPageUrl = "landing";
-        delete window.location;
-        window = Object.create(window);        
-        Object.defineProperty(window, 'location', {
-            value: {
-                href: 'http://localhost:3000/#/test/show'
-            },
-            writable: true // possibility to override
-        });
-        const { getByTestId } = render(
-            <Provider store={store}>
-                <MemoryRouter initialEntries={['/deviceDetail/1234567890']}>
-                    <Routes />
-                </MemoryRouter>
-            </Provider>
-        );
-
-        //await waitFor(()=> expect(screen.getByTestId("DeviceDetailTestId")).toBeInTheDocument());
-    });
-
-    test('renders device detail component when path is /ManageDevice/:mtn', async () => {
-        reactGlobals.transitionFallback = true;        
-        delete global._currentPageUrl;
-        delete window.location;
-        render(
-            <Provider store={store}>
-                <MemoryRouter initialEntries={['/ManageDevice/1234567890']}>
-                    <Routes />
-                </MemoryRouter>
-            </Provider>
-        );
-        //const deviceDetailComponent = await waitForElementToBeRemoved(() => getByTestId('DeviceDetailTestId'));
-        //expect(deviceDetailComponent).toBeTruthy();
-    });
-
-    
-});
+export default Routes

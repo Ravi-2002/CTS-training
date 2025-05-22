@@ -1,50 +1,70 @@
-// tests/BlockCallsEmpty.test.jsx
+import React, { useEffect } from "react";
+import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
+import { Button } from "@vds/buttons";
+import { Title } from "@vds/typography";
+import { nativeSetTitle } from "../../../../shared/utilities/native";
+import styled from "styled-components";
+import { Line } from "@vds/lines";
 
-import React from 'react'; import { render, screen, fireEvent } from '@testing-library/react'; import { Provider } from 'react-redux'; import { createMemoryHistory } from 'history'; import { Router } from 'react-router-dom'; import configureStore from 'redux-mock-store'; import BlockCallsEmpty from '../BlockCallsEmpty';
+const ViewLimitations = () => {
+  const history = useHistory();
+  const handleDone = () => {
+    history.goBack(); // Go back to previous page
+  };
+ 
+  useEffect(() => {
+    nativeSetTitle('Block Calls & Messages');
+  });
 
-const mockStore = configureStore([]);
+  return (
+    <PageContent>
+      <br></br>
+      <Title size='large' bold>
+         What you need to know about call  and text blocking.
+      </Title>
+      <br></br>
+      <Line/>
+        <br></br><br></br>
+        <p>
+          Blocking a number for calls and text is easy, but there are a few
+          things you should know beforehand. You can't block numbers that are on
+          your account, emergency numbers that are not 10-digits (911, 411, etc.)
+          or #MIN (to check your used minutes).
+        </p>
+      <br></br>
+        <p>
+          Your blocks expire after 90 days. You can either block it again or
+          subscribe to FamilyBase* to block a number permanently.
+        </p>
+        <br></br>
+        <p>
+          If you change your mind, you can review your blocked numbers and decide
+          to unblock it by tapping the red X.
+        </p>
+        <br></br>
+        <p>
+          *FamilyBase lets you permanently block incoming and outgoing calls for
+          up to 20 US or international numbers.
+        </p>
+        <ButtonWrapper>
+        <Button  onClick={handleDone}>
+          Done
+        </Button>
+        </ButtonWrapper>
+    </PageContent>
+  );
+};
 
-const setup = (initialState, routeState = {}) => { const store = mockStore(initialState); const history = createMemoryHistory(); history.push('/block-calls', routeState);
+const PageContent = styled.div`
+  padding-right:10px;
+  padding-left:10px;
+  padding-top:20px;
+`;
+const ButtonWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 100px;
+`;
 
-render( <Provider store={store}> <Router history={history}> <BlockCallsEmpty history={history} /> </Router> </Provider> );
-
-return { store, history }; };
-
-describe('BlockCallsEmpty', () => { it('renders input and disabled button initially', () => { setup({ Detail: { blockedNumbers: [], addBlockCallMsg: {}, isFetching: false, }, });
-
-expect(screen.getByText(/Block calls and messages/i)).toBeInTheDocument();
-expect(screen.getByRole('button', { name: /Block number/i })).toBeDisabled();
-
-});
-
-it('enables the button when a number is typed', () => { setup({ Detail: { blockedNumbers: [], addBlockCallMsg: {}, isFetching: false, }, });
-
-const input = screen.getByRole('textbox');
-fireEvent.change(input, { target: { value: '1234567890' } });
-
-const button = screen.getByRole('button', { name: /Block number/i });
-expect(button).not.toBeDisabled();
-
-});
-
-it('redirects if blockedNumbers > 0 and allowInput is false', () => { const initialState = { Detail: { blockedNumbers: [{ phoneNumber: '1112223333' }], addBlockCallMsg: {}, isFetching: false, }, };
-
-const { history } = setup(initialState, { allowInput: false });
-expect(history.location.pathname).toBe('/call-message-blocking');
-
-});
-
-it('does not redirect if allowInput is true even when blockedNumbers > 0', () => { const initialState = { Detail: { blockedNumbers: [{ phoneNumber: '1112223333' }], addBlockCallMsg: {}, isFetching: false, }, };
-
-const { history } = setup(initialState, { allowInput: true });
-expect(history.location.pathname).toBe('/block-calls');
-
-});
-
-it('redirects to list page after successful block', () => { const initialState = { Detail: { blockedNumbers: [], addBlockCallMsg: { responseInfo: { responseCode: '00', }, }, isFetching: false, }, };
-
-const { history } = setup(initialState);
-expect(history.location.pathname).toBe('/call-message-blocking');
-
-}); });
-
+export default ViewLimitations;

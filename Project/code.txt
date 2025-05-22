@@ -1,131 +1,154 @@
-import apiUrl from '../../../../shared/utilities/apiUrl';
-import { getHttpClientRequest, postHttpClientRequest } from '../../../../shared/services/httpClient';
-export const GET_SERVICES_BEGIN = "services/GET_SERVICES_BEGIN";
-export const GET_SERVICES_SUCCESS = "services/GET_SERVICES_SUCCESS";
-export const GET_SERVICES_FAIL = "services/GET_SERVICES_FAIL";
+import * as actions from '../../actions/blockServiceActions';
+import {
+  getHttpClientRequest,
+  postHttpClientRequest,
+} from '../../../../../shared/services/httpClient';
+import configureStore from '../../../../../shared/store/configureStore';
+import rootReducer from '../../../reducers';
 
-export const POST_SERVICES_BEGIN = "confirmServices/POST_SERVICES_BEGIN";
-export const POST_SERVICES_SUCCESS = "confirmServices/POST_SERVICES_SUCCESS";
-export const POST_SERVICES_FAIL = "confirmServices/POST_SERVICES_FAIL";
+jest.mock('../../../../../shared/services/httpClient', () => ({
+  getHttpClientRequest: jest.fn(),
+  postHttpClientRequest: jest.fn(),
+}));
 
-export const getServices = () => async dispatch => {
-    dispatch(getServicesBegin())
-    const onSuccess = (resp) => {
-      if (
-        resp &&
-        resp.data &&
-        resp.data.responseInfo &&
-        resp.data.responseInfo.responseCode == "00"
-      ) {
-        console.log(resp.data,'respdata')
-        dispatch(getServicesSuccess(resp.data));
-      } else {
-        dispatch(getServicesFail(resp.data));
-      }
-    };
-  
-    const onError = error => {
-        dispatch(getServicesFail(error));
-      
-    };
-  
-    const callMS = () => {
-      let axConfig = {
-        headers: {
-          flowName:'Blocks',
-          contentType: 'application/json',
-          // pageName: 'dsrDeviceLanding',
-          // flowName: 'Device',
-        },
-      }
-      return getHttpClientRequest(apiUrl().blockServiceV2, axConfig)}
-    callMS()
-      .then(msResp => {
-        if (msResp && msResp.status == 200) {
-          onSuccess(msResp);
-        }
-      })
-      .catch(onError);
-      }
-  export const getServicesBegin = () => ({
-    type: GET_SERVICES_BEGIN
-  })
-  
-  export const getServicesSuccess = (response) => (
-    {
-    type: GET_SERVICES_SUCCESS,
-    services: response.body.sections[0].sections[0].data.serviceDetailsMap,
-    serviceStatus: response
-    
-  })
-  export const getServicesFail = (response) => ({
-    type: GET_SERVICES_FAIL,
-    failServices: response.body
-  })
-  export const postServices = (payload) => async dispatch => {
-    dispatch(postServicesBegin())
-    const onSuccess = (resp) => {
-      
-      if (
-        resp &&
-        resp.data &&
-        resp.data.responseInfo &&
-        resp.data.responseInfo.responseCode == "00"
-      ) {
-          dispatch(postServicesSuccess(resp.data));
-      } else {
-        dispatch(postServicesFail(resp.data));
-      }
-    };
-  
-    const onError = error => {     
-        dispatch(postServicesFail(error));
-    };
-  
-    const callMS = () => {
-      let axConfig = {
-        headers: {
-          flowName:'Blocks',
-          contentType: 'application/json',
-          // pageName: 'dsrDeviceLanding',
-          // flowName: 'Device',
-        },
-      }
-      if (apiUrl().updateService?.indexOf('ApiData') > -1) {
-        return getHttpClientRequest(
-          apiUrl().updateService,payload,
-          axConfig
-        ) 
-      } 
-      else {
-        return postHttpClientRequest(
-          apiUrl().updateService,
-          payload,
-          axConfig
-        );}
-    }
-  
-    callMS()
-      .then(msResp => {
-        if (msResp && (msResp.status == 200 )) {
-          onSuccess(msResp);
-        }
-      })
-      .catch(onError);
-  }
+jest.mock('../../../../../shared/utilities/apiUrl', () => () => ({
+  blockServiceV2: '/mock/blockService',
+  updateService: '/mock/updateService',
+}));
 
-  export const postServicesBegin = () => ({
-    type: POST_SERVICES_BEGIN
-  })
-  
-  export const postServicesSuccess = (response) => (
-    {
-    type: POST_SERVICES_SUCCESS,
-    confirmServices: response,
-    
-  })
-  export const postServicesFail = (response) => (
-    {
-    type: POST_SERVICES_FAIL,
-    servicesError: response
-  })
+const store = configureStore(rootReducer);
+
+describe('BlockService Actions', () => {
+  let responseData;
+
+  beforeEach(() => {
+    responseData = {
+      responseInfo: { responseCode: "00" },
+      body: {
+        sections: [
+          {
+            sections: [
+              {
+                data: {
+                  serviceDetailsMap: {
+                    key: 'value'
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    };
+    store.clearActions?.();
+  });
+
+  test('getServices success - responseCode 00', async () => {
+    getHttpClientRequest.mockImplementationOnce(() =>
+      Promise.resolve({ status: 200, data: responseData })
+    );
+
+    await store.dispatch(actions.getServices());
+
+    expect(getHttpClientRequest).toHaveBeenCalled();
+  });
+
+  test('getServices success - responseCode not 00', async () => {
+    const failData = {
+      responseInfo: { responseCode: "99" },
+      body: { msg: "error" }
+    };
+
+    getHttpClientRequest.mockImplementationOnce(() =>
+      Promise.resolve({ status: 200, data: failData })
+    );
+
+    await store.dispatch(actions.getServices());
+
+    expect(getHttpClientRequest).toHaveBeenCalled();
+  });
+
+  test('getServices failure', async () => {
+    getHttpClientRequest.mockImplementationOnce(() =>
+      Promise.reject({ body: { msg: "fail" } })
+    );
+
+    await store.dispatch(actions.getServices());
+
+    expect(getHttpClientRequest).toHaveBeenCalled();
+  });
+
+  test('postServices success - responseCode 00', async () => {
+    postHttpClientRequest.mockImplementationOnce(() =>
+      Promise.resolve({ status: 200, data: responseData })
+    );
+
+    await store.dispatch(actions.postServices({ service: 'mock' }));
+
+    expect(postHttpClientRequest).toHaveBeenCalled();
+  });
+
+  test('postServices success - responseCode not 00', async () => {
+    const failData = {
+      responseInfo: { responseCode: "99" },
+      body: { msg: "error" }
+    };
+
+    postHttpClientRequest.mockImplementationOnce(() =>
+      Promise.resolve({ status: 200, data: failData })
+    );
+
+    await store.dispatch(actions.postServices({ service: 'mock' }));
+
+    expect(postHttpClientRequest).toHaveBeenCalled();
+  });
+
+  test('postServices failure', async () => {
+    postHttpClientRequest.mockImplementationOnce(() =>
+      Promise.reject({ body: { msg: "fail" } })
+    );
+
+    await store.dispatch(actions.postServices({ service: 'mock' }));
+
+    expect(postHttpClientRequest).toHaveBeenCalled();
+  });
+
+  test('getServicesBegin', () => {
+    expect(actions.getServicesBegin()).toEqual({ type: actions.GET_SERVICES_BEGIN });
+  });
+
+  test('getServicesSuccess', () => {
+    expect(actions.getServicesSuccess(responseData)).toEqual({
+      type: actions.GET_SERVICES_SUCCESS,
+      services: responseData.body.sections[0].sections[0].data.serviceDetailsMap,
+      serviceStatus: responseData
+    });
+  });
+
+  test('getServicesFail', () => {
+    expect(actions.getServicesFail(responseData)).toEqual({
+      type: actions.GET_SERVICES_FAIL,
+      failServices: responseData.body
+    });
+  });
+
+  test('postServicesBegin', () => {
+    expect(actions.postServicesBegin()).toEqual({
+      type: actions.POST_SERVICES_BEGIN
+    });
+  });
+
+  test('postServicesSuccess', () => {
+    expect(actions.postServicesSuccess(responseData)).toEqual({
+      type: actions.POST_SERVICES_SUCCESS,
+      confirmServices: responseData
+    });
+  });
+
+  test('postServicesFail', () => {
+    expect(actions.postServicesFail(responseData)).toEqual({
+      type: actions.POST_SERVICES_FAIL,
+      servicesError: responseData
+    });
+  });
+});

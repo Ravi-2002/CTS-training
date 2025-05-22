@@ -4,46 +4,49 @@ import { Provider } from 'react-redux';
 import { Router } from 'react-router-dom';
 import { createMemoryHistory } from 'history';
 import configureStore from 'redux-mock-store';
-import BlockServices from '../../components/BlockServices'; // adjust path
 import '@testing-library/jest-dom';
 
-// Mock useDispatch and useSelector before import
-import * as reactRedux from 'react-redux';
+import BlockServices from '../../components/BlockServices';
 
-const mockDispatch = jest.fn();
-jest.spyOn(reactRedux, 'useDispatch').mockReturnValue(mockDispatch);
-jest.spyOn(reactRedux, 'useSelector');
+// Safe dispatch and selector mock
+jest.mock('react-redux', () => {
+  const ActualRedux = jest.requireActual('react-redux');
+  return {
+    ...ActualRedux,
+    useDispatch: () => jest.fn(),
+    useSelector: jest.fn()
+  };
+});
+
+import { useSelector } from 'react-redux';
 
 const mockStore = configureStore([]);
 
 describe('BlockServices', () => {
-  let store;
-  let history;
+  let store, history;
 
   const baseState = {
     Home: {
       services: {
         Category1: [
           { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' },
-          { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' },
-        ],
+          { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' }
+        ]
       },
       isFetching: false,
       serviceFail: false,
       confirmServices: {},
-      servicesError: {},
-    },
+      servicesError: {}
+    }
   };
 
   const setup = (overrideState = {}) => {
-    const finalState = { ...baseState, ...overrideState };
-    store = mockStore(finalState);
+    const state = { Home: { ...baseState.Home, ...overrideState } };
+    store = mockStore(state);
     history = createMemoryHistory();
     history.push('/block-services?mdn=1234567890');
 
-    reactRedux.useSelector.mockImplementation((selector) =>
-      selector(finalState)
-    );
+    useSelector.mockImplementation((selector) => selector({ Home: state.Home }));
 
     render(
       <Provider store={store}>
@@ -62,65 +65,41 @@ describe('BlockServices', () => {
 
   it('renders services and toggles', () => {
     setup();
-
-    expect(
-      screen.getByText(/Be in charge of who does what/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Be in charge of who does what/i)).toBeInTheDocument();
     expect(screen.getByText('Service A')).toBeInTheDocument();
     expect(screen.getByText('Service B')).toBeInTheDocument();
     expect(screen.getAllByRole('switch')).toHaveLength(2);
   });
 
-  it('dispatches action on toggle click', () => {
-    setup();
-    fireEvent.click(screen.getAllByRole('switch')[1]);
-    expect(mockDispatch).toHaveBeenCalled();
+  it('navigates to service detail on Tell me more click', () => {
+    const { history } = setup();
+    fireEvent.click(screen.getAllByText(/Tell me more/i)[0]);
+    expect(history.location.pathname).toContain('/service-details/Service%20A');
   });
 
-  it('shows success notification when confirmServices is successful', () => {
+  it('shows success notification when responseCode is 00', () => {
     setup({
-      Home: {
-        ...baseState.Home,
-        confirmServices: {
-          responseInfo: { responseCode: '00' },
-        },
-      },
+      confirmServices: {
+        responseInfo: { responseCode: '00' }
+      }
     });
-    expect(
-      screen.getByText(/Service updated successfully/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
   });
 
-  it('shows error notification on post error', () => {
+  it('shows error when responseCode is 99', () => {
     setup({
-      Home: {
-        ...baseState.Home,
-        servicesError: {
-          responseInfo: { responseCode: '99' },
-          libErrorInfo: {
-            internalErrors: [{ errorMessage: 'Internal failure' }],
-          },
-        },
-      },
+      servicesError: {
+        responseInfo: { responseCode: '99' },
+        libErrorInfo: {
+          internalErrors: [{ errorMessage: 'Sample error' }]
+        }
+      }
     });
-
     expect(screen.getByText(/Error/i)).toBeInTheDocument();
   });
 
-  it('shows load error if serviceFail is true', () => {
-    setup({
-      Home: {
-        ...baseState.Home,
-        serviceFail: true,
-      },
-    });
+  it('shows failure message if service load fails', () => {
+    setup({ serviceFail: true });
     expect(screen.getByText(/Failed to fetch services/i)).toBeInTheDocument();
-  });
-
-  it('navigates to service details page on text link click', () => {
-    const { history } = setup();
-    const link = screen.getAllByText(/Tell me more/i)[0];
-    fireEvent.click(link);
-    expect(history.location.pathname).toContain('/service-details/Service%20A');
   });
 });

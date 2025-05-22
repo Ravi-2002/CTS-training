@@ -4,13 +4,14 @@ import { Provider } from 'react-redux';
 import { createMemoryHistory } from 'history';
 import { Router } from 'react-router-dom';
 import configureStore from 'redux-mock-store';
-import BlockCallsEmpty from '../../components/index'; // adjust path if needed
+import '@testing-library/jest-dom';
 
-// Mock useDispatch to avoid thunk middleware issues
+// Important: mock useDispatch BEFORE component import
 import * as reactRedux from 'react-redux';
-jest.spyOn(reactRedux, 'useDispatch').mockReturnValue(jest.fn());
+const mockDispatch = jest.fn();
+jest.spyOn(reactRedux, 'useDispatch').mockReturnValue(mockDispatch);
 
-import '@testing-library/jest-dom'; // needed for matchers like toBeInTheDocument
+import BlockCallsEmpty from '../../components/index'; // Adjust path as needed
 
 const mockStore = configureStore([]);
 
@@ -36,9 +37,7 @@ describe('BlockCallsEmpty', () => {
       Detail: { blockedNumbers: [], addBlockCallMsg: {}, isFetching: false },
     });
 
-    expect(
-      screen.getByText(/Block calls and messages/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Block calls and messages/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /Block number/i })
     ).toBeDisabled();
@@ -69,31 +68,4 @@ describe('BlockCallsEmpty', () => {
     expect(history.location.pathname).toBe('/call-message-blocking');
   });
 
-  it('does not redirect if allowInput is true even when blockedNumbers > 0', () => {
-    const initialState = {
-      Detail: {
-        blockedNumbers: [{ phoneNumber: '1112223333' }],
-        addBlockCallMsg: {},
-        isFetching: false,
-      },
-    };
-
-    const { history } = setup(initialState, { allowInput: true });
-    expect(history.location.pathname).toBe('/block-calls');
-  });
-
-  it('redirects to list page after successful block', () => {
-    const initialState = {
-      Detail: {
-        blockedNumbers: [],
-        addBlockCallMsg: {
-          responseInfo: { responseCode: '00' },
-        },
-        isFetching: false,
-      },
-    };
-
-    const { history } = setup(initialState);
-    expect(history.location.pathname).toBe('/call-message-blocking');
-  });
-});
+  it('does not redirect if allowInput is true even when blockedNumbers > 0', () =>

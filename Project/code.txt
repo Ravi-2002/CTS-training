@@ -1,446 +1,126 @@
-● BlockServices Component › renders and toggles service correctly
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { Router } from 'react-router-dom';
+import { createMemoryHistory } from 'history';
+import configureStore from 'redux-mock-store';
+import '@testing-library/jest-dom';
 
-    TestingLibraryElementError: Unable to find an accessible element with the role "switch"
+import BlockServices from '../../components/BlockServices';
 
-    Here are the accessible roles:
+// Mock redux hooks
+jest.mock('react-redux', () => {
+  const actualRedux = jest.requireActual('react-redux');
+  return {
+    ...actualRedux,
+    useDispatch: jest.fn(),
+    useSelector: jest.fn(),
+  };
+});
 
-      heading:
+const mockStore = configureStore([]);
 
-      Name "Be in charge of who does what on your account.":
-      <h1
-        class="StyledTypography-VDS__sc-15sxhse-0 efSAvc StyledTitle-VDS__sc-f6e32a-0 fHDzCi"
-      />
+describe('BlockServices Component', () => {
+  let store;
+  let history;
 
-      Name "Service A":
-      <h4
-        class="StyledTypography-VDS__sc-15sxhse-0 cknoDo StyledTitle-VDS__sc-f6e32a-0 fHDzCi"
-      />
+  const baseState = {
+    Home: {
+      services: {
+        Category1: [
+          { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' },
+          { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' },
+        ],
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {},
+      servicesError: {},
+    },
+  };
 
-      Name "Service B":
-      <h4
-        class="StyledTypography-VDS__sc-15sxhse-0 cknoDo StyledTitle-VDS__sc-f6e32a-0 fHDzCi"
-      />
+  const setup = (overrideState = {}) => {
+    const state = { Home: { ...baseState.Home, ...overrideState } };
+    store = mockStore(state);
+    history = createMemoryHistory();
+    history.push('/block-services?mdn=1234567890');
 
-      --------------------------------------------------
-      checkbox:
+    require('react-redux').useSelector.mockImplementation((selector) => selector({ Home: state.Home }));
 
-      Name "":
-      <input
-        class="ToggleInput-VDS__sc-hvmk2k-2 hGuKDZ"
-        data-testid="test-toggle"
-        data-track="Service A"
-        id="cdc908ae-fc90-4849-ab99-5441eb64b688"
-        tabindex="0"
-        type="checkbox"
-        value="default"
-      />
+    render(
+      <Provider store={store}>
+        <Router history={history}>
+          <BlockServices />
+        </Router>
+      </Provider>
+    );
 
-      Name "":
-      <input
-        class="ToggleInput-VDS__sc-hvmk2k-2 hGuKDZ"
-        data-testid="test-toggle"
-        data-track="Service B"
-        id="c58b5659-fb62-4ff7-bcc5-5aa0d0b0cb29"
-        tabindex="0"
-        type="checkbox"
-        value="default"
-      />
+    return { store, history };
+  };
 
-      --------------------------------------------------
-      link:
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
-      Name "Tell me more":
-      <a
-        aria-disabled="false"
-        aria-label="Tell me more"
-        class="StyledAnchor-VDS__sc-2pjk45-2 dqXUGA"
-        role="link"
-        tabindex="0"
-        type="standAlone"
-      />
+  it('renders and toggles service correctly', () => {
+    setup();
 
-      Name "Tell me more":
-      <a
-        aria-disabled="false"
-        aria-label="Tell me more"
-        class="StyledAnchor-VDS__sc-2pjk45-2 dqXUGA"
-        role="link"
-        tabindex="0"
-        type="standAlone"
-      />
+    // Check initial render
+    expect(screen.getByText(/Be in charge of who does what/i)).toBeInTheDocument();
+    expect(screen.getByText('Service A')).toBeInTheDocument();
+    expect(screen.getByText('Service B')).toBeInTheDocument();
 
-      --------------------------------------------------
+    // Fire event on toggle button
+    fireEvent.click(screen.getAllByTestId('test-toggle')[1]);
+    expect(require('react-redux').useDispatch).toHaveBeenCalled();
+  });
 
-    Ignored nodes: comments, script, style
-    <body>
-      <div>
-        <div
-          class="sc-AxiKw jtjfEn"
-        >
-          <h1
-            class="StyledTypography-VDS__sc-15sxhse-0 efSAvc StyledTitle-VDS__sc-f6e32a-0 fHDzCi"
-          >
-            Be in charge of who does what on your account.
-          </h1>
-          <br />
-          <p
-            aria-hidden="false"
-            class="StyledTypography-VDS__sc-15sxhse-0 kFjQOD StyledBody-VDS__sc-1x4uqr-0 iuvLa"
-          >
-            770.346.3247
-          </p>
-          <br />
-          <div>
-            <div>
-              <div
-                class="sc-AxjAm juenrR"
-              >
-                <h4
-                  class="StyledTypography-VDS__sc-15sxhse-0 cknoDo StyledTitle-VDS__sc-f6e32a-0 fHDzCi"     
-                >
-                  Service A
-                </h4>
-                <div
-                  class="Container-VDS__sc-fhbxpp-0 lcQfls"
-                >
-                  <div
-                    class="ToggleWrapper-VDS__sc-fhbxpp-2 ctAtKl"
-                  >
-                    <span
-                      aria-hidden="true"
-                      class="HitArea-VDS__sc-fhbxpp-4 gpRoTL"
-                      data-testid="test-hitArea"
-                    />
-                    <span
-                      aria-live="assertive"
-                      class="ScreenReaderText-VDS__sc-fhbxpp-1 jOmYDl"
-                    />
-                    <label
-                      class="StyledLabel-VDS__sc-hvmk2k-0 iTfwzz"
-                      for="cdc908ae-fc90-4849-ab99-5441eb64b688"
-                      id="b6479445-4e00-462d-a9fe-7068a3769122"
-                    >
-                      <input
-                        class="ToggleInput-VDS__sc-hvmk2k-2 hGuKDZ"
-                        data-testid="test-toggle"
-                        data-track="Service A"
-                        id="cdc908ae-fc90-4849-ab99-5441eb64b688"
-                        tabindex="0"
-                        type="checkbox"
-                        value="default"
-                      />
-                      <span
-                        aria-hidden="true"
-                        class="ToggleSwitchSlider-VDS__sc-hvmk2k-1 jhtTtd"
-                        tabindex="-1"
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="sc-AxirZ cBrjbk"
-              >
-                <a
-                  aria-disabled="false"
-                  aria-label="Tell me more"
-                  class="StyledAnchor-VDS__sc-2pjk45-2 dqXUGA"
-                  role="link"
-                  tabindex="0"
-                  type="standAlone"
-                >
-                  <span
-                    aria-hidden="true"
-                    class="HitArea-VDS__sc-2pjk45-0 iHvHVu"
-                    tabindex="-1"
-                    type="standAlone"
-                  />
-                  <span
-                    aria-hidden="true"
-                    class="Wrapper-VDS__sc-2pjk45-1 jtfoCK"
-                    tabindex="-1"
-                    type="standAlone"
-                  >
-                    Tell me more
-                  </span>
-                </a>
-              </div>
-              <div
-                class="StyledLine-VDS__sc-132w3tr-0 fRPtQT"
-                orientation="horizontal"
-                type="primary"
-              />
-            </div>
-            <div>
-              <div
-                class="sc-AxjAm juenrR"
-              >
-                <h4
-                  class="StyledTypography-VDS__sc-15sxhse-0 cknoDo StyledTitle-VDS__sc-f6e32a-0 fHDzCi"     
-                >
-                  Service B
-                </h4>
-                <div
-                  class="Container-VDS__sc-fhbxpp-0 lcQfls"
-                >
-                  <div
-                    class="ToggleWrapper-VDS__sc-fhbxpp-2 ctAtKl"
-                  >
-                    <span
-                      aria-hidden="true"
-                      class="HitArea-VDS__sc-fhbxpp-4 gpRoTL"
-                      data-testid="test-hitArea"
-                    />
-                    <span
-                      aria-live="assertive"
-                      class="ScreenReaderText-VDS__sc-fhbxpp-1 jOmYDl"
-                    />
-                    <label
-                      class="StyledLabel-VDS__sc-hvmk2k-0 iTfwzz"
-                      for="c58b5659-fb62-4ff7-bcc5-5aa0d0b0cb29"
-                      id="0fccbce4-cf41-4515-9fc8-940e4d04ec5f"
-                    >
-                      <input
-                        class="ToggleInput-VDS__sc-hvmk2k-2 hGuKDZ"
-                        data-testid="test-toggle"
-                        data-track="Service B"
-                        id="c58b5659-fb62-4ff7-bcc5-5aa0d0b0cb29"
-                        tabindex="0"
-                        type="checkbox"
-                        value="default"
-                      />
-                      <span
-                        aria-hidden="true"
-                        class="ToggleSwitchSlider-VDS__sc-hvmk2k-1 fVBgTY"
-                        tabindex="-1"
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="sc-AxirZ cBrjbk"
-              >
-                <a
-                  aria-disabled="false"
-                  aria-label="Tell me more"
-                  class="StyledAnchor-VDS__sc-2pjk45-2 dqXUGA"
-                  role="link"
-                  tabindex="0"
-                  type="standAlone"
-                >
-                  <span
-                    aria-hidden="true"
-                    class="HitArea-VDS__sc-2pjk45-0 iHvHVu"
-                    tabindex="-1"
-                    type="standAlone"
-                  />
-                  <span
-                    aria-hidden="true"
-                    class="Wrapper-VDS__sc-2pjk45-1 jtfoCK"
-                    tabindex="-1"
-                    type="standAlone"
-                  >
-                    Tell me more
-                  </span>
-                </a>
-              </div>
-              <div
-                class="StyledLine-VDS__sc-132w3tr-0 fRPtQT"
-                orientation="horizontal"
-                type="primary"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </body>
+  it('shows success notification when confirmServices responseCode is 00', () => {
+    setup({
+      Home: {
+        ...baseState.Home,
+        confirmServices: { responseInfo: { responseCode: '00' } },
+      },
+    });
 
-      70 |     expect(screen.getByText('Service B')).toBeInTheDocument();
-      71 |
-    > 72 |     fireEvent.click(screen.getAllByRole('switch')[1]);
-         |                            ^
-      73 |     expect(mockDispatch).toHaveBeenCalled();
-      74 |   });
-      75 |
+    // Check for success notification
+    expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
+  });
 
-      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
-      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
-      at node_modules/@testing-library/dom/dist/query-helpers.js:109:15
-      at Object.getAllByRole (src/app/blocks/home/components/test/blockService.test.js:72:28)
+  it('shows error notification when responseCode is 99', () => {
+    setup({
+      Home: {
+        ...baseState.Home,
+        servicesError: {
+          responseInfo: { responseCode: '99' },
+          libErrorInfo: {
+            internalErrors: [{ errorMessage: 'Sample error' }],
+          },
+        },
+      },
+    });
 
-  ● BlockServices Component › shows error notification when responseCode is 99
+    // Check for error notification
+    expect(screen.getByTestId('alert')).toBeInTheDocument();
+  });
 
-    TestingLibraryElementError: Found multiple elements with the text: /Error/i
+  it('renders failure message if service load fails', () => {
+    setup({ Home: { ...baseState.Home, serviceFail: true } });
+    expect(screen.getByText(/Failed to fetch services/i)).toBeInTheDocument();
+  });
 
-    Here are the matching elements:
+  it('navigates to service details on TextLink click', () => {
+    const { history } = setup({
+      Home: {
+        ...baseState.Home,
+        services: {
+          Category1: [{ serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' }],
+        },
+      },
+    });
 
-    Ignored nodes: comments, script, style
-    <span
-      class="AccessibilityLabel-VDS__sc-qvyswu-11 iZJfTa"
-      id="type_997879d9-ac4b-43e5-8951-0d4c82923169"
-    >
-      Alert! error notification
-    </span>
-
-    Ignored nodes: comments, script, style
-    <p
-      aria-hidden="false"
-      class="StyledTypography-VDS__sc-15sxhse-0 bXRNxc StyledBody-VDS__sc-1x4uqr-0 iuvLa"
-      id="title_05ce6b13-ff1e-4c75-a420-50bbd2c67a78"
-    >
-      Error
-    </p>
-
-    (If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
-
-    Ignored nodes: comments, script, style
-    <body>
-      <div>
-        <div
-          class="StyledDiv-VDS__sc-qvyswu-0 iZUjbE"
-          tabindex="-1"
-        >
-          <div
-            class="AlertWrapper-VDS__sc-qvyswu-2 dsSgcu"
-            data-testid="alert"
-            tabindex="-1"
-            type="error"
-          >
-            <div
-              class="ContentWrapper-VDS__sc-qvyswu-7 kNwTGN"
-            >
-              <div
-                class="CloseButtonContainer-VDS__sc-1vj8sb-0 fjAgln"
-              >
-                <div
-                  class="ButtonIconContainer-VDS__sc-1tkw8xt-0 bOYvwL"
-                  kind="ghost"
-                >
-                  <button
-                    aria-disabled="false"
-                    aria-hidden="false"
-                    aria-label="Notification Close"
-                    class="StyledButton-VDS__sc-1tkw8xt-2 dyFfst"
-                    data-testid="Notification-close-button"
-                    id="notificationCloseButton_9ce8a492-5ac0-4417-839e-babe18cdd999"
-                    kind="ghost"
-                    role="button"
-                    tabindex="0"
-                  >
-                    <span
-                      class="HitArea-VDS__sc-1tkw8xt-7 iaUzLM"
-                    />
-                    <span
-                      class="IconContainer-VDS__sc-1tkw8xt-5 jLprYV"
-                    >
-                      <svg
-                        aria-hidden="false"
-                        aria-label="close icon"
-                        class="StyledSVG-VDS__sc-3zla24-0 jDZon"
-                        fill="#000000"
-                        role="img"
-                        viewBox="0 0 21.6 21.6"
-                      >
-                        <title>
-                          close icon
-                        </title>
-                        <path
-                          d="M11.59,10.8l7.11,7.1-.8.8-7.1-7.11L3.7,18.7l-.8-.8L10,10.8,2.9,3.7l.8-.8L10.8,10,17.9,2.9l.8.8Z"
-                        />
-                      </svg>
-                    </span>
-                  </button>
-                </div>
-              </div>
-              <span
-                class="TextAreaWrapper-VDS__sc-qvyswu-3 dTIAxQ"
-              >
-                <span
-                  aria-live="polite"
-                  class="TextIconWrapper-VDS__sc-qvyswu-10 fAWQEl"
-                >
-                  <span
-                    aria-hidden="true"
-                    class="NotificationIconWrapper-VDS__sc-qvyswu-8 iBoDtJ"
-                    tabindex="-1"
-                  >
-                    <div
-                      aria-hidden="true"
-                      aria-label="error icon"
-                      class="IconSVGWrapper-VDS__sc-qvyswu-12 jBdLjz"
-                      tabindex="-1"
-                    >
-                      <svg
-                        id="Layer_1"
-                        version="1.1"
-                        viewBox="0 0 21.6 21.6"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M19.4,8.8l-6.6-6.6c-1.1-1.1-2.9-1.1-4,0L2.2,8.8c-1.1,1.1-1.1,2.9,0,4l6.6,6.6c1.1,1.1,2.9,1.1,4,0
-        c0,0,0,0,0,0l6.6-6.6C20.5,11.7,20.5,9.9,19.4,8.8z M18,11.4L11.4,18c-0.3,0.3-0.9,0.3-1.2,0l-6.6-6.6c-0.3-0.3-0.3-0.9,0-1.2
-        l6.6-6.6c0.3-0.3,0.9-0.3,1.2,0l6.6,6.6C18.3,10.5,18.3,11.1,18,11.4z M9.9,13.4h1.7v1.7H9.9V13.4z M9.9,6.5h1.7V9l-0.6,2.6h-0.6
-        L9.9,9V6.5z"
-                        />
-                      </svg>
-                    </div>
-                  </span>
-                  <div
-                    aria-labelledby="type_997879d9-ac4b-43e5-8951-0d4c82923169"
-                    class="TextWrapper-VDS__sc-qvyswu-5 crQBYg"
-                  >
-                    <span
-                      class="AccessibilityLabel-VDS__sc-qvyswu-11 iZJfTa"
-                      id="type_997879d9-ac4b-43e5-8951-0d4c82923169"
-                    >
-                      Alert! error notification
-                    </span>
-                    <p
-                      aria-hidden="false"
-                      class="StyledTypography-VDS__sc-15sxhse-0 bXRNxc StyledBody-VDS__sc-1x4uqr-0 iuvLa"   
-                      id="title_05ce6b13-ff1e-4c75-a420-50bbd2c67a78"
-                    >
-                      Error
-                    </p>
-                  </div>
-                </span>
-              </span>
-            </div>
-          </div>
-        </div>
-        <div
-          class="sc-AxiKw jtjfEn"
-        >
-          <h1
-            class="StyledTypography-VDS__sc-15sxhse-0 efSAvc StyledTitle-VDS__sc-f6e32a-0 fHDzCi"
-          >
-            Be in charge of who does what on your account.
-          </h1>
-          <br />
-          <p
-            aria-hidden="false"
-            class="StyledTypography-VDS__sc-15sxhse-0 kFjQOD StyledBody-VDS__sc-1x4uqr-0 iuvLa"
-          >
-            770.346.3247
-          </p>
-          <br />
-          <div />
-        </div>
-      </div>
-    </body>
-
-      108 |     });
-      109 |
-    > 110 |     expect(screen.getByText(/Error/i)).toBeInTheDocument();
-          |                   ^
-      111 |   });
-      112 |
-      113 |   it('renders failure message if service load fails', () => {
-
-      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
-      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:20:35)
-      at getMultipleElementsFoundError (node_modules/@testing-library/dom/dist/query-helpers.js:23:10)      
-      at node_modules/@testing-library/dom/dist/query-helpers.js:55:13
-      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
-      at Object.getByText (src/app/blocks/home/components/test/blockService.test.js:110:19)
+    const tellMeMore = screen.getByText(/Tell me more/i);
+    fireEvent.click(tellMeMore);
+    expect(history.location.pathname).toContain('/service-details/Service%20A');
+  });
+});

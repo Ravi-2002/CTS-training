@@ -1,180 +1,19 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import BlockServices from '../BlockServices';
-import { useDispatch, useSelector } from 'react-redux';
-import { getServices, postServices } from '../../actions';
-import { Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
-
-jest.mock('react-redux', () => ({
-  useDispatch: jest.fn(),
-  useSelector: jest.fn()
-}));
-
-jest.mock('../../actions', () => ({
-  getServices: jest.fn(),
-  postServices: jest.fn()
-}));
-
-jest.mock('@vds/notifications', () => ({
-  Notification: ({ title, type }) => <div>{`${type}: ${title}`}</div>
-}));
-
-jest.mock('@vds/loaders', () => ({
-  Loader: ({ active }) => (active ? <div>Loading...</div> : null)
-}));
-
-jest.mock('@vds/toggles', () => ({
-  Toggle: ({ on, onChange, 'data-track': name }) => (
-    <button data-testid={name} onClick={onChange}>
-      {on ? 'On' : 'Off'}
-    </button>
-  )
-}));
-
-jest.mock('@vds/buttons', () => ({
-  TextLink: ({ onClick, children }) => <button onClick={onClick}>{children}</button>
-}));
-
-jest.mock('@vds/typography', () => ({
-  Title: ({ children }) => <h1>{children}</h1>,
-  Body: ({ children }) => <p>{children}</p>
-}));
-
-jest.mock('@vds/lines', () => ({
-  Line: () => <hr />
-}));
-
-const mockState = {
-  Home: {
+test('updates formState and resets lastToggledService when responseCode is 08 and lastToggledService is valid', () => {
+  setup({
+    confirmServices: {
+      responseInfo: { responseCode: '08' }
+    },
+    lastToggledService: {
+      serviceName: 'Call Blocking',
+      toggledValue: false,
+      sfoCode: 'CB01',
+      sfoEnabled: 'N'
+    },
     services: {
       General: [{ serviceName: 'Call Blocking', sfoEnabled: 'Y', sfoCode: 'CB01' }]
-    },
-    isFetching: false,
-    serviceFail: false,
-    confirmServices: null,
-    servicesError: null,
-    lastToggledService: null
-  }
-};
-
-describe('BlockServices Component', () => {
-  let dispatch;
-  let history;
-
-  beforeEach(() => {
-    dispatch = jest.fn();
-    useDispatch.mockReturnValue(dispatch);
-    history = createMemoryHistory();
-    history.push('/block-services?mdn=1234567890');
+    }
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  const setup = (stateOverrides = {}) => {
-    useSelector.mockImplementation((cb) =>
-      cb({
-        ...mockState,
-        Home: {
-          ...mockState.Home,
-          ...stateOverrides
-        }
-      })
-    );
-
-    return render(
-      <Router history={history}>
-        <BlockServices />
-      </Router>
-    );
-  };
-
-  test('dispatches getServices on mount', () => {
-    setup();
-    expect(dispatch).toHaveBeenCalledWith(getServices());
-  });
-
-  test('renders loader when isFetching is true', () => {
-    setup({ isFetching: true });
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-  });
-
-  test('renders error message on serviceFail', () => {
-    setup({ serviceFail: true });
-    expect(screen.getByText('Failed to fetch services.')).toBeInTheDocument();
-  });
-
-  test('renders success notification when responseCode is 00', () => {
-    setup({
-      confirmServices: {
-        responseInfo: { responseCode: '00' }
-      }
-    });
-    expect(screen.getByText('success: Service updated successfully!')).toBeInTheDocument();
-  });
-
-  test('renders error notification when responseCode is 99', () => {
-    setup({
-      servicesError: {
-        responseInfo: { responseCode: '99' },
-        libErrorInfo: {
-          internalErrors: [{ errorMessage: 'Some error' }]
-        }
-      }
-    });
-    expect(screen.getByText('error: Some error')).toBeInTheDocument();
-  });
-
-  test('renders toggle and handles click', async () => {
-    setup();
-
-    const toggle = screen.getByTestId('Call Blocking');
-    expect(toggle).toBeInTheDocument();
-    expect(toggle.textContent).toBe('On');
-
-    fireEvent.click(toggle);
-
-    await waitFor(() => {
-      expect(dispatch).toHaveBeenCalledWith(
-        postServices([
-          {
-            mdn: '1234567890',
-            sfoCode: 'CB01',
-            sfoEnabled: 'N'
-          }
-        ])
-      );
-    });
-  });
-
-  test('navigates to service details on TextLink click', () => {
-    setup();
-
-    const button = screen.getByText('Tell me more');
-    fireEvent.click(button);
-
-    expect(history.location.pathname).toBe('/service-details/Call%20Blocking');
-  });
-
-  test('renders service again if confirmServices has responseCode 08 and matches lastToggledService', () => {
-    setup({
-      confirmServices: {
-        responseInfo: { responseCode: '08' }
-      },
-      lastToggledService: {
-        sfoCode: 'CB01',
-        sfoEnabled: 'N'
-      }
-    });
-
-    const toggle = screen.getByTestId('Call Blocking');
-    expect(toggle).toHaveTextContent('Off');
-  });
-
-  test('renders all services from serviceDetailsMap', () => {
-    setup();
-    expect(screen.getByText('Call Blocking')).toBeInTheDocument();
-  });
+  const toggle = screen.getByTestId('Call Blocking');
+  expect(toggle).toHaveTextContent('Off'); // Updated based on toggledValue: false
 });

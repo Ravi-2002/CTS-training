@@ -1,153 +1,249 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Provider, useDispatch, useSelector } from 'react-redux';
-import { Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
-import configureStore from 'redux-mock-store';
-import '@testing-library/jest-dom';
-import BlockCallsList from '../../components/BlockCallsList';
-import callsMessagesReducer from '../../redux/reducers/callsMessagesReducer';
-import * as actions from '../../redux/actions/fetchCallsMessages';
+import axios from 'axios';
+import apiUrl from '../../../../shared/utilities/apiUrl';
+import { getHttpClientRequest, postHttpClientRequest } from '../../../../shared/services/httpClient';
+// import { notifySuccess, notifyError } from "../../../utils/VendorScripts/VendorScripts"
 
-jest.mock('react-redux', () => ({
-  ...jest.requireActual('react-redux'),
-  useDispatch: jest.fn(),
-  useSelector: jest.fn()
-}));
+export const GET_CALLS_MESSAGES_BEGIN = "CallsMessages/GET_CALLS_MESSAGES_BEGIN"
+export const GET_CALLS_MESSAGES_SUCCESS =
+  "CallsMessages/GET_CALLS_MESSAGES_SUCCESS"
+export const GET_CALLS_MESSAGES_FAIL = "CallsMessages/GET_CALLS_MESSAGES_FAIL"
 
-const mockStore = configureStore([]);
-const mockDispatch = jest.fn();
+export const POST_ADD_CALL_MSG_BEGIN = "CallsMessages/POST_ADD_CALL_MSG_BEGIN"
+export const POST_ADD_CALL_MSG_SUCCESS =
+  "CallsMessages/POST_ADD_CALL_MSG_SUCCESS"
+export const POST_ADD_CALL_MSG_FAIL = "CallsMessages/POST_ADD_CALL_MSG_FAIL"
 
-describe('BlockCallsList Component', () => {
-  let store;
-  let history;
+export const POST_DELETE_CALL_MSG_BEGIN =
+  "CallsMessages/POST_DELETE_CALL_MSG_BEGIN"
+export const POST_DELETE_CALL_MSG_SUCCESS =
+  "CallsMessages/POST_DELETE_CALL_MSG_SUCCESS"
+export const POST_DELETE_CALL_MSG_FAIL =
+  "CallsMessages/POST_DELETE_CALL_MSG_FAIL"
 
-  beforeEach(() => {
-    useDispatch.mockReturnValue(mockDispatch);
-  });
 
-  const setup = (selectorData) => {
-    store = mockStore({});
-    history = createMemoryHistory();
-    history.push('/call-message-blocking');
 
-    useSelector.mockImplementation(cb => cb({ Detail: selectorData }));
+export const getCallsMessages = (payload) => async dispatch => {
 
-    render(
-      <Provider store={store}>
-        <Router history={history}>
-          <BlockCallsList history={history} />
-        </Router>
-      </Provider>
+  dispatch(getCallsMessagesBegin())
+    
+
+    const onSuccess = (resp) => {
+      if (
+        resp &&
+        resp.data &&
+        resp.data.responseInfo &&
+        resp.data.responseInfo.responseCode == "00"
+      ) {
+        dispatch(getCallsMessagesSuccess(resp.data));
+      } else {
+        dispatch(getCallsMessagesError(resp.data));
+      }
+    };
+  
+    const onError = error => {
+      // below code is for redirecting to unauthorised screen for member account
+      let msResp = error && error.response && error.response.data;
+      let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
+      let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
+      if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
+        window.location.href = apiUrl().mvoLimitedAccessUrl;
+      }
+      else {
+        dispatch(getCallsMessagesError(error));
+      }
+    };
+  
+    const callMS = () => {
+      let axConfig = {
+        headers: {
+          flowName:'Blocks',
+          contentType: 'application/json',
+          // pageName: 'dsrDeviceLanding',
+          // flowName: 'Device',
+        },
+      }
+      return getHttpClientRequest(apiUrl().callsMessages, axConfig)
+    }
+  
+    callMS()
+      .then(msResp => {
+        console.log(msResp, 'msResp')
+        if (msResp && msResp.status == 200) {
+          onSuccess(msResp);
+        }
+      })
+      .catch((error)=>{console.log("error",error)});
+}
+
+export const postaddBlockCallMsg = (blockNum) => async dispatch => {
+
+  dispatch(postaddBlockCallMsgBegin())
+  const onSuccess = (resp) => {
+    if (
+      resp &&
+      resp.data &&
+      resp.data.responseInfo &&
+      resp.data.responseInfo.responseCode == "00"
+    ) {
+      
+      dispatch(postaddBlockCallMsgSuccess(resp.data));
+    } else {
+      dispatch(postaddBlockCallMsgError(resp.data));
+    }
+  };
+  
+  const onError = error => {
+    // below code is for redirecting to unauthorised screen for member account
+    let msResp = error && error.response && error.response.data;
+    let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
+    let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
+    if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
+      window.location.href = apiUrl().mvoLimitedAccessUrl;
+    }
+    else {
+      dispatch(postaddBlockCallMsgError(error));
+    }
+  };
+  
+  const callMS = () => {
+    let axConfig = {
+      headers: {
+        flowName:'Blocks',
+        contentType: 'application/json',
+        
+      },
+    }
+    if (apiUrl().addNumber?.indexOf('ApiData') > -1) {
+      return postHttpClientRequest(
+        apiUrl().addNumber,blockNum,
+        axConfig
+      ) 
+    } else {
+      
+      return postHttpClientRequest(
+        apiUrl().addNumber,
+        blockNum,
+        axConfig
+      );
+    }
+  }
+  
+  callMS()
+    .then(msResp => {
+      console.log(msResp, 'msResp')
+      if (msResp && msResp.status == 200) {
+        onSuccess(msResp);
+      }
+    })
+    .catch(onError);
+
+}
+
+
+export const postDeleteBlockCallMsg = (blockNum) => async dispatch => {
+
+  dispatch(postDeleteBlockCallMsgBegin())
+ //const response = await axios.get(reactGlobals.postdeleteBlockCallMsg)
+ const onSuccess = (resp) => {
+  if (
+    resp &&
+    resp.data &&
+    resp.data.responseInfo &&
+    resp.data.responseInfo.responseCode == "00"
+  ) {
+    
+    dispatch(postDeleteBlockCallMsgSuccess(resp.data));
+  } else {
+    dispatch(postDeleteBlockCallMsgError(resp.data));
+  }
+};
+
+const onError = error => {
+  // below code is for redirecting to unauthorised screen for member account
+  let msResp = error && error.response && error.response.data;
+  let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
+  let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
+  if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
+    window.location.href = apiUrl().mvoLimitedAccessUrl;
+  }
+  else {
+    dispatch(postDeleteBlockCallMsgError(error));
+  }
+};
+
+const callMS = () => {
+  let axConfig = {
+    headers: {
+      flowName:'Blocks',
+      contentType: 'application/json',
+      // pageName: 'dsrDeviceLanding',
+      // flowName: 'Device',
+    },
+  }
+  if (apiUrl().deleteNumber?.indexOf('ApiData') > -1) {
+    return postHttpClientRequest(
+      apiUrl().deleteNumber,blockNum,
+      axConfig
+    ) 
+  } else {
+    
+    return postHttpClientRequest(
+      apiUrl().deleteNumber,
+      blockNum,
+      axConfig
     );
+  }
+}
 
-    return { store, history };
-  };
+callMS()
+  .then(msResp => {
+    console.log(msResp, 'msResp')
+    if (msResp && msResp.status == 200) {
+      onSuccess(msResp);
+    }
+  })
+  .catch(onError);
+   
+}
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
 
-  it('renders blocked numbers and add button', () => {
-    setup({
-      blockedNumbers: [{ phoneNumber: '1234567890' }],
-      addBlockCallMsg: {},
-      deleteBlockCallMsg: {},
-      isFetching: false,
-    });
 
-    expect(screen.getByText(/Block calls and messages/i)).toBeInTheDocument();
-    expect(screen.getByText(/732.609.9414/)).toBeInTheDocument();
-    expect(screen.getByText(/1234567890/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Add a number/i })).toBeInTheDocument();
-  });
 
-  it('navigates to input page on Add button click', () => {
-    const { history } = setup({
-      blockedNumbers: [],
-      addBlockCallMsg: {},
-      deleteBlockCallMsg: {},
-      isFetching: false,
-    });
 
-    fireEvent.click(screen.getByRole('button', { name: /Add a number/i }));
-    expect(history.location.pathname).toBe('/callsandmessages');
-  });
-});
+export const getCallsMessagesBegin = () => ({
+  type: GET_CALLS_MESSAGES_BEGIN
+})
+export const getCallsMessagesSuccess = (response) => ({
+  type: GET_CALLS_MESSAGES_SUCCESS,
+  payload: response.body,
+  blockedNumbers: response.body.blockedPhoneNumbers,
+  expiredBlockNumbers: response.body.expiredBlockedPhoneNumbers
+})
+export const getCallsMessagesError = (response) => ({
+  type: GET_CALLS_MESSAGES_FAIL,
+  payloadGetCMError: response.body
+})
 
-// Reducer test
-describe('callsMessagesReducer', () => {
-  const initialState = {
-    isFetching: false,
-    callsMessages: {},
-    blockedNumbers: [],
-    expiredNumbers: [],
-    blockAgainResponse: {},
-    addBlockCallMsg: {},
-    editBlockCallMsg: {},
-    deleteBlockCallMsg: {},
-    editAllBlockCallMsg: {},
-    getCMError: {}
-  };
+export const postaddBlockCallMsgBegin = () => ({
+  type: POST_ADD_CALL_MSG_BEGIN
+})
+export const postaddBlockCallMsgSuccess = (response) => ({
+  type: POST_ADD_CALL_MSG_SUCCESS,
+  payloadAddCallMsg: response.body
+})
+export const postaddBlockCallMsgError = (response) => ({
+  type: POST_ADD_CALL_MSG_FAIL,
+  payloadAddCallMsgError: response.body
+})
 
-  it('should return initial state', () => {
-    expect(callsMessagesReducer(undefined, {})).toEqual(initialState);
-  });
-
-  it('should handle GET_CALLS_MESSAGES_SUCCESS', () => {
-    const payload = {
-      body: {
-        blockedPhoneNumbers: [{ phoneNumber: '111' }],
-        expiredBlockedPhoneNumbers: [{ phoneNumber: '222' }]
-      }
-    };
-    const action = actions.getCallsMessagesSuccess(payload);
-    const expected = {
-      ...initialState,
-      callsMessages: payload.body,
-      blockedNumbers: payload.body.blockedPhoneNumbers,
-      expiredNumbers: payload.body.expiredBlockedPhoneNumbers,
-      isFetching: false,
-    };
-    expect(callsMessagesReducer(initialState, action)).toEqual(expected);
-  });
-
-  it('should handle POST_ADD_CALL_MSG_SUCCESS', () => {
-    const response = { body: { blockedPhoneNumbers: ['999'] } };
-    const action = actions.postaddBlockCallMsgSuccess(response);
-    const expected = {
-      ...initialState,
-      addBlockCallMsg: response.body,
-      isFetching: false,
-    };
-    expect(callsMessagesReducer(initialState, action)).toEqual(expected);
-  });
-});
-
-// Action creators test
-describe('fetchCallsMessages actions', () => {
-  it('should create GET_CALLS_MESSAGES_SUCCESS action', () => {
-    const response = {
-      body: {
-        blockedPhoneNumbers: ['123'],
-        expiredBlockedPhoneNumbers: []
-      }
-    };
-    const expected = {
-      type: actions.GET_CALLS_MESSAGES_SUCCESS,
-      payload: response.body,
-      blockedNumbers: ['123'],
-      expiredBlockNumbers: []
-    };
-    expect(actions.getCallsMessagesSuccess(response)).toEqual(expected);
-  });
-
-  it('should create POST_ADD_CALL_MSG_SUCCESS action', () => {
-    const response = { body: ['added'] };
-    const expected = {
-      type: actions.POST_ADD_CALL_MSG_SUCCESS,
-      payloadAddCallMsg: ['added']
-    };
-    expect(actions.postaddBlockCallMsgSuccess(response)).toEqual(expected);
-  });
-});
+export const postDeleteBlockCallMsgBegin = () => ({
+  type: POST_DELETE_CALL_MSG_BEGIN
+})
+export const postDeleteBlockCallMsgSuccess = (response) => ({
+  type: POST_DELETE_CALL_MSG_SUCCESS,
+  payloadDeleteCallMsg: response.body
+})
+export const postDeleteBlockCallMsgError = (response) => ({
+  type: POST_DELETE_CALL_MSG_FAIL,
+  payloadDeleteCallMsgError: response.body
+})

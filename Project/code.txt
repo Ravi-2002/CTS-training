@@ -1,60 +1,92 @@
-import React from "react";
-import { useParams,useHistory } from "react-router-dom";
-import styled from "styled-components";
-import { useSelector } from "react-redux";
-import { Button } from "@vds/buttons";
-import { Title } from "@vds/typography";
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Router, Route } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import ServiceDetails from '../../components/serviceDetails';
 
-const ServiceDetails = () => {
-  const { serviceName } = useParams();
- const history = useHistory();
-  const serviceDetailsMap = useSelector((state) => state.Home.services);
+const mockStore = configureStore([]);
 
-  let longDescription;
-  for (const category in serviceDetailsMap) {
-    const service = serviceDetailsMap[category].find(
-      (svc) => svc.serviceName === serviceName
-    );
-    if (service) {
-      if(service.longDescriptionMVA)
-      longDescription = service.longDescriptionMVA;
-      else{
-        longDescription=service.longDescription;
-      }
-      break;
-    }
-  }
+const setup = (initialState, path = '/service-details/Service A') => {
+  const store = mockStore(initialState);
+  const history = {
+    push: jest.fn(),
+    goBack: jest.fn(),
+    location: { pathname: path },
+    listen: jest.fn(),
+    createHref: jest.fn(),
+  };
 
-  return (
-    <PageWrapper>
-        <Title size="XLarge" bold>{serviceName}</Title>
-        <p dangerouslySetInnerHTML={{ __html: longDescription }}></p>
-      <ButtonWrapper>
-        <Button
-          size="large"
-          surface="light"
-          use="primary"
-          onClick={() => history.goBack()}
-        >
-          Done
-        </Button>
-      </ButtonWrapper>
-    </PageWrapper>
+  render(
+    <Provider store={store}>
+      <Router history={history}>
+        <Route path="/service-details/:serviceName">
+          <ServiceDetails />
+        </Route>
+      </Router>
+    </Provider>
   );
+
+  return { store, history };
 };
 
-const PageWrapper = styled.div`
-  padding: 20px;
-  min-height: 80vh;
-  display: flex;
-  flex-direction: column;
-`;
+describe('ServiceDetails Component', () => {
+  it('renders service title and longDescriptionMVA', () => {
+    const initialState = {
+      Home: {
+        services: {
+          Category1: [
+            {
+              serviceName: 'Service A',
+              longDescriptionMVA: '<b>Long Description MVA</b>',
+            },
+          ],
+        },
+      },
+    };
 
-const ButtonWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-top: auto;
-  padding-bottom: 2rem;
-`;
+    setup(initialState);
 
-export default ServiceDetails;
+    expect(screen.getByText('Service A')).toBeInTheDocument();
+    expect(screen.getByText('Long Description MVA')).toBeInTheDocument();
+  });
+
+  it('renders longDescription if longDescriptionMVA is not available', () => {
+    const initialState = {
+      Home: {
+        services: {
+          Category1: [
+            {
+              serviceName: 'Service B',
+              longDescription: 'Fallback long description',
+            },
+          ],
+        },
+      },
+    };
+
+    setup(initialState, '/service-details/Service B');
+
+    expect(screen.getByText('Service B')).toBeInTheDocument();
+    expect(screen.getByText('Fallback long description')).toBeInTheDocument();
+  });
+
+  it('calls history.goBack on Done button click', () => {
+    const initialState = {
+      Home: {
+        services: {
+          Category1: [
+            {
+              serviceName: 'Service A',
+              longDescription: 'Description here',
+            },
+          ],
+        },
+      },
+    };
+
+    const { history } = setup(initialState);
+    fireEvent.click(screen.getByRole('button', { name: /Done/i }));
+    expect(history.goBack).toHaveBeenCalled();
+  });
+});

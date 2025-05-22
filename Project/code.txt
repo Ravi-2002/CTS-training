@@ -1,118 +1,82 @@
-// Reducer test
-describe('callsMessagesReducer', () => {
-  const initialState = {
-    isFetching: false,
-    callsMessages: {},
-    blockedNumbers: [],
-    expiredNumbers: [],
-    blockAgainResponse: {},
-    addBlockCallMsg: {},
-    editBlockCallMsg: {},
-    deleteBlockCallMsg: {},
-    editAllBlockCallMsg: {},
-    getCMError: {},
-  };
+import * as getcreateDeviceGroup from '../../actions/createDeviceGroupAction';
+import httpClient, { getHttpClientRequest, postHttpClientRequest } from "../../../../../shared/services/httpClient";
+import configureStore, { history } from "../../../../../shared/store/configureStore";
+import rootReducer from "../../../reducers";
+jest.mock("../../../../../shared/services/httpClient", () => ({
+  ...jest.requireActual("../../../../../shared/services/httpClient"),
+  postHttpClientRequest: jest.fn()
+}));
+;
+var mobileConfig = {};
+const store = configureStore(rootReducer);
+global.mobileConfig = mobileConfig;
+let responseData = {
+  "responseInfo": {
+      "timeStamp": "23-01-2023 04:35:22",
+      "correlationId": "",
+      "responseCode": "00",
+      "responseMessage": "SUCCESS",
+      "sectionErrors": []
+  },
+  "body":{
+    "errorCode": "00"
+  }
+}
 
-  it('should return initial state', () => {
-    expect(callsMessagesReducer(undefined, {})).toEqual(initialState);
+describe('TestCreateDeviceGroupAction', () => {
+  
+
+  test("createDeviceGroup  success",()=>{
+    var reqData = {
+      "groupName": 'hfg',
+      "devicesList": [],
+  }; 
+    httpClient.postHttpClientRequest.mockImplementationOnce((reqData) => {
+    
+      return Promise.resolve({ status: 200, data: {...responseData} });
+    
+      })
+      
+      const promise = store.dispatch(getcreateDeviceGroup.createDeviceGroup('url',reqData, 'header'))
+   
+      expect(postHttpClientRequest).toHaveBeenCalled();
+      expect(typeof promise).toBe('object')
+    });
+    test("createDeviceGroup  error",()=>{
+      httpClient.postHttpClientRequest.mockImplementation(() => {
+            return Promise.reject({ data: 'error' });
+      });
+        
+        store.dispatch(getcreateDeviceGroup.createDeviceGroup())
+        .then((res) =>{
+        },(error) => {
+          expect(error.data).toEqual('error');
+        });
+    
+    });
+    test("purgeStore action",()=>{
+  
+      store.dispatch(getcreateDeviceGroup.purgeStore())
   });
-
-  it('handles GET_CALLS_MESSAGES_BEGIN', () => {
-    const result = callsMessagesReducer(initialState, { type: actions.GET_CALLS_MESSAGES_BEGIN });
-    expect(result).toEqual({ ...initialState, isFetching: true });
-  });
-
-  it('handles GET_CALLS_MESSAGES_SUCCESS', () => {
-    const payload = {
-      body: { data: 'success' },
-      blockedPhoneNumbers: ['111'],
-      expiredBlockedPhoneNumbers: ['222'],
+  test('CREATE_DEVICE_GROUP_BEGIN', () => {
+    const expected = {
+      type: 'CREATE_DEVICE_GROUP_BEGIN',
     };
-    const result = callsMessagesReducer(initialState, {
-      type: actions.GET_CALLS_MESSAGES_SUCCESS,
-      payload: payload.body,
-      blockedNumbers: payload.blockedPhoneNumbers,
-      expiredBlockNumbers: payload.expiredBlockedPhoneNumbers,
-    });
-    expect(result).toEqual({
-      ...initialState,
-      callsMessages: payload.body,
-      blockedNumbers: payload.blockedPhoneNumbers,
-      expiredNumbers: payload.expiredBlockedPhoneNumbers,
-      isFetching: false,
-    });
+    expect(getcreateDeviceGroup.createDeviceGroupBegin()).toEqual(expected);
   });
 
-  it('handles GET_CALLS_MESSAGES_FAIL', () => {
-    const error = { message: 'fail' };
-    const result = callsMessagesReducer(initialState, {
-      type: actions.GET_CALLS_MESSAGES_FAIL,
-      payloadGetCMError: error,
-    });
-    expect(result).toEqual({ ...initialState, getCMError: error, isFetching: false });
+  test('CREATE_DEVICE_GROUP_SUCCESS', () => {
+    const expected = {
+      type: 'CREATE_DEVICE_GROUP_SUCCESS',
+    };
+    expect(getcreateDeviceGroup.createDeviceGroupSuccess()).toEqual(expected);
   });
 
-  // ---------- ADD ----------
-  it('handles POST_ADD_CALL_MSG_BEGIN', () => {
-    const result = callsMessagesReducer(initialState, {
-      type: actions.POST_ADD_CALL_MSG_BEGIN,
-    });
-    expect(result).toEqual({ ...initialState, isFetching: true });
+  test('CREATE_DEVICE_GROUP_ERROR', () => {
+    const expected = {
+      type: 'CREATE_DEVICE_GROUP_ERROR',
+    };
+    expect(getcreateDeviceGroup.createDeviceGroupError()).toEqual(expected);
   });
 
-  it('handles POST_ADD_CALL_MSG_SUCCESS', () => {
-    const result = callsMessagesReducer(initialState, {
-      type: actions.POST_ADD_CALL_MSG_SUCCESS,
-      payloadAddCallMsg: { message: 'added' },
-    });
-    expect(result).toEqual({
-      ...initialState,
-      addBlockCallMsg: { message: 'added' },
-      isFetching: false,
-    });
-  });
-
-  it('handles POST_ADD_CALL_MSG_FAIL', () => {
-    const result = callsMessagesReducer(initialState, {
-      type: actions.POST_ADD_CALL_MSG_FAIL,
-      payloadAddCallMsgError: { error: 'fail' },
-    });
-    expect(result).toEqual({
-      ...initialState,
-      addBlockCallMsg: { error: 'fail' },
-      isFetching: false,
-    });
-  });
-
-  // ---------- DELETE ----------
-  it('handles POST_DELETE_CALL_MSG_BEGIN', () => {
-    const result = callsMessagesReducer(initialState, {
-      type: actions.POST_DELETE_CALL_MSG_BEGIN,
-    });
-    expect(result).toEqual({ ...initialState, isFetching: true });
-  });
-
-  it('handles POST_DELETE_CALL_MSG_SUCCESS', () => {
-    const result = callsMessagesReducer(initialState, {
-      type: actions.POST_DELETE_CALL_MSG_SUCCESS,
-      payloadDeleteCallMsg: { message: 'deleted' },
-    });
-    expect(result).toEqual({
-      ...initialState,
-      deleteBlockCallMsg: { message: 'deleted' },
-      isFetching: false,
-    });
-  });
-
-  it('handles POST_DELETE_CALL_MSG_FAIL', () => {
-    const result = callsMessagesReducer(initialState, {
-      type: actions.POST_DELETE_CALL_MSG_FAIL,
-      payloadDeleteCallMsgError: { error: 'delete-fail' },
-    });
-    expect(result).toEqual({
-      ...initialState,
-      deleteBlockCallMsg: { error: 'delete-fail' },
-      isFetching: false,
-    });
-  });
 });

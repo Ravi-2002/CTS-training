@@ -4,18 +4,15 @@ import { Provider } from 'react-redux';
 import { Router } from 'react-router-dom';
 import { createMemoryHistory } from 'history';
 import configureStore from 'redux-mock-store';
-import BlockServices from '../../components/BlockServices';
 import '@testing-library/jest-dom';
 
-import * as reactRedux from 'react-redux';
-jest.mock('react-redux', () => ({
-  ...jest.requireActual('react-redux'),
-  useDispatch: jest.fn(),
-  useSelector: jest.fn()
-}));
+import BlockServices from '../../components/BlockServices';
 
+// Mock useDispatch like BlockCallsList test
+import * as reactRedux from 'react-redux';
 const mockDispatch = jest.fn();
-reactRedux.useDispatch.mockReturnValue(mockDispatch);
+jest.spyOn(reactRedux, 'useDispatch').mockReturnValue(mockDispatch);
+jest.spyOn(reactRedux, 'useSelector');
 
 const mockStore = configureStore([]);
 
@@ -23,7 +20,7 @@ describe('BlockServices', () => {
   let store;
   let history;
 
-  const mockState = {
+  const state = {
     Home: {
       services: {
         Category1: [
@@ -38,12 +35,14 @@ describe('BlockServices', () => {
     }
   };
 
-  const renderComponent = (state = mockState) => {
-    store = mockStore(state);
+  const renderComponent = (overrideState = {}) => {
+    store = mockStore({ ...state, ...overrideState });
     history = createMemoryHistory();
     history.push('/block-services?mdn=1234567890');
 
-    reactRedux.useSelector.mockImplementation(callback => callback(state));
+    reactRedux.useSelector.mockImplementation(selector =>
+      selector({ ...state, ...overrideState })
+    );
 
     render(
       <Provider store={store}>
@@ -52,6 +51,8 @@ describe('BlockServices', () => {
         </Router>
       </Provider>
     );
+
+    return { store, history };
   };
 
   afterEach(() => {
@@ -60,7 +61,6 @@ describe('BlockServices', () => {
 
   it('renders all services and toggles correctly', () => {
     renderComponent();
-
     expect(screen.getByText('Be in charge of who does what on your account.')).toBeInTheDocument();
     expect(screen.getByText('770.346.3247')).toBeInTheDocument();
     expect(screen.getByText('Service A')).toBeInTheDocument();
@@ -70,30 +70,26 @@ describe('BlockServices', () => {
 
   it('calls dispatch on toggle change', () => {
     renderComponent();
-    const toggle = screen.getAllByRole('switch')[1];
-    fireEvent.click(toggle);
+    fireEvent.click(screen.getAllByRole('switch')[1]);
     expect(mockDispatch).toHaveBeenCalled();
   });
 
   it('displays success notification when confirmServices responseCode is 00', () => {
-    const successState = {
-      ...mockState,
+    renderComponent({
       Home: {
-        ...mockState.Home,
+        ...state.Home,
         confirmServices: {
           responseInfo: { responseCode: '00' }
         }
       }
-    };
-    renderComponent(successState);
+    });
     expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
   });
 
   it('displays error notification when postError responseCode is 99', () => {
-    const errorState = {
-      ...mockState,
+    renderComponent({
       Home: {
-        ...mockState.Home,
+        ...state.Home,
         servicesError: {
           responseInfo: { responseCode: '99' },
           libErrorInfo: {
@@ -103,27 +99,23 @@ describe('BlockServices', () => {
           }
         }
       }
-    };
-    renderComponent(errorState);
+    });
     expect(screen.getByText(/Error/i)).toBeInTheDocument();
   });
 
   it('renders failure message if service load fails', () => {
-    const failState = {
-      ...mockState,
+    renderComponent({
       Home: {
-        ...mockState.Home,
+        ...state.Home,
         serviceFail: true
       }
-    };
-    renderComponent(failState);
+    });
     expect(screen.getByText(/Failed to fetch services/i)).toBeInTheDocument();
   });
 
   it('navigates to service details page when TextLink is clicked', () => {
     renderComponent();
-    const tellMeMore = screen.getAllByText(/Tell me more/i)[0];
-    fireEvent.click(tellMeMore);
+    fireEvent.click(screen.getAllByText(/Tell me more/i)[0]);
     expect(history.location.pathname).toContain('/service-details/Service%20A');
   });
 });

@@ -1,49 +1,34 @@
-it('updates formState when confirmServices has responseCode "00" and toggled service', () => {
-  const initialServices = {
-    Category1: [
-      { serviceName: 'Test Service', sfoEnabled: 'N', sfoCode: '003' },
-    ]
-  };
+const toggle = screen.getByTestId('toggle-Test Service');
 
-  setup({
-    services: initialServices,
-    isFetching: false,
-    serviceFail: false,
-    confirmServices: null,
-    servicesError: {},
-  });
+// Check if it's initially off
+expect(toggle).toHaveAttribute('aria-checked', 'false');
 
-  // Initial state should be Off (N = false)
-  const toggleButton = screen.getByTestId('Test Service');
-  expect(toggleButton).toHaveTextContent('Off');
+// Simulate toggle
+fireEvent.click(toggle);
 
-  // Simulate toggle click
-  fireEvent.click(toggleButton);
-
-  // Simulate updated confirmServices in the next render
-  useSelector.mockImplementation((cb) =>
-    cb({
-      Home: {
-        services: initialServices,
-        isFetching: false,
-        serviceFail: false,
-        confirmServices: {
-          responseInfo: { responseCode: '00' }
-        },
-        servicesError: {},
+// Simulate Redux update with confirmServices.responseCode === '00'
+useSelector.mockImplementation((cb) =>
+  cb({
+    Home: {
+      services: initialServices,
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {
+        responseInfo: { responseCode: '00' }
       },
-    })
-  );
+      servicesError: {},
+    },
+  })
+);
 
-  // Re-render with updated selector (simulate redux update)
-  render(
-    <Provider store={store}>
-      <Router history={history}>
-        <BlockServices />
-      </Router>
-    </Provider>
-  );
+// Re-render
+render(
+  <Provider store={store}>
+    <Router history={history}>
+      <BlockServices />
+    </Router>
+  </Provider>
+);
 
-  // Toggle should now say On
-  expect(screen.getByTestId('Test Service')).toHaveTextContent('On');
-});
+// Now should be on
+expect(screen.getByTestId('toggle-Test Service')).toHaveAttribute('aria-checked', 'true');

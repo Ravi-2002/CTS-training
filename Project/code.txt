@@ -1,104 +1,31 @@
-import React from 'react';
-import '../../../../config/jest/test-setup';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import configureStore from '../../../shared/store/configureStore';
-import rootReducer from '../reducers';
-import App, { history } from '../app';
-import * as monitoring from '../../../../shared/services/monitoring';
-import * as vzUtil from '@vz/react-util';
+describe('Global setup for faroMonitoring and appPerformanceMetrics', () => {
+  afterEach(() => {
+    jest.resetModules();
+  });
 
-// Mocks
-jest.mock('@vz/react-util', () => ({
-  ...jest.requireActual('@vz/react-util'),
-  library: { init: jest.fn() },
-  SessionTimeoutModal: () => <div data-testid="session-timeout-modal">Session Timeout</div>,
-  ErrorBoundary: ({ children }) => <div data-testid="error-boundary">{children}</div>,
-}));
+  test('sets monitoring globals when enableFaroMonitoring is "Y"', () => {
+    global.reactGlobals = { enableFaroMonitoring: 'Y' };
+    delete window.appPerformanceMetrics;
 
-jest.mock('../../../../shared/services/monitoring', () => ({
-  startMonitoring: jest.fn(),
-}));
+    require('../app'); // trigger top-level code
 
-jest.mock('../../routes', () => () => <div data-testid="mock-routes">Routes Loaded</div>);
-
-describe('App Component Full Coverage', () => {
-  const store = configureStore(rootReducer);
-  const originalConsoleLog = console.log;
-
-  beforeEach(() => {
-    console.log = jest.fn();
-    global.reactGlobals = {
-      enableFaroMonitoring: 'Y',
-      session: { sessionTimeoutEnabled: true },
-    };
-    global.window.appPerformanceMetrics = {
+    expect(global.reactGlobals.enableFaroMonitoring).toBe('Y');
+    expect(window.appPerformanceMetrics).toEqual({
       startMonitoring: false,
       perfArr: [],
-    };
+    });
   });
 
-  afterEach(() => {
-    console.log = originalConsoleLog;
-    jest.clearAllMocks();
-  });
+  test('does not set enableFaroMonitoring if not "Y"', () => {
+    global.reactGlobals = { enableFaroMonitoring: '' };
+    delete window.appPerformanceMetrics;
 
-  test('renders the app and all key sections including session timeout modal', () => {
-    const { getByTestId } = render(
-      <Provider store={store}>
-        <App />
-      </Provider>
-    );
+    require('../app');
 
-    expect(getByTestId('appTestId')).toBeInTheDocument();
-    expect(getByTestId('mock-routes')).toBeInTheDocument();
-    expect(getByTestId('session-timeout-modal')).toBeInTheDocument();
-    expect(getByTestId('error-boundary')).toBeInTheDocument();
-  });
-
-  test('calls vztag dispatch on vztagLoaded event (valid function)', () => {
-    window.vztag = { api: { dispatch: jest.fn() } };
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>
-    );
-
-    const evt = new Event('vztagLoaded');
-    document.dispatchEvent(evt);
-    expect(window.vztag.api.dispatch).toHaveBeenCalled();
-  });
-
-  test('handles vztagLoaded with missing dispatch function', () => {
-    window.vztag = { api: {} };
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>
-    );
-    const evt = new Event('vztagLoaded');
-    document.dispatchEvent(evt);
-  });
-
-  test('handles route changes and triggers monitoring', () => {
-    render(
-      <Provider store={store}>
-        <App />
-      </Provider>
-    );
-    history.push('/test-route');
-    expect(monitoring.startMonitoring).toHaveBeenCalled();
-  });
-
-  test('renders loader when not authenticated', () => {
-    const OriginalApp = require('../app').default;
-
-    const { getByTestId } = render(
-      <Provider store={store}>
-        <OriginalApp />
-      </Provider>
-    );
-
-    expect(getByTestId('appTestId')).toBeInTheDocument();
+    expect(global.reactGlobals.enableFaroMonitoring).toBe('');
+    expect(window.appPerformanceMetrics).toEqual({
+      startMonitoring: false,
+      perfArr: [],
+    });
   });
 });

@@ -1,169 +1,131 @@
-import configureStore from "../../../../../shared/store/configureStore";
-import rootReducer from "../../../reducers";
-import * as callsMessagesActions from "../../actions/callsMessagesAction";
-import httpClient, {
-  getHttpClientRequest,
-  postHttpClientRequest,
-} from "../../../../../shared/services/httpClient";
+import apiUrl from '../../../../shared/utilities/apiUrl';
+import { getHttpClientRequest, postHttpClientRequest } from '../../../../shared/services/httpClient';
+export const GET_SERVICES_BEGIN = "services/GET_SERVICES_BEGIN";
+export const GET_SERVICES_SUCCESS = "services/GET_SERVICES_SUCCESS";
+export const GET_SERVICES_FAIL = "services/GET_SERVICES_FAIL";
 
-jest.mock("../../../../../shared/services/httpClient", () => ({
-  ...jest.requireActual("../../../../../shared/services/httpClient"),
-  postHttpClientRequest: jest.fn(),
-  getHttpClientRequest: jest.fn(),
-}));
+export const POST_SERVICES_BEGIN = "confirmServices/POST_SERVICES_BEGIN";
+export const POST_SERVICES_SUCCESS = "confirmServices/POST_SERVICES_SUCCESS";
+export const POST_SERVICES_FAIL = "confirmServices/POST_SERVICES_FAIL";
 
-const store = configureStore(rootReducer);
-global.mobileConfig = {}; // To avoid ReferenceError
+export const getServices = () => async dispatch => {
+    dispatch(getServicesBegin())
+    const onSuccess = (resp) => {
+      if (
+        resp &&
+        resp.data &&
+        resp.data.responseInfo &&
+        resp.data.responseInfo.responseCode == "00"
+      ) {
+        console.log(resp.data,'respdata')
+        dispatch(getServicesSuccess(resp.data));
+      } else {
+        dispatch(getServicesFail(resp.data));
+      }
+    };
+  
+    const onError = error => {
+        dispatch(getServicesFail(error));
+      
+    };
+  
+    const callMS = () => {
+      let axConfig = {
+        headers: {
+          flowName:'Blocks',
+          contentType: 'application/json',
+          // pageName: 'dsrDeviceLanding',
+          // flowName: 'Device',
+        },
+      }
+      return getHttpClientRequest(apiUrl().blockServiceV2, axConfig)}
+    callMS()
+      .then(msResp => {
+        if (msResp && msResp.status == 200) {
+          onSuccess(msResp);
+        }
+      })
+      .catch(onError);
+      }
+  export const getServicesBegin = () => ({
+    type: GET_SERVICES_BEGIN
+  })
+  
+  export const getServicesSuccess = (response) => (
+    {
+    type: GET_SERVICES_SUCCESS,
+    services: response.body.sections[0].sections[0].data.serviceDetailsMap,
+    serviceStatus: response
+    
+  })
+  export const getServicesFail = (response) => ({
+    type: GET_SERVICES_FAIL,
+    failServices: response.body
+  })
+  export const postServices = (payload) => async dispatch => {
+    dispatch(postServicesBegin())
+    const onSuccess = (resp) => {
+      
+      if (
+        resp &&
+        resp.data &&
+        resp.data.responseInfo &&
+        resp.data.responseInfo.responseCode == "00"
+      ) {
+          dispatch(postServicesSuccess(resp.data));
+      } else {
+        dispatch(postServicesFail(resp.data));
+      }
+    };
+  
+    const onError = error => {     
+        dispatch(postServicesFail(error));
+    };
+  
+    const callMS = () => {
+      let axConfig = {
+        headers: {
+          flowName:'Blocks',
+          contentType: 'application/json',
+          // pageName: 'dsrDeviceLanding',
+          // flowName: 'Device',
+        },
+      }
+      if (apiUrl().updateService?.indexOf('ApiData') > -1) {
+        return getHttpClientRequest(
+          apiUrl().updateService,payload,
+          axConfig
+        ) 
+      } 
+      else {
+        return postHttpClientRequest(
+          apiUrl().updateService,
+          payload,
+          axConfig
+        );}
+    }
+  
+    callMS()
+      .then(msResp => {
+        if (msResp && (msResp.status == 200 )) {
+          onSuccess(msResp);
+        }
+      })
+      .catch(onError);
+  }
 
-const successResponse = {
-  status: 200,
-  data: {
-    responseInfo: { responseCode: "00" },
-    body: {
-      blockedPhoneNumbers: [],
-      expiredBlockedPhoneNumbers: [],
-    },
-  },
-};
-
-describe("Calls & Messages Actions", () => {
-  beforeEach(() => {
-    store.clearActions?.();
-    jest.clearAllMocks();
-  });
-
-  test("postaddBlockCallMsg success (status 200)", () => {
-    postHttpClientRequest.mockImplementation(() => Promise.resolve(successResponse));
-
-    return store
-      .dispatch(callsMessagesActions.postaddBlockCallMsg({ phone: "12345" }))
-      .then(() => {
-        expect(postHttpClientRequest).toHaveBeenCalled();
-      });
-  });
-
-  test("postDeleteBlockCallMsg success (status 200)", () => {
-    postHttpClientRequest.mockImplementation(() => Promise.resolve(successResponse));
-
-    return store
-      .dispatch(callsMessagesActions.postDeleteBlockCallMsg({ phone: "12345" }))
-      .then(() => {
-        expect(postHttpClientRequest).toHaveBeenCalled();
-      });
-  });
-
-  test("getCallsMessages success (status 200)", () => {
-    getHttpClientRequest.mockImplementation(() => Promise.resolve(successResponse));
-
-    return store
-      .dispatch(callsMessagesActions.getCallsMessages())
-      .then(() => {
-        expect(getHttpClientRequest).toHaveBeenCalled();
-      });
-  });
-
-  test("postaddBlockCallMsg error", () => {
-    postHttpClientRequest.mockImplementation(() =>
-      Promise.reject({ data: { body: "error" } })
-    );
-
-    return store
-      .dispatch(callsMessagesActions.postaddBlockCallMsg({}))
-      .catch((err) => {
-        expect(postHttpClientRequest).toHaveBeenCalled();
-      });
-  });
-
-  test("postDeleteBlockCallMsg error", () => {
-    postHttpClientRequest.mockImplementation(() =>
-      Promise.reject({ data: { body: "error" } })
-    );
-
-    return store
-      .dispatch(callsMessagesActions.postDeleteBlockCallMsg({}))
-      .catch((err) => {
-        expect(postHttpClientRequest).toHaveBeenCalled();
-      });
-  });
-
-  test("getCallsMessages error", () => {
-    getHttpClientRequest.mockImplementation(() =>
-      Promise.reject({ data: { body: "error" } })
-    );
-
-    return store
-      .dispatch(callsMessagesActions.getCallsMessages())
-      .catch((err) => {
-        expect(getHttpClientRequest).toHaveBeenCalled();
-      });
-  });
-
-  // Action creators
-  test("getCallsMessagesBegin returns correct action", () => {
-    expect(callsMessagesActions.getCallsMessagesBegin()).toEqual({
-      type: "CallsMessages/GET_CALLS_MESSAGES_BEGIN",
-    });
-  });
-
-  test("postaddBlockCallMsgBegin returns correct action", () => {
-    expect(callsMessagesActions.postaddBlockCallMsgBegin()).toEqual({
-      type: "CallsMessages/POST_ADD_CALL_MSG_BEGIN",
-    });
-  });
-
-  test("postDeleteBlockCallMsgBegin returns correct action", () => {
-    expect(callsMessagesActions.postDeleteBlockCallMsgBegin()).toEqual({
-      type: "CallsMessages/POST_DELETE_CALL_MSG_BEGIN",
-    });
-  });
-
-  test("getCallsMessagesSuccess returns correct action", () => {
-    const res = successResponse.data;
-    expect(callsMessagesActions.getCallsMessagesSuccess(res)).toEqual({
-      type: "CallsMessages/GET_CALLS_MESSAGES_SUCCESS",
-      payload: res.body,
-      blockedNumbers: res.body.blockedPhoneNumbers,
-      expiredBlockNumbers: res.body.expiredBlockedPhoneNumbers,
-    });
-  });
-
-  test("getCallsMessagesError returns correct action", () => {
-    const res = { body: "error" };
-    expect(callsMessagesActions.getCallsMessagesError(res)).toEqual({
-      type: "CallsMessages/GET_CALLS_MESSAGES_FAIL",
-      payloadGetCMError: res.body,
-    });
-  });
-
-  test("postaddBlockCallMsgSuccess returns correct action", () => {
-    const res = { body: "success" };
-    expect(callsMessagesActions.postaddBlockCallMsgSuccess(res)).toEqual({
-      type: "CallsMessages/POST_ADD_CALL_MSG_SUCCESS",
-      payloadAddCallMsg: res.body,
-    });
-  });
-
-  test("postDeleteBlockCallMsgSuccess returns correct action", () => {
-    const res = { body: "deleted" };
-    expect(callsMessagesActions.postDeleteBlockCallMsgSuccess(res)).toEqual({
-      type: "CallsMessages/POST_DELETE_CALL_MSG_SUCCESS",
-      payloadDeleteCallMsg: res.body,
-    });
-  });
-
-  test("postaddBlockCallMsgError returns correct action", () => {
-    const res = { body: "add error" };
-    expect(callsMessagesActions.postaddBlockCallMsgError(res)).toEqual({
-      type: "CallsMessages/POST_ADD_CALL_MSG_FAIL",
-      payloadAddCallMsgError: res.body,
-    });
-  });
-
-  test("postDeleteBlockCallMsgError returns correct action", () => {
-    const res = { body: "delete error" };
-    expect(callsMessagesActions.postDeleteBlockCallMsgError(res)).toEqual({
-      type: "CallsMessages/POST_DELETE_CALL_MSG_FAIL",
-      payloadDeleteCallMsgError: res.body,
-    });
-  });
-});
+  export const postServicesBegin = () => ({
+    type: POST_SERVICES_BEGIN
+  })
+  
+  export const postServicesSuccess = (response) => (
+    {
+    type: POST_SERVICES_SUCCESS,
+    confirmServices: response,
+    
+  })
+  export const postServicesFail = (response) => (
+    {
+    type: POST_SERVICES_FAIL,
+    servicesError: response
+  })

@@ -1,19 +1,22 @@
-test('updates formState and resets lastToggledService when responseCode is 08 and lastToggledService is valid', () => {
-  setup({
-    confirmServices: {
-      responseInfo: { responseCode: '08' }
-    },
-    lastToggledService: {
-      serviceName: 'Call Blocking',
-      toggledValue: false,
-      sfoCode: 'CB01',
-      sfoEnabled: 'N'
-    },
-    services: {
-      General: [{ serviceName: 'Call Blocking', sfoEnabled: 'Y', sfoCode: 'CB01' }]
-    }
-  });
+it('updates form state using lastToggledService when confirmServices responseCode is 08', () => {
+    setup({
+      services: {
+        Category1: [{ serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' }],
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {
+        responseInfo: { responseCode: '08' },
+      },
+      lastToggledService: {
+        serviceName: 'Service A',
+        sfoCode: '001',
+        toggledValue: false,
+        sfoEnabled: 'N',
+      },
+      servicesError: {},
+    });
 
-  const toggle = screen.getByTestId('Call Blocking');
-  expect(toggle).toHaveTextContent('Off'); // Updated based on toggledValue: false
-});
+    const toggle = screen.getByTestId('Service A');
+    expect(toggle).toHaveTextContent('Off'); // toggledValue was false
+  });

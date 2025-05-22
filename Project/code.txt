@@ -1,80 +1,20 @@
- <h4
-                  class="StyledTypography-VDS__sc-15sxhse-0 cknoDo StyledTitle-VDS__sc-f6e32a-0 fHDzCi"     
-                >
-                  Service A
-                </h4>
-                <div
-                  class="Container-VDS__sc-fhbxpp-0 lcQfls"
-                >
-                  <div
-                    class="ToggleWrapper-VDS__sc-fhbxpp-2 ctAtKl"
-                  >
-                    <span
-                      aria-hidden="true"
-                      class="HitArea-VDS__sc-fhbxpp-4 gpRoTL"
-                      data-testid="test-hitArea"
-                    />
-                    <span
-                      aria-live="assertive"
-                      class="ScreenReaderText-VDS__sc-fhbxpp-1 jOmYDl"
-                    />
-                    <label
-                      class="StyledLabel-VDS__sc-hvmk2k-0 iTfwzz"
-                      for="147eb857-86b4-4ecf-abd0-4459b68f3f4b"
-                      id="ae131304-2c10-4bb6-af9d-42c54ba05d39"
-                    >
-                      <input
-                        class="ToggleInput-VDS__sc-hvmk2k-2 hGuKDZ"
-                        data-testid="test-toggle"
-                        data-track="Service A"
-                        id="147eb857-86b4-4ecf-abd0-4459b68f3f4b"
-                        tabindex="0"
-                        type="checkbox"
-                        value="default"
-                      />
-                      <span
-                        aria-hidden="true"
-                        class="ToggleSwitchSlider-VDS__sc-hvmk2k-1 jhtTtd"
-                        tabindex="-1"
-                      />
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="sc-AxirZ cBrjbk"
-              >
-                <a
-                  aria-disabled="false"
-                  aria-label="Tell me more"
-                  class="StyledAnchor-VDS__sc-2pjk45-2 dqXUGA"
-                  role="link"
-                  tabindex="0"
-                  type="standAlone"
-                >
-                  <span
-                    aria-hidden="true"
-                    class="HitArea-VDS__sc-2pjk45-0 iHvHVu"
-                    tabindex="-1"
-                    type="standAlone"
-                  />
-                  <span
-                    aria-hidden="true"
-                    class="Wrapper-VDS__sc-2pjk45-1 jtfoCK"
-                    tabindex="-1"
-                    type="standAlone"
-                  >
-                    Tell me more
-                  </span>
-                </a>
-              </div>
-              <div
-                class="StyledLine-VDS__sc-132w3tr-0 fRPtQT"
-                orientation="horizontal"
-                type="primary"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </body>
+it('renders service toggle and toggles it correctly', () => {
+  setup({
+    services: {
+      Category1: [
+        { serviceName: 'Service A', sfoEnabled: 'N', sfoCode: '001' }, // Initially Off
+      ]
+    },
+    isFetching: false,
+    serviceFail: false,
+    confirmServices: {},
+    servicesError: {}
+  });
+
+  const toggle = screen.getByTestId('test-toggle');
+  expect(toggle).not.toBeChecked(); // initially off
+
+  fireEvent.click(toggle); // toggle it
+
+  expect(mockDispatch).toHaveBeenCalled(); // or any specific dispatched action
+});

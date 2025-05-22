@@ -1,22 +1,110 @@
-it('updates formState and resets lastToggledService when responseCode is 08', () => {
-  const toggleData = { serviceName: 'Service A', toggledValue: 'N' };
+import 'url-search-params-polyfill';
+import React, { Component, Suspense } from 'react';
+import { bindActionCreators } from 'redux';
+import { HashRouter } from 'react-router-dom';
+import { createBrowserHistory } from 'history';
+import { CookiesProvider } from 'react-cookie';
+import Routes from './routes';
+import Loader from './../../shared/components/Loader/Loader';
+import { ErrorBoundary, library, SessionTimeoutModal } from '@vz/react-util';
+import { connect } from 'react-redux';
+import * as homeActions from './home/actions';
+import { startMonitoring } from './../../shared/services/monitoring';
+export const history = createBrowserHistory();
 
-  setup({
-    services: {
-      Category1: [{ serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' }]
-    },
-    isFetching: false,
-    serviceFail: false,
-    confirmServices: {
-      responseInfo: { responseCode: '08' }
-    },
-    servicesError: {},
-    lastToggledService: toggleData
-  });
+const loadingImg = (<Loader />);
 
-  // This line should force the useEffect to run, triggering the setFormState update
-  const toggle = screen.getByTestId('test-toggle');
 
-  // The toggle should now reflect the updated state
-  expect(toggle).not.toBeChecked(); // toggledValue: 'N'
+if ("Y" == reactGlobals?.enableFaroMonitoring || window.sessionStorage.getItem("enableFaro") != null) {
+	reactGlobals.enableFaroMonitoring = "Y";
+	window.appPerformanceMetrics = window.appPerformanceMetrics || {};
+	window.appPerformanceMetrics.startMonitoring = false;
+	window.appPerformanceMetrics.perfArr = [];
+}
+
+class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      isAuthenticated: true,
+    };
+  } 
+
+  componentWillMount() {
+    try {
+      var isFaroEnabled= "Y" == window.reactGlobals?.enableFaroMonitoring || window.sessionStorage.getItem("enableFaro") != null;
+      library.init({ appName: 'Devices', pageName: 'Device overview', flowName: 'device overview',enableFaro:isFaroEnabled });
+    } catch (ex) { }
+  }
+
+  componentDidMount() {
+    history.listen((action) => {
+      startMonitoring()
+    })
+    if (typeof reactGlobals === 'undefined' || reactGlobals === null || !reactGlobals) {
+      window.reactGlobals = {};
+    }
+    reactGlobals.routeLog = reactGlobals.routeLog || {};
+    reactGlobals.routeLog = {
+      showConfirmation: false,
+      confirmationShown: false,
+    };
+
+    document.addEventListener('vztagLoaded', this.handleOmniLoad);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('vztagLoaded', this.handleOmniLoad);
+  }
+
+  handleOmniLoad = (e) => {
+    try {
+      if (vztag?.api?.dispatch) {
+        vztag.api.dispatch();
+      }
+    } catch (ex) { console.log('ex:' + ex); }
+  }
+  
+
+  render() {
+    if (this.state.isAuthenticated) {
+      return (
+        <div data-testid="appTestId">
+          <Suspense fallback={loadingImg}>
+            <HashRouter history={history}>
+              <CookiesProvider>
+                {/* <div className={'main grid'}> */}
+                <section>
+                  <ErrorBoundary init={true}>
+                    <Routes reduxStore={this.props.reduxStore} />
+                    {reactGlobals && reactGlobals.session && reactGlobals.session.sessionTimeoutEnabled
+                      && (
+                        <SessionTimeoutModal />
+                      )
+                    }
+                  </ErrorBoundary>
+                </section>
+                {/* </div> */}
+              </CookiesProvider>
+            </HashRouter>
+          </Suspense>
+        </div>
+      );
+    }
+    return <div data-testid="appTestId">{loadingImg}</div>;
+  }
+}
+
+const mapStateToProps = (store) => ({
+  reduxStore: store,
+  statusCode: store.Home.statusCode,
 });
+
+const mapDispatchToProps = (dispatch) => ({
+  homeActions: bindActionCreators(homeActions, dispatch),
+});
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(App);

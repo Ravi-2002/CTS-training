@@ -1,142 +1,259 @@
-import apiUrl from '../../../../shared/utilities/apiUrl';
-import { getHttpClientRequest, postHttpClientRequest } from '../../../../shared/services/httpClient';
-export const GET_SERVICES_BEGIN = "services/GET_SERVICES_BEGIN";
-export const GET_SERVICES_SUCCESS = "services/GET_SERVICES_SUCCESS";
-export const GET_SERVICES_FAIL = "services/GET_SERVICES_FAIL";
+// blockServices.test.js
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import { Router } from 'react-router-dom';
+import { createMemoryHistory } from 'history';
+import configureStore from 'redux-mock-store';
+import '@testing-library/jest-dom';
 
-export const POST_SERVICES_BEGIN = "confirmServices/POST_SERVICES_BEGIN";
-export const POST_SERVICES_SUCCESS = "confirmServices/POST_SERVICES_SUCCESS";
-export const POST_SERVICES_FAIL = "confirmServices/POST_SERVICES_FAIL";
+import BlockServices from '../../components/index';
+import servicesReducer from '../../redux/reducers/servicesReducer';
+import * as actions from '../../redux/actions/blockServicesActions';
 
-export const getServices = () => async dispatch => {
-    dispatch(getServicesBegin())
-    const onSuccess = (resp) => {
-      if (
-        resp &&
-        resp.data &&
-        resp.data.responseInfo &&
-        resp.data.responseInfo.responseCode == "00"
-      ) {
-        console.log(resp.data,'respdata')
-        dispatch(getServicesSuccess(resp.data));
-      } else {
-        dispatch(getServicesFail(resp.data));
-      }
-    };
-  
-    const onError = error => {
-      // below code is for redirecting to unauthorised screen for member account
-      
-        dispatch(getServicesFail(error));
-      
-    };
-  
-    const callMS = () => {
-      let axConfig = {
-        headers: {
-          flowName:'Blocks',
-          contentType: 'application/json',
-          // pageName: 'dsrDeviceLanding',
-          // flowName: 'Device',
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
+  useDispatch: jest.fn(),
+  useSelector: jest.fn(),
+}));
+
+const mockStore = configureStore([]);
+const mockDispatch = jest.fn();
+
+describe('BlockServices Component', () => {
+  let store;
+  let history;
+
+  beforeEach(() => {
+    useDispatch.mockReturnValue(mockDispatch);
+  });
+
+  const setup = (selectorData) => {
+    store = mockStore({});
+    history = createMemoryHistory();
+    history.push('/block-services?mdn=1234567890');
+    useSelector.mockImplementation((cb) => cb({ Home: selectorData }));
+
+    render(
+      <Provider store={store}>
+        <Router history={history}>
+          <BlockServices />
+        </Router>
+      </Provider>
+    );
+
+    return { store, history };
+  };
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('renders and toggles service correctly', () => {
+    setup({
+      services: {
+        Category1: [
+          { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' },
+          { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' },
+        ],
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {},
+      servicesError: {},
+    });
+
+    expect(screen.getByText('Service A')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('checkbox')[1]);
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  it('shows success notification when confirmServices responseCode is 00', () => {
+    setup({
+      services: { Category1: [] },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: { responseInfo: { responseCode: '00' } },
+      servicesError: {},
+    });
+
+    expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
+  });
+
+  it('shows error notification when responseCode is 99', () => {
+    setup({
+      services: { Category1: [] },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {},
+      servicesError: {
+        responseInfo: { responseCode: '99' },
+        libErrorInfo: {
+          internalErrors: [{ errorMessage: 'Some error occurred' }],
         },
-      }
-      return getHttpClientRequest(apiUrl().blockServiceV2, axConfig)}
-    callMS()
-      .then(msResp => {
-        if (msResp && msResp.status == 200) {
-          onSuccess(msResp);
-        }
-      })
-      .catch(onError);
-      }
-  export const getServicesBegin = () => ({
-    type: GET_SERVICES_BEGIN
-  })
-  
-  export const getServicesSuccess = (response) => (
-    {
-    type: GET_SERVICES_SUCCESS,
-    services: response.body.sections[0].sections[0].data.serviceDetailsMap,
-    serviceStatus: response
-    
-  })
-  export const getServicesFail = (response) => ({
-    type: GET_SERVICES_FAIL,
-    failServices: response.body
-  })
-  export const postServices = (payload) => async dispatch => {
-    dispatch(postServicesBegin())
-    const onSuccess = (resp) => {
-      
-      if (
-        resp &&
-        resp.data &&
-        resp.data.responseInfo &&
-        resp.data.responseInfo.responseCode == "00"
-      ) {
-          dispatch(postServicesSuccess(resp.data));
-      } else {
-        dispatch(postServicesFail(resp.data));
-      }
-    };
-  
-    const onError = error => {
-      // below code is for redirecting to unauthorised screen for member account
-      let msResp = error && error.response && error.response.data;
-      let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-      let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-      if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-        window.location.href = apiUrl().mvoLimitedAccessUrl;
-      }
-      else {
-        dispatch(postServicesFail(error));
-      }
-    };
-  
-    const callMS = () => {
-      let axConfig = {
-        headers: {
-          flowName:'Blocks',
-          contentType: 'application/json',
-          // pageName: 'dsrDeviceLanding',
-          // flowName: 'Device',
-        },
-      }
-      if (apiUrl().updateService?.indexOf('ApiData') > -1) {
-        return getHttpClientRequest(
-          apiUrl().updateService,payload,
-          axConfig
-        ) 
-      } 
-      else {
-        return postHttpClientRequest(
-          apiUrl().updateService,
-          payload,
-          axConfig
-        );}
-    }
-  
-    callMS()
-      .then(msResp => {
-        if (msResp && (msResp.status == 200 )) {
-          onSuccess(msResp);
-        }
-      })
-      .catch(onError);
-  }
+      },
+    });
 
-  export const postServicesBegin = () => ({
-    type: POST_SERVICES_BEGIN
-  })
-  
-  export const postServicesSuccess = (response) => (
-    {
-    type: POST_SERVICES_SUCCESS,
-    confirmServices: response,
-    
-  })
-  export const postServicesFail = (response) => (
-    {
-    type: POST_SERVICES_FAIL,
-    servicesError: response
-  })
+    expect(screen.getByText(/Error/i)).toBeInTheDocument();
+  });
+
+  it('renders failure message if service load fails', () => {
+    setup({
+      services: {},
+      isFetching: false,
+      serviceFail: true,
+      confirmServices: {},
+      servicesError: {},
+    });
+
+    expect(screen.getByText(/Failed to fetch services/i)).toBeInTheDocument();
+  });
+
+  it('navigates to service details on TextLink click', () => {
+    const { history } = setup({
+      services: {
+        Category1: [{ serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' }],
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {},
+      servicesError: {},
+    });
+
+    fireEvent.click(screen.getByText(/Tell me more/i));
+    expect(history.location.pathname).toContain('/service-details/Service A');
+  });
+});
+
+// REDUCER TESTS
+describe('servicesReducer', () => {
+  const initialState = {
+    isFetching: false,
+    services: {},
+    confirmServices: {},
+    servicesError: {},
+    serviceErrorFlag: false,
+    confirmServiceFlag: false,
+    failServices: {},
+    getServices: false,
+    serviceFail: false,
+  };
+
+  it('should return initial state', () => {
+    expect(servicesReducer(undefined, {})).toEqual(initialState);
+  });
+
+  it('should handle GET_SERVICES_BEGIN', () => {
+    const action = { type: actions.GET_SERVICES_BEGIN };
+    expect(servicesReducer(initialState, action)).toEqual({
+      ...initialState,
+      isFetching: true,
+    });
+  });
+
+  it('should handle GET_SERVICES_SUCCESS', () => {
+    const data = { Category1: [] };
+    const action = {
+      type: actions.GET_SERVICES_SUCCESS,
+      services: data,
+      serviceStatus: {},
+    };
+    expect(servicesReducer(initialState, action)).toEqual({
+      ...initialState,
+      services: data,
+      serviceStatus: {},
+      isFetching: false,
+      getServices: true,
+    });
+  });
+
+  it('should handle GET_SERVICES_FAIL', () => {
+    const error = { error: 'failed' };
+    const action = {
+      type: actions.GET_SERVICES_FAIL,
+      failServices: error,
+    };
+    expect(servicesReducer(initialState, action)).toEqual({
+      ...initialState,
+      isFetching: false,
+      failServices: error,
+      serviceFail: true,
+    });
+  });
+
+  it('should handle POST_SERVICES_SUCCESS', () => {
+    const confirm = { success: true };
+    const action = {
+      type: actions.POST_SERVICES_SUCCESS,
+      confirmServices: confirm,
+    };
+    expect(servicesReducer(initialState, action)).toEqual({
+      ...initialState,
+      confirmServices: confirm,
+      confirmServiceFlag: true,
+      isFetching: false,
+    });
+  });
+
+  it('should handle POST_SERVICES_FAIL', () => {
+    const err = { error: true };
+    const action = {
+      type: actions.POST_SERVICES_FAIL,
+      servicesError: err,
+    };
+    expect(servicesReducer(initialState, action)).toEqual({
+      ...initialState,
+      servicesError: err,
+      serviceErrorFlag: true,
+      isFetching: false,
+    });
+  });
+});
+
+// ACTION CREATOR TESTS
+describe('blockServicesActions', () => {
+  it('getServicesBegin returns correct action', () => {
+    expect(actions.getServicesBegin()).toEqual({ type: actions.GET_SERVICES_BEGIN });
+  });
+
+  it('getServicesSuccess returns correct action', () => {
+    const mockResp = {
+      body: {
+        sections: [{ sections: [{ data: { serviceDetailsMap: { foo: [] } } }] }],
+      },
+    };
+    expect(actions.getServicesSuccess(mockResp)).toEqual({
+      type: actions.GET_SERVICES_SUCCESS,
+      services: { foo: [] },
+      serviceStatus: mockResp,
+    });
+  });
+
+  it('getServicesFail returns correct action', () => {
+    const err = { body: { error: true } };
+    expect(actions.getServicesFail(err)).toEqual({
+      type: actions.GET_SERVICES_FAIL,
+      failServices: err.body,
+    });
+  });
+
+  it('postServicesBegin returns correct action', () => {
+    expect(actions.postServicesBegin()).toEqual({ type: actions.POST_SERVICES_BEGIN });
+  });
+
+  it('postServicesSuccess returns correct action', () => {
+    const resp = { success: true };
+    expect(actions.postServicesSuccess(resp)).toEqual({
+      type: actions.POST_SERVICES_SUCCESS,
+      confirmServices: resp,
+    });
+  });
+
+  it('postServicesFail returns correct action', () => {
+    const err = { message: 'fail' };
+    expect(actions.postServicesFail(err)).toEqual({
+      type: actions.POST_SERVICES_FAIL,
+      servicesError: err,
+    });
+  });
+});

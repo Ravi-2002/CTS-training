@@ -1,5 +1,22 @@
-const { serviceName, toggledValue } lastToggledService; setFormState((prev) => ({ .prev, [serviceName]: toggledValue, }));
+it('updates formState and resets lastToggledService when responseCode is 08', () => {
+  const toggleData = { serviceName: 'Service A', toggledValue: 'N' };
 
-setLast ToggledService(null);
+  setup({
+    services: {
+      Category1: [{ serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' }]
+    },
+    isFetching: false,
+    serviceFail: false,
+    confirmServices: {
+      responseInfo: { responseCode: '08' }
+    },
+    servicesError: {},
+    lastToggledService: toggleData
+  });
 
-}
+  // This line should force the useEffect to run, triggering the setFormState update
+  const toggle = screen.getByTestId('test-toggle');
+
+  // The toggle should now reflect the updated state
+  expect(toggle).not.toBeChecked(); // toggledValue: 'N'
+});

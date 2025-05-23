@@ -1,28 +1,25 @@
-import React from 'react';
-import { withRouter } from "react-router-dom";
- 
-// variable which will point to react-router history
-let globalHistory = null;
- 
-// component which we will mount on top of the app
-class Spy extends React.Component {
-  constructor(props) {
-    super(props)
-    globalHistory = props.history;
-  }
- 
-  componentDidUpdate() {
-    globalHistory = this.props.history;
-  }
- 
-  render() {
-    return null;
-  }
+import Spy, {GlobalHistory, getHistory}  from './history'
+import { render } from '@testing-library/react'
+import { BrowserRouter as Router } from 'react-router-dom';
+const props = {
+    history:'GlobalHistory',
+
 }
- 
-export const GlobalHistory = withRouter(Spy);
- 
-// export react-router history
-export default function getHistory() {
-  return globalHistory;
-}
+describe("checking", () => {
+    test("testing Spy render", () => {
+        const res = render(<Spy {...props}/>)
+        expect(res).toBeDefined()
+        expect(GlobalHistory).toBeTruthy()
+     
+    }
+    )
+})
+describe("checking GlobalHistory render", () => {
+    test("testing", () => {
+        const res = render( <Router>  <GlobalHistory {...props}/></Router>)
+        expect(res).toBeDefined();
+        expect(GlobalHistory).toBeTruthy()
+     
+    }
+    )
+})

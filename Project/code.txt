@@ -1,50 +1,31 @@
-import rootReducer from '../../blocks/reducers';
-import landingReducer from '../../blocks/home/reducers';
-import deviceDetailReducer from '../../blocks/deviceDetail/reducers';
+import { combineReducers } from "redux";
+import deviceLandingReducer from "./home/reducers";
+import deviceDetailReducer from "./deviceDetail/reducers";
 import { PURGE, REHYDRATE } from 'redux-persist';
 
-// Mock the individual reducers
-jest.mock('../home/reducers', () => jest.fn(() => ({ homeData: 'mockedHome' })));
-jest.mock('../deviceDetail/reducers', () => jest.fn(() => ({ detailData: 'mockedDetail' })));
+const initialState = {};
 
-describe('rootReducer', () => {
-  const mockInitialState = {
-    Home: { homeData: 'initialHome' },
-    Detail: { detailData: 'initialDetail' }
-  };
+export const prodReducer = (state = initialState, actions) => {
+  switch (actions.type) {
+    default:
+      return state;
+  }
+};
 
-  it('should return combined reducer state by default', () => {
-    const result = rootReducer(mockInitialState, { type: 'UNKNOWN_ACTION' });
-    expect(landingReducer).toHaveBeenCalled();
-    expect(deviceDetailReducer).toHaveBeenCalled();
-    expect(result).toEqual({
-      Home: { homeData: 'mockedHome' },
-      Detail: { detailData: 'mockedDetail' }
-    });
-  });
-
-  it('should return state untouched for REHYDRATE action', () => {
-    const result = rootReducer(mockInitialState, { type: REHYDRATE });
-    expect(result).toEqual({
-      Home: { homeData: 'mockedHome' },
-      Detail: { detailData: 'mockedDetail' }
-    });
-  });
-
-  it('should reset state and clear sessionStorage on PURGE', () => {
-    const clearSpy = jest.spyOn(sessionStorage, 'clear');
-    const removeSpy = jest.spyOn(sessionStorage.__proto__, 'removeItem');
-
-    const result = rootReducer(mockInitialState, { type: PURGE });
-
-    expect(removeSpy).toHaveBeenCalledWith('persist:root');
-    expect(clearSpy).toHaveBeenCalled();
-    expect(result).toEqual({
-      Home: { homeData: 'mockedHome' },
-      Detail: { detailData: 'mockedDetail' }
-    });
-
-    clearSpy.mockRestore();
-    removeSpy.mockRestore();
-  });
+const appReducer = combineReducers({
+  Home: deviceLandingReducer,
+  Detail: deviceDetailReducer
 });
+
+const rootReducer = (state = initialState, action) => {
+  if(action.type === REHYDRATE){
+  }
+  else if(action.type === PURGE){
+    sessionStorage.removeItem('persist:root');      
+    sessionStorage.clear();    
+    state = initialState;     
+  }
+  return appReducer(state, action);
+};
+
+export default rootReducer;

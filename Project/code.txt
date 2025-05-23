@@ -1,61 +1,28 @@
-import React from "react";
-import { render, act, cleanup } from "@testing-library/react";
-import "@testing-library/jest-dom/extend-expect";
-import { createMemoryHistory } from "history";
-import { Router } from "react-router-dom";
-import ScrollToTop from "../ScrollToTop";
-
-describe("ScrollToTop", () => {
-  let scrollSpy;
-  let history;
-
-  beforeEach(() => {
-    scrollSpy = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
-    history = createMemoryHistory();
-  });
-
-  afterEach(() => {
-    scrollSpy.mockRestore();
-    cleanup();
-  });
-
-  it("renders without crashing", () => {
-    render(
-      <Router history={history}>
-        <ScrollToTop />
-      </Router>
-    );
-  });
-
-  it("calls scrollTo on route change", () => {
-    render(
-      <Router history={history}>
-        <ScrollToTop />
-      </Router>
-    );
-
-    act(() => {
-      history.push("/new-path");
-    });
-
-    expect(scrollSpy).toHaveBeenCalledWith(0, 0);
-  });
-
-  it("cleans up history listener on unmount", () => {
-    const unlistenMock = jest.fn();
-    const originalListen = history.listen;
-    history.listen = jest.fn(() => unlistenMock);
-
-    const { unmount } = render(
-      <Router history={history}>
-        <ScrollToTop />
-      </Router>
-    );
-
-    unmount();
-    expect(unlistenMock).toHaveBeenCalled();
-
-    // Restore original listen
-    history.listen = originalListen;
-  });
-});
+import React from 'react';
+import { withRouter } from "react-router-dom";
+ 
+// variable which will point to react-router history
+let globalHistory = null;
+ 
+// component which we will mount on top of the app
+class Spy extends React.Component {
+  constructor(props) {
+    super(props)
+    globalHistory = props.history;
+  }
+ 
+  componentDidUpdate() {
+    globalHistory = this.props.history;
+  }
+ 
+  render() {
+    return null;
+  }
+}
+ 
+export const GlobalHistory = withRouter(Spy);
+ 
+// export react-router history
+export default function getHistory() {
+  return globalHistory;
+}

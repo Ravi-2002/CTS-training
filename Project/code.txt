@@ -56,4 +56,12 @@ describe('rootReducer', () => {
 describe('prodReducer', () => {
   it('should return the initial state for unknown action', () => {
     const customInitial = { feature: 'testFeature' };
-    const result =
+    const result = prodReducer(customInitial, { type: 'SOME_UNKNOWN_ACTION' });
+    expect(result).toEqual(customInitial);
+  });
+
+  it('should return empty object when no initial state is passed', () => {
+    const result = prodReducer(undefined, { type: 'UNKNOWN' });
+    expect(result).toEqual({});
+  });
+});

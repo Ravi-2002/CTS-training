@@ -1,31 +1,59 @@
-import { combineReducers } from "redux";
-import deviceLandingReducer from "./home/reducers";
-import deviceDetailReducer from "./deviceDetail/reducers";
+import rootReducer, { prodReducer } from '../../blocks/reducers';
+import landingReducer from '../../blocks/home/reducers';
+import deviceDetailReducer from '../../blocks/deviceDetail/reducers';
 import { PURGE, REHYDRATE } from 'redux-persist';
 
-const initialState = {};
+// Mock individual reducers to track calls
+jest.mock('../../blocks/home/reducers', () => jest.fn(() => ({ homeData: 'mockedHome' })));
+jest.mock('../../blocks/deviceDetail/reducers', () => jest.fn(() => ({ detailData: 'mockedDetail' })));
 
-export const prodReducer = (state = initialState, actions) => {
-  switch (actions.type) {
-    default:
-      return state;
-  }
-};
+describe('rootReducer', () => {
+  const mockInitialState = {
+    Home: { homeData: 'initialHome' },
+    Detail: { detailData: 'initialDetail' }
+  };
 
-const appReducer = combineReducers({
-  Home: deviceLandingReducer,
-  Detail: deviceDetailReducer
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should return combined reducer state by default', () => {
+    const result = rootReducer(mockInitialState, { type: 'UNKNOWN_ACTION' });
+    expect(landingReducer).toHaveBeenCalled();
+    expect(deviceDetailReducer).toHaveBeenCalled();
+    expect(result).toEqual({
+      Home: { homeData: 'mockedHome' },
+      Detail: { detailData: 'mockedDetail' }
+    });
+  });
+
+  it('should return state untouched for REHYDRATE action', () => {
+    const result = rootReducer(mockInitialState, { type: REHYDRATE });
+    expect(result).toEqual({
+      Home: { homeData: 'mockedHome' },
+      Detail: { detailData: 'mockedDetail' }
+    });
+  });
+
+  it('should reset state and clear sessionStorage on PURGE', () => {
+    const clearSpy = jest.spyOn(sessionStorage, 'clear');
+    const removeSpy = jest.spyOn(sessionStorage.__proto__, 'removeItem');
+
+    const result = rootReducer(mockInitialState, { type: PURGE });
+
+    expect(removeSpy).toHaveBeenCalledWith('persist:root');
+    expect(clearSpy).toHaveBeenCalled();
+    expect(result).toEqual({
+      Home: { homeData: 'mockedHome' },
+      Detail: { detailData: 'mockedDetail' }
+    });
+
+    clearSpy.mockRestore();
+    removeSpy.mockRestore();
+  });
 });
 
-const rootReducer = (state = initialState, action) => {
-  if(action.type === REHYDRATE){
-  }
-  else if(action.type === PURGE){
-    sessionStorage.removeItem('persist:root');      
-    sessionStorage.clear();    
-    state = initialState;     
-  }
-  return appReducer(state, action);
-};
-
-export default rootReducer;
+describe('prodReducer', () => {
+  it('should return the initial state for unknown action', () => {
+    const customInitial = { feature: 'testFeature' };
+    const result =

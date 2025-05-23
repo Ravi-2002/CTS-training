@@ -1,25 +1,45 @@
-import Spy, {GlobalHistory, getHistory}  from './history'
-import { render } from '@testing-library/react'
-import { BrowserRouter as Router } from 'react-router-dom';
-const props = {
-    history:'GlobalHistory',
+import React from 'react';
+import Spy, { GlobalHistory, getHistory } from './history';
+import { render, rerender } from '@testing-library/react';
+import { Router } from 'react-router-dom';
+import { createMemoryHistory } from 'history';
 
-}
-describe("checking", () => {
-    test("testing Spy render", () => {
-        const res = render(<Spy {...props}/>)
-        expect(res).toBeDefined()
-        expect(GlobalHistory).toBeTruthy()
-     
-    }
-    )
-})
-describe("checking GlobalHistory render", () => {
-    test("testing", () => {
-        const res = render( <Router>  <GlobalHistory {...props}/></Router>)
-        expect(res).toBeDefined();
-        expect(GlobalHistory).toBeTruthy()
-     
-    }
-    )
-})
+describe("Spy and GlobalHistory", () => {
+  test("Spy renders with props", () => {
+    const res = render(<Spy history="GlobalHistory" />);
+    expect(res).toBeDefined();
+    expect(GlobalHistory).toBeTruthy();
+  });
+
+  test("GlobalHistory renders with Router", () => {
+    const history = createMemoryHistory();
+    const res = render(
+      <Router history={history}>
+        <GlobalHistory />
+      </Router>
+    );
+    expect(res).toBeDefined();
+    expect(GlobalHistory).toBeTruthy();
+  });
+
+  test("GlobalHistory updates when history prop changes", () => {
+    const history1 = createMemoryHistory();
+    const history2 = createMemoryHistory();
+    
+    const { rerender } = render(
+      <Router history={history1}>
+        <GlobalHistory />
+      </Router>
+    );
+
+    // Update with a new history to trigger componentDidUpdate
+    rerender(
+      <Router history={history2}>
+        <GlobalHistory />
+      </Router>
+    );
+
+    // getHistory should now return updated history
+    expect(getHistory()).toBe(history2);
+  });
+});

@@ -1,18 +1,61 @@
 import React from "react";
-import { act, render, screen, cleanup,waitFor } from "@testing-library/react";
+import { render, act, cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/extend-expect";
-import { BrowserRouter as Router } from 'react-router-dom';
+import { createMemoryHistory } from "history";
+import { Router } from "react-router-dom";
 import ScrollToTop from "../ScrollToTop";
 
-window.scrollTo = jest.fn()
-describe("ScrollTo Top", () => {
-    it("render ", () => {
-        render(
-            <Router>
-                 <div>
-                 <ScrollToTop />
-                </div>
-           </Router>
-       )
-     });
-})
+describe("ScrollToTop", () => {
+  let scrollSpy;
+  let history;
+
+  beforeEach(() => {
+    scrollSpy = jest.spyOn(window, "scrollTo").mockImplementation(() => {});
+    history = createMemoryHistory();
+  });
+
+  afterEach(() => {
+    scrollSpy.mockRestore();
+    cleanup();
+  });
+
+  it("renders without crashing", () => {
+    render(
+      <Router history={history}>
+        <ScrollToTop />
+      </Router>
+    );
+  });
+
+  it("calls scrollTo on route change", () => {
+    render(
+      <Router history={history}>
+        <ScrollToTop />
+      </Router>
+    );
+
+    act(() => {
+      history.push("/new-path");
+    });
+
+    expect(scrollSpy).toHaveBeenCalledWith(0, 0);
+  });
+
+  it("cleans up history listener on unmount", () => {
+    const unlistenMock = jest.fn();
+    const originalListen = history.listen;
+    history.listen = jest.fn(() => unlistenMock);
+
+    const { unmount } = render(
+      <Router history={history}>
+        <ScrollToTop />
+      </Router>
+    );
+
+    unmount();
+    expect(unlistenMock).toHaveBeenCalled();
+
+    // Restore original listen
+    history.listen = originalListen;
+  });
+});

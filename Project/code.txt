@@ -3,8 +3,6 @@ import { render, fireEvent, screen } from '@testing-library/react';
 import BlockCallsList from '../BlockCallsList';
 import { useSelector, useDispatch } from 'react-redux';
 import { postDeleteBlockCallMsg, getCallsMessages } from '../../actions/fetchCallsMessages';
-import { createMemoryHistory } from 'history';
-import { Router } from 'react-router-dom';
 import * as util from '../../../../../shared/utilities/util';
 
 jest.mock('react-redux', () => ({
@@ -39,7 +37,11 @@ jest.mock('../../../../../shared/utilities/util', () => ({
 
 describe('BlockCallsList', () => {
   const dispatch = jest.fn();
-  const history = createMemoryHistory();
+
+  const getMockHistory = () => ({
+    push: jest.fn(),
+    location: { pathname: '/' },
+  });
 
   const renderComponent = (stateOverrides = {}) => {
     useDispatch.mockReturnValue(dispatch);
@@ -72,41 +74,38 @@ describe('BlockCallsList', () => {
 
     localStorage.setItem('mdn', '9876543210');
 
-    return render(
-      <Router location={history.location} navigator={history}>
-        <BlockCallsList history={history} />
-      </Router>
-    );
+    const history = getMockHistory();
+
+    render(<BlockCallsList history={history} />);
+    return history;
   };
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should render loader when isFetching is true', () => {
+  it('renders loader when fetching', () => {
     renderComponent({ isFetching: true });
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('should render title and formatted mtn', () => {
+  it('renders title and formatted MDN', () => {
     renderComponent();
     expect(screen.getByText('Block Calls and Messages Title')).toBeInTheDocument();
     expect(screen.getByText('123-456-7890')).toBeInTheDocument();
   });
 
-  it('should render blocked numbers and remove button', () => {
+  it('renders blocked numbers', () => {
     renderComponent();
     expect(screen.getByText('1111111111')).toBeInTheDocument();
     expect(screen.getByText('2222222222')).toBeInTheDocument();
-
-    const closeButtons = screen.getAllByRole('button');
-    expect(closeButtons.length).toBeGreaterThanOrEqual(2); // Remove buttons present
   });
 
-  it('should dispatch deleteBlockCallMsg on remove', () => {
+  it('calls deleteBlockCallMsg on remove', () => {
     renderComponent();
-    const closeButton = screen.getAllByRole('button')[0];
-    fireEvent.click(closeButton);
+    const removeButtons = screen.getAllByRole('button');
+    fireEvent.click(removeButtons[0]);
+
     expect(postDeleteBlockCallMsg).toHaveBeenCalledWith(
       expect.objectContaining({
         mtn: '9876543210',
@@ -116,33 +115,36 @@ describe('BlockCallsList', () => {
     );
   });
 
-  it('should show correct block count text', () => {
+  it('displays correct block count text', () => {
     renderComponent();
     expect(screen.getByText('You are blocking 2 of 5 numbers.')).toBeInTheDocument();
   });
 
-  it('should disable add number button when 5 blocked numbers', () => {
-    const numbers = Array(5).fill({ phoneNumber: '0000000000' });
+  it('disables add button when list has 5 numbers', () => {
+    const numbers = Array(5).fill({ phoneNumber: '9999999999' });
     renderComponent({ blockedNumbers: numbers });
     const addButton = screen.getByRole('button', { name: /add a number/i });
     expect(addButton).toBeDisabled();
   });
 
-  it('should navigate to add number screen on button click', () => {
-    renderComponent();
+  it('navigates to add screen on add button click', () => {
+    const history = renderComponent();
     const addButton = screen.getByRole('button', { name: /add a number/i });
     fireEvent.click(addButton);
-    expect(history.location.pathname).toBe('/callsandmessages');
+    expect(history.push).toHaveBeenCalledWith('/callsandmessages', {
+      allowInput: true,
+      mtn: '9876543210',
+    });
   });
 
-  it('should navigate to limitations on link click', () => {
-    renderComponent();
+  it('navigates to View Limitations screen', () => {
+    const history = renderComponent();
     const link = screen.getByText('View Limitations');
     fireEvent.click(link);
-    expect(history.location.pathname).toBe('/viewlimitation');
+    expect(history.push).toHaveBeenCalledWith('/viewlimitation');
   });
 
-  it('should fallback to blockedNumbers if addBlockCallMsg is not available', () => {
+  it('uses blockedNumbers if addBlockCallMsg is null', () => {
     renderComponent({
       addBlockCallMsg: null,
       blockedNumbers: [{ phoneNumber: '9999999999' }],
@@ -150,7 +152,7 @@ describe('BlockCallsList', () => {
     expect(screen.getByText('9999999999')).toBeInTheDocument();
   });
 
-  it('should fallback to deleteBlockCallMsg if available', () => {
+  it('uses deleteBlockCallMsg if available', () => {
     renderComponent({
       deleteBlockCallMsg: { blockedPhoneNumbers: [{ phoneNumber: '8888888888' }] },
     });

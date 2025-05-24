@@ -1,21 +1,34 @@
-// blockServices.test.js
+// BlockServices.test.js
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { Router } from 'react-router-dom';
 import { createMemoryHistory } from 'history';
 import configureStore from 'redux-mock-store';
-import '@testing-library/jest-dom';
-
 import BlockServices from '../../components/index';
-import servicesReducer from '../../reducers/index';
-import * as actions from '../../actions/pageActions';
+import '@testing-library/jest-dom';
 
 jest.mock('react-redux', () => ({
   ...jest.requireActual('react-redux'),
   useDispatch: jest.fn(),
   useSelector: jest.fn(),
 }));
+
+jest.mock('../../../../shared/utilities/util', () => ({
+  getContentFromSection: () => ({
+    contents: [{ items: [{ key: 'BlockserviceHeader', value: 'Mocked Block Title' }, { key: 'TellMeMoreHeader', value: 'Tell me more' }] }]
+  }),
+  getItemValue: (items, key) => {
+    const found = items?.find(item => item.key === key);
+    return found ? found.value : '';
+  },
+  mtnFormat: (mtn) => `(${mtn.slice(0, 3)}) ${mtn.slice(3, 6)}-${mtn.slice(6)}`
+}));
+
+jest.mock('../../../../shared/utilities/native', () => ({
+  nativeSetTitle: jest.fn(),
+}));
+
 const mockStore = configureStore([]);
 const mockDispatch = jest.fn();
 
@@ -25,12 +38,12 @@ describe('BlockServices Component', () => {
 
   beforeEach(() => {
     useDispatch.mockReturnValue(mockDispatch);
-  });
-
-  const setup = (selectorData) => {
     store = mockStore({});
     history = createMemoryHistory();
     history.push('/block-services?mdn=1234567890');
+  });
+
+  const setup = (selectorData) => {
     useSelector.mockImplementation((cb) => cb({ Home: selectorData }));
 
     render(
@@ -41,14 +54,14 @@ describe('BlockServices Component', () => {
       </Provider>
     );
 
-    return { store, history };
+    return { history };
   };
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders and toggles service correctly', () => {
+  it('renders toggle section and handles interaction', () => {
     setup({
       services: {
         Category1: [
@@ -56,71 +69,151 @@ describe('BlockServices Component', () => {
           { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' },
         ],
       },
+      serviceStatus: {
+        body: {
+          sections: [
+            {
+              sections: [
+                {
+                  data: {
+                    mtn: '7703463247'
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
       isFetching: false,
       serviceFail: false,
       confirmServices: {},
-      servicesError: {},
+      servicesError: {}
     });
 
+    expect(screen.getByText('Mocked Block Title')).toBeInTheDocument();
+    expect(screen.getByText('(770) 346-3247')).toBeInTheDocument();
     expect(screen.getByText('Service A')).toBeInTheDocument();
+    expect(screen.getByText('Service B')).toBeInTheDocument();
+
     fireEvent.click(screen.getAllByRole('checkbox')[1]);
     expect(mockDispatch).toHaveBeenCalled();
   });
 
-  it('shows success notification when confirmServices responseCode is 00', () => {
+  it('shows success notification on POST success', () => {
     setup({
       services: { Category1: [] },
+      serviceStatus: {
+        body: {
+          sections: [
+            {
+              sections: [
+                {
+                  data: {
+                    mtn: '7703463247'
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
       isFetching: false,
       serviceFail: false,
-      confirmServices: { responseInfo: { responseCode: '00' } },
-      servicesError: {},
+      confirmServices: {
+        responseInfo: { responseCode: '00' }
+      },
+      servicesError: {}
     });
 
     expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
   });
 
-  it('shows error notification when responseCode is 99', () => {
+  it('shows error notification on POST failure', () => {
     setup({
       services: { Category1: [] },
+      serviceStatus: {
+        body: {
+          sections: [
+            {
+              sections: [
+                {
+                  data: {
+                    mtn: '7703463247'
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
       isFetching: false,
       serviceFail: false,
       confirmServices: {},
       servicesError: {
         responseInfo: { responseCode: '99' },
         libErrorInfo: {
-          internalErrors: [{ errorMessage: 'Some error occurred' }],
-        },
-      },
+          internalErrors: [{ errorMessage: 'Some error' }]
+        }
+      }
     });
 
     expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
   });
 
-  it('renders failure message if service load fails', () => {
+  it('renders error message when service load fails', () => {
     setup({
       services: {},
+      serviceStatus: {
+        body: {
+          sections: [
+            {
+              sections: [
+                {
+                  data: {
+                    mtn: '7703463247'
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
       isFetching: false,
       serviceFail: true,
       confirmServices: {},
-      servicesError: {},
+      servicesError: {}
     });
 
     expect(screen.getByText(/Failed to fetch services/i)).toBeInTheDocument();
   });
 
-  it('navigates to service details on TextLink click', () => {
+  it('navigates on TextLink click', () => {
     const { history } = setup({
       services: {
-        Category1: [{ serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' }],
+        Category1: [{ serviceName: 'Service X', sfoEnabled: 'Y', sfoCode: '100' }],
+      },
+      serviceStatus: {
+        body: {
+          sections: [
+            {
+              sections: [
+                {
+                  data: {
+                    mtn: '7703463247'
+                  }
+                }
+              ]
+            }
+          ]
+        }
       },
       isFetching: false,
       serviceFail: false,
       confirmServices: {},
-      servicesError: {},
+      servicesError: {}
     });
 
-    fireEvent.click(screen.getByText(/Tell me more/i));
-    expect(history.location.pathname).toContain('/service-details/Service A');
+    fireEvent.click(screen.getByText('Tell me more'));
+    expect(history.location.pathname).toBe('/service-details/Service%20X');
   });
-  
 });

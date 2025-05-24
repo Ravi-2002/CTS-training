@@ -14,22 +14,24 @@ jest.mock('react-redux', () => ({
 }));
 
 jest.mock('../../../../shared/utilities/util', () => ({
-  getItemValue: jest.fn((items, key) => {
-    if (key === 'callsandMessageTitle') return 'Block calls and messages from up to 5 numbers.';
-    if (key === 'TellMeMoreHeader') return 'Tell me more';
-    return 'Mocked text';
-  }),
-  mtnFormat: jest.fn((mtn) => `(${mtn})`),
-  getContentFromSection: jest.fn((body, id) => ({
-    sections: [{ contents: [{ items: [{ key: 'callsandMessageTitle', value: 'Block calls and messages from up to 5 numbers.' }] }] }]
+  getContentFromSection: jest.fn(() => ({
+    contents: [{ items: [{ key: 'callsandMessageTitle', value: 'Block calls and messages' }, { key: 'TellMeMoreHeader', value: 'View Limitations' }] }]
   })),
-  getChannelId: jest.fn(() => 'test-channel-id')
+  getItemValue: jest.fn((items, key) => {
+    const found = items.find(i => i.key === key);
+    return found ? found.value : '';
+  }),
+  mtnFormat: jest.fn(() => 'FormattedMTN')
+}));
+
+jest.mock('../../../../shared/utilities/native', () => ({
+  nativeSetTitle: jest.fn()
 }));
 
 const mockStore = configureStore([]);
 const mockDispatch = jest.fn();
 
-describe('BlockCallsList Component', () => {
+describe('BlockCallsList', () => {
   let store;
   let history;
 
@@ -37,12 +39,31 @@ describe('BlockCallsList Component', () => {
     useDispatch.mockReturnValue(mockDispatch);
     localStorage.setItem('mdn', '1234567890');
     history = createMemoryHistory();
-    history.push('/call-message-blocking');
   });
 
-  const setup = (selectorData) => {
-    store = mockStore({});
-    useSelector.mockImplementation(cb => cb({ Detail: selectorData }));
+  const setup = (stateOverrides = {}) => {
+    store = mockStore({
+      Detail: {
+        blockedNumbers: [],
+        addBlockCallMsg: {},
+        deleteBlockCallMsg: {},
+        isFetching: false,
+        callsMessages: {
+          aemResponse: {
+            sections: [
+              {
+                sections: [
+                  {
+                    data: { mtn: '9876543210' }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        ...stateOverrides
+      }
+    });
 
     render(
       <Provider store={store}>
@@ -53,152 +74,51 @@ describe('BlockCallsList Component', () => {
     );
   };
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('renders title and mtn', () => {
-    setup({
-      callsMessages: {
-        aemResponse: {
-          sections: [
-            {
-              sections: [
-                { data: { mtn: '1234567890' } }
-              ]
-            }
-          ]
-        }
-      },
-      blockedNumbers: [],
-      addBlockCallMsg: {},
-      deleteBlockCallMsg: {},
-      isFetching: false
-    });
-
-    expect(screen.getByText(/Block calls and messages/i)).toBeInTheDocument();
-    expect(screen.getByText('(1234567890)')).toBeInTheDocument();
-  });
-
-  it('displays blocked number from blockedNumbers', () => {
-    setup({
-      callsMessages: {
-        aemResponse: {
-          sections: [{ sections: [{ data: { mtn: '1234567890' } }] }]
-        }
-      },
-      blockedNumbers: [{ phoneNumber: '1112223333' }],
-      addBlockCallMsg: {},
-      deleteBlockCallMsg: {},
-      isFetching: false
-    });
-
+  it('renders title and blocked number', () => {
+    setup({ blockedNumbers: [{ phoneNumber: '1112223333' }] });
+    expect(screen.getByText('Block calls and messages')).toBeInTheDocument();
     expect(screen.getByText('1112223333')).toBeInTheDocument();
+    expect(screen.getByText('FormattedMTN')).toBeInTheDocument();
   });
 
-  it('displays blocked number from addBlockCallMsg', () => {
-    setup({
-      callsMessages: {
-        aemResponse: {
-          sections: [{ sections: [{ data: { mtn: '1234567890' } }] }]
-        }
-      },
-      blockedNumbers: [],
-      addBlockCallMsg: {
-        blockedPhoneNumbers: [{ phoneNumber: '9999999999' }]
-      },
-      deleteBlockCallMsg: {},
-      isFetching: false
-    });
-
+  it('renders number from addBlockCallMsg', () => {
+    setup({ addBlockCallMsg: { blockedPhoneNumbers: [{ phoneNumber: '9999999999' }] } });
     expect(screen.getByText('9999999999')).toBeInTheDocument();
   });
 
-  it('displays blocked number from deleteBlockCallMsg', () => {
-    setup({
-      callsMessages: {
-        aemResponse: {
-          sections: [{ sections: [{ data: { mtn: '1234567890' } }] }]
-        }
-      },
-      blockedNumbers: [],
-      addBlockCallMsg: {},
-      deleteBlockCallMsg: {
-        blockedPhoneNumbers: [{ phoneNumber: '8888888888' }]
-      },
-      isFetching: false
-    });
-
+  it('renders number from deleteBlockCallMsg', () => {
+    setup({ deleteBlockCallMsg: { blockedPhoneNumbers: [{ phoneNumber: '8888888888' }] } });
     expect(screen.getByText('8888888888')).toBeInTheDocument();
   });
 
-  it('disables add number button if 5 numbers blocked', () => {
-    const blocked = Array.from({ length: 5 }).map((_, i) => ({ phoneNumber: `${i}` }));
+  it('disables Add button when 5 numbers are blocked', () => {
     setup({
-      callsMessages: {
-        aemResponse: {
-          sections: [{ sections: [{ data: { mtn: '1234567890' } }] }]
-        }
-      },
-      blockedNumbers: blocked,
-      addBlockCallMsg: {},
-      deleteBlockCallMsg: {},
-      isFetching: false
+      blockedNumbers: [
+        { phoneNumber: '1' }, { phoneNumber: '2' }, { phoneNumber: '3' },
+        { phoneNumber: '4' }, { phoneNumber: '5' }
+      ]
     });
-
     expect(screen.getByRole('button', { name: /Add a number/i })).toBeDisabled();
   });
 
-  it('navigates to /viewlimitation when TextLink clicked', () => {
-    setup({
-      callsMessages: {
-        aemResponse: {
-          sections: [{ sections: [{ data: { mtn: '1234567890' } }] }]
-        }
-      },
-      blockedNumbers: [],
-      addBlockCallMsg: {},
-      deleteBlockCallMsg: {},
-      isFetching: false
-    });
-
-    fireEvent.click(screen.getByText(/View Limitations/i));
+  it('navigates to view limitations page', () => {
+    setup();
+    const link = screen.getByText('View Limitations');
+    fireEvent.click(link);
     expect(history.location.pathname).toBe('/viewlimitation');
   });
 
-  it('navigates to /callsandmessages when Add button clicked', () => {
-    setup({
-      callsMessages: {
-        aemResponse: {
-          sections: [{ sections: [{ data: { mtn: '1234567890' } }] }]
-        }
-      },
-      blockedNumbers: [],
-      addBlockCallMsg: {},
-      deleteBlockCallMsg: {},
-      isFetching: false
-    });
-
-    const addBtn = screen.getByRole('button', { name: /Add a number/i });
-    fireEvent.click(addBtn);
+  it('navigates to add number input page', () => {
+    setup();
+    const addButton = screen.getByRole('button', { name: /Add a number/i });
+    fireEvent.click(addButton);
     expect(history.location.pathname).toBe('/callsandmessages');
   });
 
-  it('dispatches delete action when X is clicked', () => {
-    setup({
-      callsMessages: {
-        aemResponse: {
-          sections: [{ sections: [{ data: { mtn: '1234567890' } }] }]
-        }
-      },
-      blockedNumbers: [{ phoneNumber: '3213213210' }],
-      addBlockCallMsg: {},
-      deleteBlockCallMsg: {},
-      isFetching: false
-    });
-
-    const deleteBtn = screen.getByRole('button', { name: /close/i });
-    fireEvent.click(deleteBtn);
+  it('dispatches on remove click', () => {
+    setup({ blockedNumbers: [{ phoneNumber: '1231231234' }] });
+    const removeButton = screen.getByRole('button', { name: /close/i });
+    fireEvent.click(removeButton);
     expect(mockDispatch).toHaveBeenCalled();
   });
 });

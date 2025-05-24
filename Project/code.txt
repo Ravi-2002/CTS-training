@@ -1,171 +1,222 @@
+// BlockServices.test.js
 import React from 'react';
-import { render, fireEvent, screen } from '@testing-library/react';
-import BlockCallsList from '../BlockCallsList';
-import { useDispatch, useSelector } from 'react-redux';
-import { BrowserRouter as Router } from 'react-router-dom';
-import * as actions from '../../actions/fetchCallsMessages';
-import common from '../../../../../shared/utilities/util';
-import { nativeSetTitle } from '../../../../../shared/utilities/native';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import { Router } from 'react-router-dom';
+import { createMemoryHistory } from 'history';
+import configureStore from 'redux-mock-store';
+import BlockServices from '../../components/index';
+import '@testing-library/jest-dom';
 
 jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
   useDispatch: jest.fn(),
   useSelector: jest.fn(),
 }));
 
 jest.mock('../../../../../shared/utilities/util', () => ({
-  getItemValue: jest.fn((items, key) => key),
-  getContentFromSection: jest.fn((content, id) => content.sections[0]),
-  mtnFormat: jest.fn((mtn) => `Formatted: ${mtn}`),
+    ...jest.requireActual('../../../../../shared/utilities/util'),
+    getChannelId:jest.fn(()=>'mocked-channel-id'),
+  getContentFromSection: () => ({
+    sections:[{
+    contents: [{ items: [{ key: 'BlockserviceHeader', value: 'Mocked Block Title' }, { key: 'TellMeMoreHeader', value: 'Tell me more' }] }]}]
+  }),
+  getItemValue: (items, key) => {
+    const found = items?.find(item => item.key === key);
+    return found ? found.value : '';
+  },
+  mtnFormat: (mtn) => `(${mtn.slice(0, 3)}) ${mtn.slice(3, 6)}-${mtn.slice(6)}`
 }));
 
 jest.mock('../../../../../shared/utilities/native', () => ({
   nativeSetTitle: jest.fn(),
 }));
 
-jest.mock('../../actions/fetchCallsMessages', () => ({
-  getCallsMessages: jest.fn(() => ({ type: 'GET_CALLS_MESSAGES' })),
-  postDeleteBlockCallMsg: jest.fn((payload) => ({ type: 'DELETE_CALL', payload })),
-}));
-
+const mockStore = configureStore([]);
 const mockDispatch = jest.fn();
-Object.defineProperty(window, 'localStorage', {
-  value: {
-    getItem: jest.fn(() => '9999999999'),
-  },
-});
 
-const mockState = {
-  Detail: {
-    blockedNumbers: [{ phoneNumber: '1234567890' }],
-    addBlockCallMsg: null,
-    deleteBlockCallMsg: null,
-    isFetching: false,
-    callsMessages: {
-      aemResponse: {
-        sections: [
-          {
-            sections: [
-              {
-                data: {
-                  mtn: '9876543210',
-                },
-              },
-            ],
-            contents: [
-              {
-                items: [{ title: 'callsandMessageTitle' }],
-              },
-            ],
-          },
-        ],
-      },
-    },
-  },
-};
+describe('BlockServices Component', () => {
+  let store;
+  let history;
 
-const renderComponent = (overrides = {}) => {
-  useDispatch.mockReturnValue(mockDispatch);
-  useSelector.mockImplementation((selector) =>
-    selector({
-      Detail: {
-        ...mockState.Detail,
-        ...overrides,
-      },
-    })
-  );
-
-  return render(
-    <Router>
-      <BlockCallsList history={{ push: jest.fn() }} />
-    </Router>
-  );
-};
-
-describe('BlockCallsList', () => {
   beforeEach(() => {
+    useDispatch.mockReturnValue(mockDispatch);
+    store = mockStore({});
+    history = createMemoryHistory();
+    history.push('/block-services?mdn=1234567890');
+  });
+
+  const setup = (selectorData) => {
+    useSelector.mockImplementation((cb) => cb({ Home: selectorData }));
+
+    render(
+      <Provider store={store}>
+        <Router history={history}>
+          <BlockServices />
+        </Router>
+      </Provider>
+    );
+
+    return { history };
+  };
+
+  afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it('renders title and mtn', () => {
-    renderComponent();
-    expect(nativeSetTitle).toHaveBeenCalledWith('Block Calls & Messages', false);
-    expect(screen.getByText('callsandMessageTitle')).toBeInTheDocument();
-    expect(screen.getByText('Formatted: 9876543210')).toBeInTheDocument();
-  });
-
-  it('displays blocked numbers', () => {
-    renderComponent();
-    expect(screen.getByText('1234567890')).toBeInTheDocument();
-    expect(screen.getByText('You are blocking 1 of 5 numbers.')).toBeInTheDocument();
-  });
-
-  it('disables add button at 5 numbers', () => {
-    renderComponent({
-      blockedNumbers: Array(5).fill({ phoneNumber: '1111111111' }),
+  it('renders toggle section and handles interaction', () => {
+    setup({
+      services: {
+        Category1: [
+          { serviceName: 'Service A', sfoEnabled: 'Y', sfoCode: '001' },
+          { serviceName: 'Service B', sfoEnabled: 'N', sfoCode: '002' },
+        ],
+      },
+      serviceStatus: {
+        body: {
+          sections: [
+            {
+              sections: [
+                {
+                  data: {
+                    mtn: '7703463247'
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {},
+      servicesError: {}
     });
-    expect(screen.getByRole('button', { name: /Add a number/i })).toBeDisabled();
+
+    expect(screen.getByText('Mocked Block Title')).toBeInTheDocument();
+    expect(screen.getByText('(770) 346-3247')).toBeInTheDocument();
+    expect(screen.getByText('Service A')).toBeInTheDocument();
+    expect(screen.getByText('Service B')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('checkbox')[1]);
+    expect(mockDispatch).toHaveBeenCalled();
   });
 
-  it('calls dispatch to fetch calls/messages on mount', () => {
-    renderComponent();
-    expect(mockDispatch).toHaveBeenCalledWith(actions.getCallsMessages());
-  });
-
-  it('calls dispatch to remove a number', () => {
-    renderComponent();
-    fireEvent.click(screen.getByRole('button', { name: /close/i }));
-    expect(mockDispatch).toHaveBeenCalledWith(
-      actions.postDeleteBlockCallMsg({
-        mtn: '9999999999',
-        blockNumber: '1234567890',
-        oldPhoneNumber: '1234567890',
-        memo: '',
-        expiredPhoneNumber: '',
-        blockedNumbers: [],
-        applyAll: false,
-        onlyMemo: false,
-      })
-    );
-  });
-
-  it('navigates to /viewlimitation', () => {
-    const push = jest.fn();
-    render(
-      <Router>
-        <BlockCallsList history={{ push }} />
-      </Router>
-    );
-    fireEvent.click(screen.getByText(/View Limitations/i));
-    expect(push).toHaveBeenCalledWith('/viewlimitation');
-  });
-
-  it('navigates to /callsandmessages with correct state', () => {
-    const push = jest.fn();
-    render(
-      <Router>
-        <BlockCallsList history={{ push }} />
-      </Router>
-    );
-    fireEvent.click(screen.getByText(/Add a number/i));
-    expect(push).toHaveBeenCalledWith('/callsandmessages', {
-      allowInput: true,
-      mtn: '9999999999',
+  it('shows success notification on POST success', () => {
+    setup({
+      services: { Category1: [] },
+      serviceStatus: {
+        body: {
+          sections: [
+            {
+              sections: [
+                {
+                  data: {
+                    mtn: '7703463247'
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {
+        responseInfo: { responseCode: '00' }
+      },
+      servicesError: {}
     });
+
+    expect(screen.getByText(/Service updated successfully/i)).toBeInTheDocument();
   });
 
-  it('falls back to blockedNumbers if addBlockCallMsg is not set', () => {
-    renderComponent({
-      addBlockCallMsg: null,
-      blockedNumbers: [{ phoneNumber: '2222222222' }],
+  it('shows error notification on POST failure', () => {
+    setup({
+      services: { Category1: [] },
+      serviceStatus: {
+        body: {
+          sections: [
+            {
+              sections: [
+                {
+                  data: {
+                    mtn: '7703463247'
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {},
+      servicesError: {
+        responseInfo: { responseCode: '99' },
+        libErrorInfo: {
+          internalErrors: [{ errorMessage: 'Some error' }]
+        }
+      }
     });
-    expect(screen.getByText('2222222222')).toBeInTheDocument();
+
+    expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
   });
 
-  it('renders empty state if nothing is blocked', () => {
-    renderComponent({
-      addBlockCallMsg: null,
-      blockedNumbers: [],
+  it('renders error message when service load fails', () => {
+    setup({
+      services: {},
+      serviceStatus: {
+        body: {
+          sections: [
+            {
+              sections: [
+                {
+                  data: {
+                    mtn: '7703463247'
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      isFetching: false,
+      serviceFail: true,
+      confirmServices: {},
+      servicesError: {}
     });
-    expect(screen.getByText('You are blocking 0 of 5 numbers.')).toBeInTheDocument();
+
+    expect(screen.getByText(/Failed to fetch services/i)).toBeInTheDocument();
+  });
+
+  it('navigates on TextLink click', () => {
+    const { history } = setup({
+      services: {
+        Category1: [{ serviceName: 'ServiceX', sfoEnabled: 'Y', sfoCode: '100' }],
+      },
+      serviceStatus: {
+        body: {
+          sections: [
+            {
+              sections: [
+                {
+                  data: {
+                    mtn: '7703463247'
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      isFetching: false,
+      serviceFail: false,
+      confirmServices: {},
+      servicesError: {}
+    });
+
+    fireEvent.click(screen.getByText('Tell me more'));
+    expect(history.location.pathname).toBe('/service-details/ServiceX');
   });
 });

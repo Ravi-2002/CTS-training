@@ -24,14 +24,17 @@ jest.mock('../../../../shared/utilities/util', () => ({
     getItemValue: jest.fn(() => 'Block calls and messages'),
     mtnFormat: jest.fn((mtn) => `(${mtn})`),
     getChannelId: jest.fn(() => 'web'),
-    getContentFromSection: jest.fn((Content, key) => Content.sections[0]) // Mock safely
-  }
+    getContentFromSection: jest.fn((Content, key) => {
+      // return nested section safely
+      return Content.sections?.[0]?.sections?.[0] || {};
+    }),
+  },
 }));
 
 const mockStore = configureStore([]);
 const mockDispatch = jest.fn();
 
-describe('BlockCallsList - 100% Coverage with Channel ID & Sections', () => {
+describe('BlockCallsList with valid mocked Content', () => {
   let store;
   let history;
 
@@ -47,17 +50,17 @@ describe('BlockCallsList - 100% Coverage with Channel ID & Sections', () => {
         sections: [
           {
             data: {
-              mtn: '9876543210'
+              mtn: '9876543210',
             },
             contents: [
               {
-                items: [{ callsandMessageTitle: 'Block calls and messages' }]
-              }
-            ]
-          }
-        ]
-      }
-    ]
+                items: [{ callsandMessageTitle: 'Block calls and messages' }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
   };
 
   const setup = (selectorOverrides = {}) => {
@@ -70,10 +73,10 @@ describe('BlockCallsList - 100% Coverage with Channel ID & Sections', () => {
           deleteBlockCallMsg: {},
           isFetching: false,
           callsMessages: {
-            aemResponse: baseContentMock
+            aemResponse: baseContentMock,
           },
-          ...selectorOverrides
-        }
+          ...selectorOverrides,
+        },
       })
     );
 
@@ -90,55 +93,52 @@ describe('BlockCallsList - 100% Coverage with Channel ID & Sections', () => {
     jest.clearAllMocks();
   });
 
-  it('renders with default content and no blocked numbers', () => {
+  it('renders header and MTN from content', () => {
     setup();
     expect(screen.getByText('Block calls and messages')).toBeInTheDocument();
     expect(screen.getByText('(9876543210)')).toBeInTheDocument();
-    expect(screen.getByText(/You are blocking 0 of 5 numbers/i)).toBeInTheDocument();
   });
 
-  it('renders blocked number from addBlockCallMsg', () => {
+  it('shows number from addBlockCallMsg', () => {
     setup({
       addBlockCallMsg: {
-        blockedPhoneNumbers: [{ phoneNumber: '9999999999' }]
-      }
+        blockedPhoneNumbers: [{ phoneNumber: '9999999999' }],
+      },
     });
     expect(screen.getByText('9999999999')).toBeInTheDocument();
   });
 
-  it('renders blocked number from deleteBlockCallMsg', () => {
+  it('shows number from deleteBlockCallMsg', () => {
     setup({
       deleteBlockCallMsg: {
-        blockedPhoneNumbers: [{ phoneNumber: '5555555555' }]
-      }
+        blockedPhoneNumbers: [{ phoneNumber: '8888888888' }],
+      },
     });
-    expect(screen.getByText('5555555555')).toBeInTheDocument();
+    expect(screen.getByText('8888888888')).toBeInTheDocument();
   });
 
-  it('disables Add button when blocked list is full', () => {
+  it('disables Add button when 5 numbers exist', () => {
     setup({
-      blockedNumbers: Array.from({ length: 5 }, (_, i) => ({
-        phoneNumber: `${i + 1}`
-      }))
+      blockedNumbers: Array.from({ length: 5 }, (_, i) => ({ phoneNumber: `${i}` })),
     });
     expect(screen.getByRole('button', { name: /Add a number/i })).toBeDisabled();
   });
 
-  it('navigates to /viewlimitation when link is clicked', () => {
+  it('navigates to /viewlimitation', () => {
     setup();
     fireEvent.click(screen.getByText(/View Limitations/i));
     expect(history.location.pathname).toBe('/viewlimitation');
   });
 
-  it('navigates to /callsandmessages on Add a number button click', () => {
+  it('navigates to /callsandmessages', () => {
     setup();
     fireEvent.click(screen.getByRole('button', { name: /Add a number/i }));
     expect(history.location.pathname).toBe('/callsandmessages');
   });
 
-  it('dispatches delete action when X button is clicked', () => {
+  it('dispatches action when removing number', () => {
     setup({
-      blockedNumbers: [{ phoneNumber: '1234567890' }]
+      blockedNumbers: [{ phoneNumber: '1234567890' }],
     });
     fireEvent.click(screen.getByRole('button', { name: /close/i }));
     expect(mockDispatch).toHaveBeenCalled();

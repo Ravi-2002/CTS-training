@@ -1,132 +1,159 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Title, Body } from "@vds/typography";
-import { Button, TextLink } from "@vds/buttons";
-import { ButtonIcon} from "@vds/button-icons";
-import { Icon } from "@vds/icons";
-import { Loader } from "@vds/loaders";
-import styled from "styled-components";
-import {
-  getCallsMessages,
-  postaddBlockCallMsg,
-  postDeleteBlockCallMsg,
-} from "../actions/fetchCallsMessages";
-import { Line } from "@vds/lines";
-import { ListGroup } from "@vds/lists";
-import { nativeSetTitle } from "../../../../shared/utilities/native";
-import common from "../../../../shared/utilities/util";
+import React from 'react';
+import { render, fireEvent, screen } from '@testing-library/react';
+import BlockCallsList from '../BlockCallsList';
+import { useSelector, useDispatch } from 'react-redux';
+import { postDeleteBlockCallMsg, getCallsMessages } from '../../actions/fetchCallsMessages';
+import { createMemoryHistory } from 'history';
+import { Router } from 'react-router-dom';
+import * as util from '../../../../../shared/utilities/util';
 
-const BlockCallsList = ({ history }) => {
-  useEffect(() => {
-    nativeSetTitle('Block Calls & Messages',false);
-  });
-  const dispatch = useDispatch();
-  const [blockedList, setBlockedList] = useState([]);
-  const mdn = localStorage.getItem('mdn');
-  const {
-    blockedNumbers,
-    addBlockCallMsg,
-    deleteBlockCallMsg,
-    isFetching,
-  } = useSelector((state) => state.Detail);
-  const Content = useSelector((state)=>state.Detail.callsMessages.aemResponse)
-  const mtn = Content.sections[0].sections[0].data.mtn;
-  let pageContent;
-    if (Content && Content?.sections[0]) {
-      pageContent = common.getContentFromSection(Content, 'devicesBlocksMainSection');
-      pageContent = pageContent.sections[0];
-    }
-  let pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
-  useEffect(() => {
-    dispatch(getCallsMessages());
-  }, [dispatch]);
+jest.mock('react-redux', () => ({
+  useSelector: jest.fn(),
+  useDispatch: jest.fn(),
+}));
 
-  useEffect(() => {
-    if (addBlockCallMsg?.blockedPhoneNumbers) {
-      setBlockedList(addBlockCallMsg.blockedPhoneNumbers);
-    }
-    else if(blockedNumbers){
-      setBlockedList(blockedNumbers)
-    }
-  }, [addBlockCallMsg,blockedNumbers]);
+jest.mock('../../actions/fetchCallsMessages', () => ({
+  getCallsMessages: jest.fn(() => ({ type: 'MOCK_GET_CALLS_MESSAGES' })),
+  postDeleteBlockCallMsg: jest.fn(),
+}));
 
-  useEffect(() => {
-    if (deleteBlockCallMsg?.blockedPhoneNumbers) {
-      setBlockedList(deleteBlockCallMsg.blockedPhoneNumbers);
-    }
-  }, [deleteBlockCallMsg]);
+jest.mock('../../../../../shared/utilities/util', () => ({
+  __esModule: true,
+  default: {
+    mtnFormat: jest.fn(() => '123-456-7890'),
+    getItemValue: jest.fn(() => 'Block Calls and Messages Title'),
+    getContentFromSection: jest.fn(() => ({
+      sections: [
+        {
+          contents: [
+            {
+              items: [{ title: 'callsandMessageTitle' }],
+            },
+          ],
+        },
+      ],
+    })),
+  },
+  nativeSetTitle: jest.fn(),
+}));
 
-  
+describe('BlockCallsList', () => {
+  const dispatch = jest.fn();
+  const history = createMemoryHistory();
 
-  const handleRemove = (num) => {
-    let payload = {
-      mtn: mdn,
-      blockNumber: num,
-      oldPhoneNumber: num,
-      memo: "",
-      expiredPhoneNumber: "",
-      blockedNumbers: [],
-      applyAll: false,
-      onlyMemo: false
-    }
-    dispatch(postDeleteBlockCallMsg(payload));
+  const renderComponent = (stateOverrides = {}) => {
+    useDispatch.mockReturnValue(dispatch);
+    useSelector.mockImplementation((selectorFn) =>
+      selectorFn({
+        Detail: {
+          blockedNumbers: stateOverrides.blockedNumbers || [
+            { phoneNumber: '1111111111' },
+            { phoneNumber: '2222222222' },
+          ],
+          addBlockCallMsg: stateOverrides.addBlockCallMsg || null,
+          deleteBlockCallMsg: stateOverrides.deleteBlockCallMsg || null,
+          isFetching: stateOverrides.isFetching || false,
+          callsMessages: {
+            aemResponse: {
+              sections: [
+                {
+                  sections: [
+                    {
+                      data: { mtn: '9876543210' },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      })
+    );
+
+    localStorage.setItem('mdn', '9876543210');
+
+    return render(
+      <Router location={history.location} navigator={history}>
+        <BlockCallsList history={history} />
+      </Router>
+    );
   };
 
-  return (
-    <PageWrapper>
-      <Loader active={isFetching} fullscreen />
-      <Title size="large" bold>{common.getItemValue(pageItems,"callsandMessageTitle")}</Title>
-      <MdnWrapper>
-      <Body size='large'>{common.mtnFormat(mtn)}</Body>
-      </MdnWrapper>
-      <TextWrapper>
-        <Body bold size='large'>You are blocking {blockedList.length} of 5 numbers.</Body>
-      </TextWrapper>
-      {blockedList.map((item, idx) => (
-          <ListGroupWrapper key={idx}>
-          <ListGroup>
-            <RemoveWrapper>
-              <Body size="large">{item.phoneNumber}</Body>
-              <ButtonIcon
-                kind="ghost"
-                size="small"
-                onClick={() => handleRemove(item.phoneNumber)}
-                renderIcon={(props) => <Icon name="close" {...props} />}
-              />
-            </RemoveWrapper>
-            <Line type="secondary" surface="light" />
-          </ListGroup>
-        </ListGroupWrapper>
-      ))}
-      
-    <LimitationWrapper>
-      <Body>
-        There is no charge to block.{" "}
-        <TextLink
-          type="standAlone"
-          surface="light"
-          onClick={() => history.push("/viewlimitation")}
-        >
-          View Limitations
-        </TextLink>
-      </Body>
-      </LimitationWrapper>
-          <ButtonWrapper>
-            <Button disabled={blockedList.length>=5} 
-                onClick={() => history.push("/callsandmessages",{allowInput:true,mtn:mdn})}>
-              Add a number
-            </Button>
-          </ButtonWrapper>
-    </PageWrapper>
-  );
-};
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
-const PageWrapper = styled.div` padding: 20px; `;
-const MdnWrapper = styled.div` padding-top: 7px; padding-bottom:7px`;
-const LimitationWrapper = styled.div` padding-top: 7px; padding-bottom:7px; display: flex; justify-content: center;`;
-const ButtonWrapper = styled.div` display: flex; justify-content: center; padding: 20px 0; `;
-const TextWrapper = styled.div` margin-bottom: 1rem; display: flex; justify-content: center; padding-top:30px; padding-bottom:20px `;
-const ListGroupWrapper = styled.div` padding-bottom: 10px; `;
-const RemoveWrapper = styled.div` display: flex; justify-content: space-between; align-items: center; `;
+  it('should render loader when isFetching is true', () => {
+    renderComponent({ isFetching: true });
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
 
-export default BlockCallsList;
+  it('should render title and formatted mtn', () => {
+    renderComponent();
+    expect(screen.getByText('Block Calls and Messages Title')).toBeInTheDocument();
+    expect(screen.getByText('123-456-7890')).toBeInTheDocument();
+  });
+
+  it('should render blocked numbers and remove button', () => {
+    renderComponent();
+    expect(screen.getByText('1111111111')).toBeInTheDocument();
+    expect(screen.getByText('2222222222')).toBeInTheDocument();
+
+    const closeButtons = screen.getAllByRole('button');
+    expect(closeButtons.length).toBeGreaterThanOrEqual(2); // Remove buttons present
+  });
+
+  it('should dispatch deleteBlockCallMsg on remove', () => {
+    renderComponent();
+    const closeButton = screen.getAllByRole('button')[0];
+    fireEvent.click(closeButton);
+    expect(postDeleteBlockCallMsg).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mtn: '9876543210',
+        blockNumber: '1111111111',
+        oldPhoneNumber: '1111111111',
+      })
+    );
+  });
+
+  it('should show correct block count text', () => {
+    renderComponent();
+    expect(screen.getByText('You are blocking 2 of 5 numbers.')).toBeInTheDocument();
+  });
+
+  it('should disable add number button when 5 blocked numbers', () => {
+    const numbers = Array(5).fill({ phoneNumber: '0000000000' });
+    renderComponent({ blockedNumbers: numbers });
+    const addButton = screen.getByRole('button', { name: /add a number/i });
+    expect(addButton).toBeDisabled();
+  });
+
+  it('should navigate to add number screen on button click', () => {
+    renderComponent();
+    const addButton = screen.getByRole('button', { name: /add a number/i });
+    fireEvent.click(addButton);
+    expect(history.location.pathname).toBe('/callsandmessages');
+  });
+
+  it('should navigate to limitations on link click', () => {
+    renderComponent();
+    const link = screen.getByText('View Limitations');
+    fireEvent.click(link);
+    expect(history.location.pathname).toBe('/viewlimitation');
+  });
+
+  it('should fallback to blockedNumbers if addBlockCallMsg is not available', () => {
+    renderComponent({
+      addBlockCallMsg: null,
+      blockedNumbers: [{ phoneNumber: '9999999999' }],
+    });
+    expect(screen.getByText('9999999999')).toBeInTheDocument();
+  });
+
+  it('should fallback to deleteBlockCallMsg if available', () => {
+    renderComponent({
+      deleteBlockCallMsg: { blockedPhoneNumbers: [{ phoneNumber: '8888888888' }] },
+    });
+    expect(screen.getByText('8888888888')).toBeInTheDocument();
+  });
+});

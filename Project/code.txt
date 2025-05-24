@@ -1,128 +1,69 @@
-// BlockCallsList.test.js
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Provider, useDispatch, useSelector } from 'react-redux';
-import { Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
-import configureStore from 'redux-mock-store';
-import BlockCallsList from '../../components/BlockCallsList';
-import '@testing-library/jest-dom';
-
-jest.mock('react-redux', () => ({
-  ...jest.requireActual('react-redux'),
-  useDispatch: jest.fn(),
-  useSelector: jest.fn(),
-}));
-
-jest.mock('../../../../../shared/utilities/native', () => ({
-  nativeSetTitle: jest.fn(),
-}));
-
-jest.mock('../../../../../shared/utilities/util', () => ({
-  ...jest.requireActual('../../../../../shared/utilities/util'),
-  getChannelId: jest.fn(() => 'mocked-channel-id'),
-  getContentFromSection: jest.fn(() => ({
-    sections: [
-      {
-        contents: [
+it('sets blocked list from addBlockCallMsg', () => {
+  setup({
+    addBlockCallMsg: {
+      blockedPhoneNumbers: ['1112223333']
+    },
+    blockedNumbers: ['9998887777'],
+    deleteBlockCallMsg: null,
+    isFetching: false,
+    callsMessages: {
+      aemResponse: {
+        sections: [
           {
-            items: [
-              { key: 'callsandMessageTitle', value: 'Mocked Block Title' }
+            sections: [
+              { data: { mtn: '7703463247' } }
             ]
           }
         ]
       }
-    ]
-  })),
-  getItemValue: (items, key) => {
-    const item = items?.find(item => item.key === key);
-    return item ? item.value : '';
-  },
-  mtnFormat: (mtn) => mtn ? `(${mtn.slice(0, 3)}) ${mtn.slice(3, 6)}-${mtn.slice(6)}` : '',
-}));
-
-const mockStore = configureStore([]);
-const mockDispatch = jest.fn();
-
-describe('BlockCallsList Component', () => {
-  let store;
-  let history;
-
-  beforeEach(() => {
-    localStorage.setItem('mdn', '7703463247');
-    useDispatch.mockReturnValue(mockDispatch);
-    history = createMemoryHistory();
-    store = mockStore({});
+    }
   });
 
-  const setup = (selectorData) => {
-    useSelector.mockImplementation(cb => cb({ Detail: selectorData }));
+  expect(screen.getByText('1112223333')).toBeInTheDocument();
+});
 
-    render(
-      <Provider store={store}>
-        <Router history={history}>
-          <BlockCallsList />
-        </Router>
-      </Provider>
-    );
-  };
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('renders blocked numbers and page title', () => {
-    setup({
-      blockedNumbers: [
-        { phoneNumber: '1234567890' },
-        { phoneNumber: '0987654321' }
-      ],
-      addBlockCallMsg: null,
-      deleteBlockCallMsg: null,
-      isFetching: false,
-      callsMessages: {
-        aemResponse: {
-          sections: [
-            {
-              sections: [
-                {
-                  data: { mtn: '7703463247' }
-                }
-              ]
-            }
-          ]
-        }
+it('sets blocked list from fallback blockedNumbers if addBlockCallMsg is null', () => {
+  setup({
+    addBlockCallMsg: null,
+    blockedNumbers: ['4445556666'],
+    deleteBlockCallMsg: null,
+    isFetching: false,
+    callsMessages: {
+      aemResponse: {
+        sections: [
+          {
+            sections: [
+              { data: { mtn: '7703463247' } }
+            ]
+          }
+        ]
       }
-    });
-
-    expect(screen.getByText('Mocked Block Title')).toBeInTheDocument();
-    expect(screen.getByText('(770) 346-3247')).toBeInTheDocument();
-    expect(screen.getByText('1234567890')).toBeInTheDocument();
-    expect(screen.getByText('0987654321')).toBeInTheDocument();
+    }
   });
 
-  it('navigates to /callsandmessages on Add a number click', () => {
-    setup({
-      blockedNumbers: [],
-      addBlockCallMsg: null,
-      deleteBlockCallMsg: null,
-      isFetching: false,
-      callsMessages: {
-        aemResponse: {
-          sections: [
-            {
-              sections: [
-                {
-                  data: { mtn: '7703463247' }
-                }
-              ]
-            }
-          ]
-        }
+  expect(screen.getByText('4445556666')).toBeInTheDocument();
+});
+
+it('updates blocked list from deleteBlockCallMsg', () => {
+  setup({
+    addBlockCallMsg: null,
+    blockedNumbers: ['original'],
+    deleteBlockCallMsg: {
+      blockedPhoneNumbers: ['deleted']
+    },
+    isFetching: false,
+    callsMessages: {
+      aemResponse: {
+        sections: [
+          {
+            sections: [
+              { data: { mtn: '7703463247' } }
+            ]
+          }
+        ]
       }
-    });
-
-    fireEvent.click(screen.getByText('Add a number'));
-    expect(history.location.pathname).toBe('/callsandmessages');
+    }
   });
+
+  expect(screen.getByText('deleted')).toBeInTheDocument();
 });

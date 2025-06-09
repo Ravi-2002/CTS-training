@@ -1,1 +1,60 @@
-__webpack_public_path__ = staticFilePath || mobileConfig.reactStaticFilePath ||'//ecache.verizonwireless.com/imageFiles/cpc/mobile/east/';
+const tileGroupComp = this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.devices
+        ?.filter((rec) => !rec.isFiveGDevice)
+        .map((tile, index) => (
+          <Col colSizes={{ mobile: 1, desktop: 3, tablet: 2 }} width="100px">
+            <TileContainer
+              key={`${index}`}
+              id="tileContainer"
+              backgroundImage="none"
+              aspectRatio="5:1"
+              height="220px"
+              width="400px"
+              showBorder
+              onClick={(event) => this.selectDevice(event, tile)}
+              onKeyPress={(event) => this.selectDevice(event, tile)}
+              role={
+                this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder ? '' : 'link'
+              }
+              aria-label={`${tile.deviceNickname}  ${this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder
+                ? 'disabled'
+                : ''
+                }`}
+              tabIndex={
+                this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder ? '-1' : '0'
+              }
+              aria-disabled={this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder}
+              data-track={tile.mtn}
+            >
+              <Col className="col col-title">
+                <div>
+                  <Body>{tile.role}</Body>
+                  <Title size="medium" bold color="#000000">
+                    {tile.deviceNickname}
+                    <br />
+                    {tile.displayMtn}
+                    <br />
+                  </Title>
+                  <Body primitive="p">
+                    {' '}
+                    {tile.deviceMake}
+                    {' '}
+                    -
+                    {' '}
+                    {tile.deviceModel}
+                  </Body>
+                </div>
+              </Col>
+              <Col className="col-image">
+                <div aria-hidden="true">
+                  <img src={tile.images.mediumImage} alt="" />
+                </div>
+              </Col>
+              {tile.role == common.getItemValue(pageItems,'mdnRoleNonRegMsg') ? <div >
+                <Tooltip outlined={true} style={{ marginLeft: "0.5rem" }}>
+                  {common.getItemValue(pageItems,'mdnRoleMsg')}
+                </Tooltip>
+              </div> : ""
+              }
+            </TileContainer>
+          </Col>
+        ));

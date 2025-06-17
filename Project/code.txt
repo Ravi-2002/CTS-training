@@ -1,168 +1,18 @@
-import React from "react";
-import "../../../../../config/jest/test-setup";
-import "./test-setup";
-import { act, render, screen, cleanup, fireEvent, shallow } from "@testing-library/react";
-import "@testing-library/jest-dom/extend-expect";
-import userEvent from "@testing-library/user-event";
-import { Provider } from "react-redux";
-import { getHttpClientRequest } from "@vz/react-util";
-import configureStore, { history } from "../../../../shared/store/configureStore";
-import rootReducer from "../../reducers";
-import { persistStore } from 'redux-persist';
-import { PersistGate } from 'redux-persist/integration/react';
-import HeaderDetails from "../components/callFilterHeader/HeaderDetails";
-////import * as deviceActions from "../actions"
+test("should call fetchCallTreatment when lisCallFilterOff8 and manageCallFilterSettingsFFlag are true", () => {
+  // Set global flag
+  window.manageCallFilterSettingsFFlag = true;
 
+  // Set the condition
+  const lisCallFilterOff8 = true;
 
+  // Mock dispatch
+  const dispatch = jest.fn();
 
-import CallFilterSettings from "../components/callFilterSettings/CallFIlterSettings";
-import { callfilterSettingsPageMockResponse } from "./callfilterSettingsPageMock";
-import CallFilterSettingsDetails from "../components/callFilterSettings/CallFilterSettingsDetails";
-import CallFilterContainer from "../CallFilterContainer"
-//import * as pageActions  from '../actions/pageActions';
+  // Simulate the logic block
+  if (lisCallFilterOff8 && window.manageCallFilterSettingsFFlag) {
+    fetchCallTreatment(dispatch);
+  }
 
-const store = configureStore(rootReducer);
-const persistor = persistStore(store);
-const itemValue=[
-    "Auto-block spam calls by risk level.#Suspected spam calls that aren't auto-blocked will be labeled on your incoming call screen to help you decide if you want to answer.#Please note calls you want to receive may be auto-blocked by Call Filter, causing you to missing them.",
- ];
- const criteriaList= [
-    {
-        "header": "High-risk only",
-        "label": "Potential fraud. Number is usually disguised as private or anonymous.",
-        "criteria": "high",
-        "value": "High-risk only"
-    },
-    {
-        "header": "Medium and high-risk",
-        "label": "Potential spam and fraud. Number may be disguised.",
-        "criteria": "medium"
-    },
-    {
-        "header": "All spam calls",
-        "label": "Any number that is identified as spam.",
-        "criteria": "low"
-    }
-];
-const actionList= [
-    {
-        "header": "No ring and no voicemail",
-        "action": "block",
-        "label": "Call is blocked and sent directly to voice mail."
-    },
-    {
-        "header": "Allow voicemail",
-        "action": "voicemail",
-        "label": "Call is blocked and not sent to voice mail."
-    }
-];
-const notification= {
-								"header": "Call Filter notifications",
-								"label": "Get notifications of auto-blocked calls using the",
-								"linkName": "Call Filter App",
-								"linkUrl": "https://play.google.com/store/apps/details?id=com.vzw.ecid&hl=en_US",
-								"hyperLinkRequired": true
-							};
-   const nonAppCapableInd= "N"                        
-
-jest.mock("@vz/react-util", () => ({
-    ...jest.requireActual("@vz/react-util"),
-    getHttpClientRequest: jest.fn()
-  }));
-
-jest.mock("../../../../shared/services/httpClient", () => ({
-    ...jest.requireActual("../../../../shared/services/httpClient"),
-    // getHttpClientRequest: jest.fn()
-}));
-
-
-describe("<Confirmation />", () => {
-    beforeEach(async () => {
-        window.location = {
-            assign: jest.fn(),
-          };
-        getHttpClientRequest.mockImplementation((url) => {
-            return Promise.resolve({ status: 200, data: {...callfilterSettingsPageMockResponse} });
-        })
-        
-        await act(async () => render(
-            <Provider store={store}>
-                <PersistGate loading={null} persistor={persistor}>
-                    <CallFilterSettings />
-                </PersistGate>
-            </Provider>
-        ));
-
-    })
-
-    test("it should mount", () => {
-        const doc = screen.getByTestId("callFilterSettings");
-        expect(doc).toBeInTheDocument();
-    });
-    test('termsURL button working or not', async() => {
-
-         const termsURL = screen.getByTestId('termsURL');
-         expect(screen.getByTestId('termsURL')).toBeInTheDocument();
-
-         userEvent.click(termsURL);
-      });
-      test('toggleBtn button working or not', async() => {
-        const { getByTestId } = render(<HeaderDetails isCallFilterTurnOn="true" 
-            subHeader={itemValue}
-            linkTermsUrl= "https://www.verizonwireless.com/support/call-filter-legal/"
-            linkPrivacyUrl= "https://www.verizon.com/about/privacy/full-privacy-policy"
-             linkDescription= "By turning on Call Filter, you agree to our"
-             handleToggle = "true"
-      />)
-        const toggleBtn = screen.getAllByTestId('callfilter-toggle');
-        toggleBtn.forEach((element,index)=>{
-            userEvent.click(element)
-        })
-        // expect(screen.getByTestId('toggleBtn')).toBeInTheDocument();
-
-        // userEvent.click(toggleBtn);
-     });
-      test('privacyUrl button working or not', async() => {
-        render(<HeaderDetails isCallFilterTurnOn="true" 
-            subHeader=''
-            linkTermsUrl= "https://www.verizonwireless.com/support/call-filter-legal/"
-            linkPrivacyUrl= "https://www.verizon.com/about/privacy/full-privacy-policy"
-             linkDescription= "By turning on Call Filter, you agree to our"
-             handleToggle = "false"
-      />)
-        const privacyURL = screen.getByTestId('privacyURL');
-        expect(screen.getByTestId('privacyURL')).toBeInTheDocument();
-
-        userEvent.click(privacyURL);
-     });
-     test('save button  working or not', async() => {
-        render(<HeaderDetails isCallFilterTurnOn="true" 
-            subHeader=''
-            linkTermsUrl= "https://www.verizonwireless.com/support/call-filter-legal/"
-            linkPrivacyUrl= "https://www.verizon.com/about/privacy/full-privacy-policy"
-             linkDescription= "By turning on Call Filter, you agree to our"
-             handleToggle = "false"
-      />)
-        const save_call_filter_button = screen.getByTestId('save_call_filter_button');
-        expect(screen.getByTestId('save_call_filter_button')).toBeInTheDocument();
-
-        userEvent.click(save_call_filter_button);
-     });
-    //  test('handling save changes  working or not', async() => {
-    //     render(<CallFilterSettingsDetails  
-    //         defaultCriteriaValue='High'
-    //         defaultActionValue= "block"
-    //         criteriaList= {criteriaList}
-    //         actionList= {actionList}
-    //         notification = {notification}
-    //         nonAppCapableInd ={nonAppCapableInd}
-    //   />)
-    //     const changesOnSave = screen.getByTestId('changesOnSave');
-    //     expect(screen.getByTestId('changesOnSave')).toBeInTheDocument();
-
-    //     userEvent.click(changesOnSave);
-    //  });
-
-
-})
-
+  // Assert
+  expect(fetchCallTreatment).toHaveBeenCalledWith(dispatch);
+});

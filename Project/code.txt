@@ -1,58 +1,38 @@
-const tileGroupComp = this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.devices
-  ?.filter((rec) => !rec.isFiveGDevice)
-  .map((tile, index) => (
-    <Col colSizes={{ mobile: 1, desktop: 3, tablet: 2 }} width="100px" key={index}>
-      <TileContainer
-        id="tileContainer"
-        backgroundImage="none"
-        aspectRatio="5:1"
-        height="220px"
-        width="400px"
-        showBorder
-        onClick={(event) => this.selectDevice(event, tile)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            this.selectDevice(event, tile);
-          }
-        }}
-        role="button"
-        tabIndex="0"
-        aria-label={`Device nickname: ${tile.deviceNickname}, Number: ${tile.displayMtn}, Model: ${tile.deviceMake} ${tile.deviceModel}${
-          tile.role === common.getItemValue(pageItems, 'mdnRoleNonRegMsg') ? ', Non-Registered User' : ''
-        }${this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder ? ', disabled' : ''}`}
-        aria-disabled={
-          this.props.deviceList?.sections?.[0]?.sections?.[0]?.data?.pendingOrder || false
-        }
-        data-track={tile.mtn}
-      >
-        <Col className="col col-title">
-          <div>
-            <Body>{tile.role}</Body>
-            <Title size="medium" bold color="#000000">
-              {tile.deviceNickname}
-              <br />
-              {tile.displayMtn}
-              <br />
-            </Title>
-            <Body primitive="p">
-              {tile.deviceMake} - {tile.deviceModel}
-            </Body>
-          </div>
-        </Col>
-
-        <Col className="col-image">
-          <div>
-            <img src={tile.images.mediumImage} alt="" />
-          </div>
-        </Col>
-
-        {tile.role === common.getItemValue(pageItems, 'mdnRoleNonRegMsg') && (
-          <div>
-            <Tooltip outlined={true} style={{ marginLeft: '0.5rem' }}>
-              {common.getItemValue(pageItems, 'mdnRoleMsg')}
-            </Tooltip>
-          </div>
-        )}
-      </TileContainer>
-    </Col>
-  ));
+{(this.props.selectedAccordian == 'BS' && this.props.getServices) && false ?
+            <div style={{ marginBottom: 15, paddingLeft: "27%" }} >
+              <div><Body> <TextLink onClick={(e) => {
+                e.preventDefault();
+                let actionKey = pageContent && common.getActionKey(pageItems, `dcbLink`);
+                const actionKeyValue = pageContent && common.getActionByKey(pageActions, actionKey);
+                const actionValue = actionKeyValue && actionKeyValue.actionValue;
+                window.location.href = `${actionValue}`;
+              }} data-track="ViewMediaAppPurchases">{common.getItemValue(pageItems,'dcbLink')}</TextLink></Body></div><br />
+              <div ><Body> <TextLink onClick={(e) => {
+                e.preventDefault();
+                let actionKey = pageContent && common.getActionKey(pageItems, `videoLink`);
+                const actionKeyValue = pageContent && common.getActionByKey(pageActions, actionKey);
+                const actionValue = actionKeyValue && actionKeyValue.actionValue;
+                window.location.href = `${actionValue}`;
+              }} data-track="VideoForBlockServices">{common.getItemValue(pageItems,'videoLink')}</TextLink></Body></div><br />
+              <div ><Body><TextLink onClick={(e) => {
+                e.preventDefault();
+                let actionKey = pageContent && common.getActionKey(pageItems, `faqsLink`);
+                const actionKeyValue = pageContent && common.getActionByKey(pageActions, actionKey);
+                const actionValue = actionKeyValue && actionKeyValue.actionValue;
+                window.location.href = `${actionValue}`;              
+                }} data-track="BlockFAQ">{common.getItemValue(pageItems,'faqsLink')}</TextLink></Body></div><br />
+            </div> : 
+            <div style={{ marginBottom: 15, paddingLeft: "27%" }} >
+              <div><Body> <TextLink onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "https://myvpostpay.verizonwireless.com/ui/bill/secure/dcb"
+              }} data-track="ViewMediaAppPurchases">View Media &amp; App Purchases</TextLink></Body></div><br />
+              <div ><Body> <TextLink onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "https://www.verizonwireless.com/support/how-to-add-blocks-video/"
+              }} data-track="VideoForBlockServices">Video: How to block services</TextLink></Body></div><br />
+              <div ><Body><TextLink onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "https://www.verizonwireless.com/support/block-unblock-services-faqs/"
+              }} data-track="BlockFAQ">Block and unblock services FAQ</TextLink></Body></div><br />
+            </div> }

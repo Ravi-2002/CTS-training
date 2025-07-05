@@ -1,18 +1,71 @@
-test("should call fetchCallTreatment when lisCallFilterOff8 and manageCallFilterSettingsFFlag are true", () => {
-  // Set global flag
-  window.manageCallFilterSettingsFFlag = true;
+ renderPreferenceLink = (singleLink, index) => {
+    const isMvm =  common.getChannelId() === 'VZW-MFA';;
+    const { deviceDetailInfoSection } = this.props;
+    const pageContent = deviceDetailInfoSection?.sections
+      ? common.getContentFromSection(deviceDetailInfoSection, 'devicesLandingMainSection')?.sections?.[0]
+      : null;
+    const pageAttributes = deviceDetailInfoSection?.pageAttributes || {};
+    const enableSharenameid = common.getItemValue(pageAttributes, 'enableSharenameid') === 'true';
+    const enableCallFilter = common.getItemValue(pageAttributes, 'enableCallFilter') === 'true';
+    const enableBlocks = common.getItemValue(pageAttributes, 'enableBlocks') === 'true';
+    const enableBlocksMVA = common.getItemValue(pageAttributes,'enableBlocksMVA')==='true';
+    const pageItems = pageContent?.contents?.[0]?.items;
+    const deviceList = pageContent?.data || [];
+    let selectedDeviceDetail = (deviceList && deviceList.filter((singleDevice) => singleDevice.mtn == this.state.selectedMdn)) || [];
+    let { preferences, shareNameIDBtnThrottle } = selectedDeviceDetail.length && selectedDeviceDetail[0];
+    let encrypterMDN = selectedDeviceDetail[0].encryptedMtnDES;
+    console.log(encrypterMDN,'encry')
+    if (!preferences?.[singleLink]) return null; 
+    const isAllowedAction = {
+      shareNameIDBtn: enableSharenameid &&!isMvm,
+      blockSpecificServicesBtn: enableBlocksMVA ,
+      blockCallsAndMessagesBtn: enableBlocksMVA ,
+      manageCallFilterBtn: enableCallFilter && !isMvm
+    }[singleLink];
+    const handleClick = () => {
+      const actionKey = common.getActionKey(pageItems, singleLink);
+      let clickInfo;
+      if (singleLink === 'shareNameIDBtn' && shareNameIDBtnThrottle) {
+        clickInfo = this.getOnClickInfo(pageContent, isMvm ? `nsa_${actionKey}_native` : `nsa_${actionKey}`, this.state.selectedMdn);
+      } else if (isAllowedAction) {
+        if(isMvm){
+          clickInfo = this.getOnClickInfo(pageContent, enableBlocksMVA?`nsa_${actionKey}_mva`:`${actionKey}_native` ,encrypterMDN,false,singleLink);
+        }
+        else{
+          clickInfo = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
+        }
 
-  // Set the condition
-  const lisCallFilterOff8 = true;
+      } else {
+        clickInfo = this.getOnClickInfo(pageContent, isMvm ? `${actionKey}_native` : actionKey, this.state.selectedMdn);
+      }
+      clickInfo?.onclick();
+      
+    localStorage.setItem('MDN',this.state.selectedMdn);
+    const a= localStorage.getItem('MDN')
+    console.log(a,'md')
+    };
+    
+    
 
-  // Mock dispatch
-  const dispatch = jest.fn();
-
-  // Simulate the logic block
-  if (lisCallFilterOff8 && window.manageCallFilterSettingsFFlag) {
-    fetchCallTreatment(dispatch);
-  }
-
-  // Assert
-  expect(fetchCallTreatment).toHaveBeenCalledWith(dispatch);
-});
+    return (
+      <Col key={singleLink} colSizes={{ mobile: 4, desktop: 6, tablet: 6 }}>
+        <ListGroup topLine={false} bottomLine={true} surface="light" viewport="desktop">
+          <ListGroupItem
+            ariaLabel={common.getItemValue(pageItems, `${singleLink}`)}
+            actionElement="none"
+            ariaRole="link"
+            onClick={handleClick}
+          >
+            <ListGroupItemTitle bold={false}>
+              <ListGroupItemTitleContent>
+                <ItemWrapper>
+                  <span>{common.getItemValue(pageItems, `${singleLink}`)}</span>
+                  <span><Icon name='right-arrow' size='medium' /></span>
+                </ItemWrapper>
+                </ListGroupItemTitleContent>
+            </ListGroupItemTitle>
+          </ListGroupItem>
+        </ListGroup>
+      </Col>
+    );
+  };

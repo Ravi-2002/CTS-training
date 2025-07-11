@@ -1,71 +1,54 @@
- renderPreferenceLink = (singleLink, index) => {
-    const isMvm =  common.getChannelId() === 'VZW-MFA';;
-    const { deviceDetailInfoSection } = this.props;
-    const pageContent = deviceDetailInfoSection?.sections
-      ? common.getContentFromSection(deviceDetailInfoSection, 'devicesLandingMainSection')?.sections?.[0]
-      : null;
-    const pageAttributes = deviceDetailInfoSection?.pageAttributes || {};
-    const enableSharenameid = common.getItemValue(pageAttributes, 'enableSharenameid') === 'true';
-    const enableCallFilter = common.getItemValue(pageAttributes, 'enableCallFilter') === 'true';
-    const enableBlocks = common.getItemValue(pageAttributes, 'enableBlocks') === 'true';
-    const enableBlocksMVA = common.getItemValue(pageAttributes,'enableBlocksMVA')==='true';
-    const pageItems = pageContent?.contents?.[0]?.items;
-    const deviceList = pageContent?.data || [];
-    let selectedDeviceDetail = (deviceList && deviceList.filter((singleDevice) => singleDevice.mtn == this.state.selectedMdn)) || [];
-    let { preferences, shareNameIDBtnThrottle } = selectedDeviceDetail.length && selectedDeviceDetail[0];
-    let encrypterMDN = selectedDeviceDetail[0].encryptedMtnDES;
-    console.log(encrypterMDN,'encry')
-    if (!preferences?.[singleLink]) return null; 
-    const isAllowedAction = {
-      shareNameIDBtn: enableSharenameid &&!isMvm,
-      blockSpecificServicesBtn: enableBlocksMVA ,
-      blockCallsAndMessagesBtn: enableBlocksMVA ,
-      manageCallFilterBtn: enableCallFilter && !isMvm
-    }[singleLink];
-    const handleClick = () => {
-      const actionKey = common.getActionKey(pageItems, singleLink);
-      let clickInfo;
-      if (singleLink === 'shareNameIDBtn' && shareNameIDBtnThrottle) {
-        clickInfo = this.getOnClickInfo(pageContent, isMvm ? `nsa_${actionKey}_native` : `nsa_${actionKey}`, this.state.selectedMdn);
-      } else if (isAllowedAction) {
-        if(isMvm){
-          clickInfo = this.getOnClickInfo(pageContent, enableBlocksMVA?`nsa_${actionKey}_mva`:`${actionKey}_native` ,encrypterMDN,false,singleLink);
+got this error in MVA {
+  "App_id": "Devices",
+  "_version": 1,
+  "_source": {
+    "msg": "",
+    "logs": [
+      {
+        "logSeverity": "ERROR",
+        "errorID": "RENDER",
+        "feErrorDetails": {
+          "App_id": "Devices",
+          "version": 1,
+          "errorID": "RENDER",
+          "flowName": "device overview",
+          "pageName": "Device overview",
+          "pageTitle": "Device overview",
+          "errorShown": 1,
+          "userViewedMessages": [
+            {
+              "userViewedMessage": "We encountered an error while processing your request. Please wait a few minutes and try again later.",
+              "messageStyle": "page"
+            }
+          ],
+          "errorInfoShort": "A <Router> may have only one child element",
+          "errorMessage": "Invariant Violation: A <Router> may have only one child element\n    at e.exports (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2599:3012)\n    at t.componentWillMount (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2599:4787)\n    at https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:64677\n    at Kh (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:64991)\n    at lm (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:107391)\n    at Tm (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:124791)\n    at Fw (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:171011)\n    at Ew (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:164025)\n    at bw (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:163892)\n    at yw (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:163655)",
+          "message": "{\"errorMessage\":\"A <Router> may have only one child element\",\"errorStack\":\"Invariant Violation: A <Router> may have only one child element\\n    at e.exports (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2599:3012)\\n    at t.componentWillMount (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2599:4787)\\n    at https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:64677\\n    at Kh (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:64991)\\n    at lm (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:107391)\\n    at Tm (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:124791)\\n    at Fw (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:171011)\\n    at Ew (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:164025)\\n    at bw (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:163892)\\n    at yw (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3448:163655)\",\"fileName\":\"\\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2599:3898)\\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:4:18897)\\n    at div\\n    at Fm (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2591:6863)\\n    at e (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3416:88593)\\n    at section\\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3527:31071)\\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2599:3898)\\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:4:19988)\\n    at Suspense\\n    at div\\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2591:15438)\\n    at p (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3559:127283)\\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2591:19640)\\n    at p (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3559:124137)\"}",
+          "vendorSubEventType": "\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2599:3898)\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:4:18897)\n    at div\n    at Fm (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2591:6863)\n    at e (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3416:88593)\n    at section\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3527:31071)\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2599:3898)\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:4:19988)\n    at Suspense\n    at div\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2591:15438)\n    at p (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3559:127283)\n    at t (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:2591:19640)\n    at p (https://vzwqa2.verizonwireless.com/digital/nsa/nos/devices/mobile/blocks/js/blocks.js:3559:124137)",
+          "eventType": "FeError",
+          "subEventType": "FeErrorJ",
+          "customerRole": "accountManager",
+          "customerType": "",
+          "browserEngine": "Blink",
+          "browserName": "Chrome WebView",
+          "host": "vzwqa2.verizonwireless.com",
+          "userAgent": "Mozilla/5.0 (Linux; Android 15; SM-S916B Build/AP3A.240905.015.A2; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/137.0.7151.115 Mobile Safari/537.36;MY_VZW_APP/21.0.8 (MY_VZW_APP/21.0.8(osName:Android;osVersion:15;deviceName:dm2q;model:SM-S916B;MF_APP_VERSION:21.0;appReleaseVersion:21.0;accept-language:en;channelId:VZW-MFA-ANDROID))",
+          "pageUrl": "https://vzwqa2.verizonwireless.com/digital/nsa/secure/ui/devices/blocks/callsandMessages?mdn=aMJpemk2RZATXpupMXVUQQ%3D%3D#/",
+          "pageReferrer": "vzwqa2.verizonwireless.com",
+          "referrerURL": "vzwqa2.verizonwireless.com"
+        },
+        "sessionDetails": {
+          "loginStatus": "authenticated",
+          "caseId": "",
+          "globalId": "3a78f2a2z39ebz45f2z89f9z68524650dfc1",
+          "sessionId": "0800132c-449c-4e7f-9f57-8ee09349155e",
+          "e2eRequestId": "15847cd7-5ccb-4ab6-bac5-58e07a39e393-257463",
+          "channelId": "VZW-MFA",
+          "soesessionId": "0800132c-449c-4e7f-9f57-8ee09349155e",
+          "customerType": "",
+          "customerRole": "accountManager"
         }
-        else{
-          clickInfo = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
-        }
-
-      } else {
-        clickInfo = this.getOnClickInfo(pageContent, isMvm ? `${actionKey}_native` : actionKey, this.state.selectedMdn);
       }
-      clickInfo?.onclick();
-      
-    localStorage.setItem('MDN',this.state.selectedMdn);
-    const a= localStorage.getItem('MDN')
-    console.log(a,'md')
-    };
-    
-    
-
-    return (
-      <Col key={singleLink} colSizes={{ mobile: 4, desktop: 6, tablet: 6 }}>
-        <ListGroup topLine={false} bottomLine={true} surface="light" viewport="desktop">
-          <ListGroupItem
-            ariaLabel={common.getItemValue(pageItems, `${singleLink}`)}
-            actionElement="none"
-            ariaRole="link"
-            onClick={handleClick}
-          >
-            <ListGroupItemTitle bold={false}>
-              <ListGroupItemTitleContent>
-                <ItemWrapper>
-                  <span>{common.getItemValue(pageItems, `${singleLink}`)}</span>
-                  <span><Icon name='right-arrow' size='medium' /></span>
-                </ItemWrapper>
-                </ListGroupItemTitleContent>
-            </ListGroupItemTitle>
-          </ListGroupItem>
-        </ListGroup>
-      </Col>
-    );
-  };
+    ]
+  }
+}

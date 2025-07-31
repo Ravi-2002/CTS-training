@@ -1,162 +1,314 @@
-import React from 'react';
-import { render } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import { MemoryRouter } from 'react-router-dom';
-import DeviceDetail from '../index'; // Adjust the import path as needed
-import * as common from '../../../../../shared/utilities/util'; // Adjust the import path as needed
 
-// Mock the utility functions
-jest.mock('../../../../../shared/utilities/util', () => ({
-  getItem: jest.fn(),
-  getItemValue: jest.fn(),
-  getChannelId: jest.fn(),
-}));
-
-describe('DeviceDetail Component', () => {
-  let pageItems;
-  let pageContent;
-  let store;
-
-  beforeEach(() => {
-    // Mock data for pageItems
-    pageItems = [
-      { itemKey: 'familyBaseMessage', itemAttributes: { baseUrl: 'https://example.com', baseUrlMsg: 'Learn More' } },
-    ];
-
-    // Mock data for pageContent
-    pageContent = {
-      data: {
-        isAppleDevice: true,
-      },
-      appleDeviceMessage: 'This is an Apple device message.',
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { Redirect } from 'react-router-dom';
+import { Body } from '@vds/typography';
+import { bindActionCreators } from 'redux';
+import styled from 'styled-components';
+import { Button, TextLink } from '@vds/buttons';
+import { Line } from '@vds/lines';
+import {
+  Modal, ModalBody, ModalTitle,
+} from '@vds/modals';
+import { Toggle } from '@vds/toggles';
+import { Loader } from '@vds/loaders';
+import { DropdownSelect } from '@vds/selects';
+import './blocksServices/style.css';
+import { Tooltip } from '@vds/tooltips';
+import BlockServices from './blocksServices/BlockServices';
+import BlockCallsMessages from './blockCallsMessages';
+import Alert from '../../alert';
+import * as deviceDetailActions from '../actions';
+import AdvancedControls from '../../home/components/AdvanceControls';
+import { media } from '../../../utils/VendorScripts/style';
+import { Col, Grid, Row } from '@vds/grids';
+import common from '../../../../shared/utilities/util';
+export const MDN_ROLE_MESSAGE = 'This line isn\'t registered for a My Verizon Account yet. You\'ll need this line to complete the online registration in order to access the features within My Verizon.';
+export const MDN_ROLE_NONREG_MESSAGE = 'Non Registered';
+class DeviceDetail extends Component {
+  constructor(props) {
+    super(props);
+    console.log(props, 'props');
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+    if (props.location.state !== null && props.location.state !== undefined) {
+      this.devices = props.location.state.devices;
+      this.isSingleDevice = props.location.state.isSingleDevice;
+      this.selectedDevice = props.location.state.selectedDevice;
+      this.advanceControls = props.location.state.advanceControls;
+      this.showAdvanceControls = props.location.state.showAdvanceControls;
+    }
+    this.state = {
+      selectedDevice: this.selectedDevice,
+      devices: this.devices,
+      advanceControls: this.advanceControls,
+      applePopUp: false,
+      isSingleDevice: this.isSingleDevice,
     };
+  }
 
-    // Mock implementations of common functions
-    common.getItem.mockImplementation((items, key) => items.find((item) => item.itemKey === key));
-    common.getItemValue.mockImplementation((items, key) => {
-      const mockValues = {
-        appleDeviceMessage: 'This is an Apple device message.',
-        familyBaseMessage: 'This is a family base message.',
-        dataOnlyMessage: 'This is a data-only message.',
-      };
-      return mockValues[key];
+  componentDidMount() {
+    const selectedMdn = this.props.location?.state?.selectedDevice?.encryptedMtn || null ;
+   if(selectedMdn )
+    {
+     this.props?.actions?.getDeviceDetail(selectedMdn);
+    }
+    
+  }
+
+  handleOnChangeDevice = (event) => {
+    const newSelectedDevice = this.state.devices.filter((selected) => selected.mtn === event.target.value);
+    if (newSelectedDevice.length > 0) {
+      this.props?.actions?.getDeviceDetail(newSelectedDevice[0].encryptedMtn);
+      this.setState({
+        selectedDevice: newSelectedDevice[0],
+        selectedAccordian: ""
+      });
+    }
+  }
+
+  selectAccordian = (name) => {
+    if (this.state.selectedAccordian === name) name = '';
+    this.setState({
+      selectedAccordian: name,
     });
-    common.getChannelId.mockReturnValue('mockChannelId');
+  }
+  render() {
+    // const { isFetching, deviceListError } = this.props
 
-    // Create a mock Redux store
-    const mockStore = configureStore([]);
-    store = mockStore({
-      Detail: {
-        Details: {
-          isFetching: false, // Mock value for isFetching
-          deviceDetails: {
-            data: {
-              isAppleDevice: true, // Mock value for isAppleDevice
-            },
-          },
-        },
-      },
-    });
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks(); // Clear mocks after each test
-  });
-
-  it('should correctly set appleNotice and Showmsg when isAppleDevice is true', () => {
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail pageItems={pageItems} pageContent={pageContent} />
-        </MemoryRouter>
-      </Provider>
+    const { deviceDetails, isFetching } = this.props;
+    const { isSingleDevice } = this.state;
+    let pageContent,appleContant;
+    if  (this.props.deviceDetails) 	
+	  {
+      	pageContent = common.getContentFromSection(this.props.deviceDetails,'devicesBlocksMainSection');	
+        console.log(pageContent,'pagecontent')		
+        appleContant = pageContent?.sections[2];
+      	if(pageContent){ pageContent = pageContent?.sections[1];}
+	  }
+    const pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
+    const appleItems = appleContant && appleContant.contents && appleContant.contents[0].items;
+    console.log(appleItems,'appleItems');
+    let Message = '';
+    let appleNotice = false;
+    let showNotice = false;
+    let Showmsg = '';
+    if (this.state.devices === undefined || this.state.devices === null) {
+      return (
+        <Redirect
+          push
+          to={{
+            pathname: '/',
+          }}
+        />
+      );
+    }
+    const deviceOptions = this.state.devices.filter((rec) => !rec.isFiveGDevice).map((device) => (
+      <option value={device.mtn}>
+        {(device.deviceNickname)}
+        {' '}
+        {device.mtn}
+      </option>
+    ));
+    let cons = common.getItemValue(pageItems,'appleDeviceMessage');
+    let familyBaseItem = common.getItem(pageItems,'familyBaseMessage')  || { itemAttributes: {} };
+    console.log(familyBaseItem,'ppt')
+    let familybasemessage = common.getItemValue(pageItems,'familyBaseMessage')
+    let callsmessage = common.getItemValue(pageItems,'dataOnlyMessage');
+    let familybaseurl = familyBaseItem.itemAttributes;
+    if (pageContent && pageContent.data?.isAppleDevice && pageContent.data?.isAppleDevice === true) {
+      appleNotice = true;
+      Showmsg = pageContent.appleDeviceMessage;
+    }
+    if (this.props.deviceDetails) {
+      if (pageContent?.data?.isDataOnlyPlan === true) {
+        showNotice = true;
+        Message = callsmessage;
+      } else if (pageContent?.data?.isTrackingDevice === true) {
+        showNotice = true;
+        Message = callsmessage;
+      }
+    }
+    return (
+      <div className="oneD">
+        <div>
+          <Loader show={isFetching} fullscreen/>
+        </div>
+        <br />
+        <br />
+        <div className="row" tabIndex="-1">
+          <div className="col-lg-12 visible-lg visible-md">
+          <Grid
+              padding="0"
+              >
+              <Row>
+                <Col colSizes={{ desktop: 7, mobile: 4 ,tablet:10}} padding="0" id="blocktext">
+                <h1 style={{ paddingLeft: '10px' }}>
+            {common.getItemValue(pageItems,'headerText')}
+            </h1>
+                </Col>
+              </Row>
+            </Grid>
+          </div>
+          {!isSingleDevice && (
+            <div className="row">
+              <div style={{ paddingLeft: '8px' }}>
+                <Button use="secondary" surface="light" onClick={() => window.location.href = "/digital/nsa/secure/ui/devices/blocks/#/"} role="button"data-track="DeviceDetailsSeeAllDevices">
+                  {common.getItemValue(pageItems,'seeAllDevicesBtn')}</Button>
+              </div>
+            </div>
+          )}
+          <div style={{ padding: '5px' }} />
+        </div>
+        {!isSingleDevice && (
+            <Grid
+            >
+              <Row>
+                <Col colSizes={{ desktop: 4, mobile: 4,tablet:12 }}>
+                <DropdownSelect
+                  onChange={(event) => this.handleOnChangeDevice(event)}
+                  defaultValue={this.state.selectedDevice.mtn}
+                >
+                  {deviceOptions}
+                </DropdownSelect>
+                </Col>
+              </Row>
+            </Grid>
+        )}
+        <br />
+        <Line />
+        <br />
+        <Grid
+          bleed="1272"
+          rowGutter="10px"
+        >
+          <Row >
+            <Col colSizes={{ desktop: 5,tablet:8 }}><div style={{ width: '100%' }} /><div className="col-lg-4 col-sm-12 col-md-4">
+              <div className="row " style={{ paddingLeft: '10px' }}>
+                <div className="col-lg-12 col-sm-8 col-xs-8 col-md-8">
+                  <div style={{ display: 'flex' }}>
+                    <p className="role">
+                      {this.state.selectedDevice.role}
+                    </p>
+                    {this.state.selectedDevice.role ===  common.getItemValue(pageItems,'mdnRoleNonRegMsg') ? (
+                      <div>
+                        <Tooltip outlined style={{ marginLeft: '0.5rem' }}>
+                        {common.getItemValue(pageItems,'mdnRoleMsg')}
+                        </Tooltip>
+                      </div>
+                    ) : ''
+                    }
+                  </div>
+                  <h4>{this.state.selectedDevice.deviceNickname}</h4>
+                  <h4>{(this.state.selectedDevice.displayMtn)}</h4>
+                  {appleNotice && (
+                    <div className="row visible-sm visible-xs">
+                      {Showmsg}
+                    </div>
+                  )}
+                </div>
+                <div style={{ padding: 0 }}>
+                  <img src={this.state.selectedDevice?.images?.mediumImage} alt="Device" />
+                </div>
+              </div>
+              {appleNotice
+                ? (
+                  <div className="row visible-lg visible-md" style={{ width: '300px', paddingLeft: '10px' }}>
+                    <Body>
+                      {' '}
+                      <span dangerouslySetInnerHTML={{ __html: cons }} />
+                      <TextLink surface="light">
+                        {' '}
+                        <Modal
+                          toggleButton={<TextLink surface="light"> {common.getItemValue(pageItems,'appleModalLink')} </TextLink>}
+                          surface="light"
+                          fullScreenDialog={false}
+                          disableAnimation={false}
+                          disableOutsideClick={false}
+                          ariaLabel="Testing Modal"
+                        >
+                          <ModalTitle>
+                            {common.getItemValue(appleItems,'header')}<br />
+                            {common.getItemValue(appleItems,'subHeader1')}
+                          </ModalTitle>
+                          <ModalBody>
+                            <p>{common.getItemValue(appleItems,'header1')}</p>
+                            <br />
+                            <p dangerouslySetInnerHTML={{ __html: common.getItemValue(appleItems,'appleDevicesList') }} />
+                            
+                            <br />
+                            <h5>{common.getItemValue(appleItems,'subHeader1')}</h5>
+                            <br />
+                            <ol>
+                              <li>{common.getItemValue(appleItems,'desc1')}</li>
+                              <li>
+                                <div style={{ display: 'flex' }}>
+                                {common.getItemValue(appleItems,'subHeader')}<label style={{ textAlign: 'center', paddingLeft: '2px' }}>
+                                    <Toggle
+                                      disabled={false}
+                                      showText
+                                      on
+                                    />
+                                  </label>
+                                  {' '}
+                                  <span style={{ paddingLeft: '5px' }}>or</span>
+                                  {' '}
+                                  <label style={{ textAlign: 'center', paddingLeft: '2px' }}>
+                                    <Toggle
+                                      disabled={false}
+                                      on={false}
+                                      showText
+                                    />
+                                  </label>
+                                </div>
+                              </li>
+                            </ol>
+                          </ModalBody>
+                        </Modal>
+                        {' '}
+                      </TextLink>
+                      <br />
+                    </Body>
+                  </div>  
+                ) : null}
+            </div></Col>
+            <Col colSizes={{ desktop: 7, mobile: 4,tablet:12 }}><div style={{ width: '100%' }}><span style={{ fontSize: '13px' }}>
+            {common.getItemValue(pageItems,'selectServiceText')}</span>
+            <br />
+              <br />
+              {pageContent?.data?.isFamilyBase && <Alert Message={familybasemessage} URL={familybaseurl.baseUrl} Label={familybaseurl.baseUrlMsg} Type={1} familyBaseFlag={pageContent.isFamilyBase} closeBanner={false} />}
+              {showNotice ? <Alert Message={Message} Type={1} closeBanner /> : null}
+              <div className={!showNotice && !pageContent?.data?.isFamilyBase ? '' : 'disabled'} >
+                <BlockCallsMessages selectAccordian={this.selectAccordian} selectedAccordian={this.state.selectedAccordian} selectedDevice={this.state.selectedDevice} disabled={true} />
+              </div>
+              <div className={showNotice ? 'radio-choose--disabled' : ''}>
+                <BlockServices key={this.state.selectedDevice.mtn} selectAccordian={this.selectAccordian} selectedAccordian={this.state.selectedAccordian} selectedDevice={this.state.selectedDevice} />
+              </div></div></Col>
+          </Row>
+        </Grid>
+        <Line />
+        {this.showAdvanceControls
+          && (
+            <div>
+              <Line />
+              <br></br>
+              <AdvancedControls advanceControls={this.state.advanceControls} />
+            </div>
+          )
+        }
+      </div>
     );
-
-    // Verify appleNotice and Showmsg
-    expect(pageContent.data.isAppleDevice).toBe(true);
-    expect(pageContent.appleDeviceMessage).toBe('This is an Apple device message.');
-  });
-
-  it('should correctly retrieve values using common.getItemValue', () => {
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail pageItems={pageItems} pageContent={pageContent} />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    // Verify values retrieved by common.getItemValue
-    const cons = common.getItemValue(pageItems, 'appleDeviceMessage');
-    const familybasemessage = common.getItemValue(pageItems, 'familyBaseMessage');
-    const callsmessage = common.getItemValue(pageItems, 'dataOnlyMessage');
-
-    expect(cons).toBe('This is an Apple device message.');
-    expect(familybasemessage).toBe('This is a family base message.');
-    expect(callsmessage).toBe('This is a data-only message.');
-  });
-
-  it('should correctly map state to props', () => {
-    const { Detail } = store.getState();
-    expect(Detail.Details.isFetching).toBe(false);
-    expect(Detail.Details.deviceDetails.data.isAppleDevice).toBe(true);
-  });
-
-  it('should handle non-Apple devices correctly', () => {
-    // Re-initialize the mock store with the updated state for non-Apple devices
-    const mockStore = configureStore([]);
-    store = mockStore({
-      Detail: {
-        Details: {
-          isFetching: false,
-          deviceDetails: {
-            data: {
-              isAppleDevice: false, // Set isAppleDevice to false
-            },
-          },
-        },
-      },
-    });
-
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail pageItems={pageItems} pageContent={pageContent} />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    // Verify behavior for non-Apple devices
-    expect(store.getState().Detail.Details.deviceDetails.data.isAppleDevice).toBe(false);
-  });
-
-  it('should call getChannelId and return the correct value', () => {
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail pageItems={pageItems} pageContent={pageContent} />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    // Verify getChannelId is called
-    expect(common.getChannelId).toHaveBeenCalled();
-    expect(common.getChannelId()).toBe('mockChannelId');
-  });
-
-  it('should handle missing pageItems or pageContent gracefully', () => {
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail pageItems={null} pageContent={null} />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    // Verify no errors occur and component renders gracefully
-    expect(common.getItem).not.toHaveBeenCalled();
-    expect(common.getItemValue).not.toHaveBeenCalled();
-  });
+  }
+}
+const mapStateToProps = (store) => {
+  return {
+    isFetching: store.Detail.Details.isFetching,
+    deviceDetails: store.Detail.Details.deviceDetails,
+  };
+};
+const mapDispatchToProps = (dispatch) => ({
+  actions: bindActionCreators({ ...deviceDetailActions }, dispatch),
 });
-
+export default connect(mapStateToProps, mapDispatchToProps)(DeviceDetail);

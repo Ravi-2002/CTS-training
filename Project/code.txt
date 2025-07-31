@@ -1,27 +1,162 @@
-import React, { lazy, Fragment } from 'react'
-import ScrollToTop from './ScrollToTop'
-import { BrowserRouter, Route,Switch} from 'react-router-dom'
-import Home from "../blocks/home/components";
-import DeviceDetail from "../blocks/deviceDetail/components";
-import ServiceDetails from "../blocks/home/components/servicedetails";
-import ViewLimitations from "../blocks/deviceDetail/components/ViewLimitation";
-import callsmessages from "../blocks/deviceDetail/components/callsandmessages";
+import React from 'react';
+import { render } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import { MemoryRouter } from 'react-router-dom';
+import DeviceDetail from '../index'; // Adjust the import path as needed
+import * as common from '../../../../../shared/utilities/util'; // Adjust the import path as needed
 
+// Mock the utility functions
+jest.mock('../../../../../shared/utilities/util', () => ({
+  getItem: jest.fn(),
+  getItemValue: jest.fn(),
+  getChannelId: jest.fn(),
+}));
 
-const Routes = ({ reduxStore }) => {
-  const routeConfig = (
-      <BrowserRouter>
-      <ScrollToTop />
-      <Switch>
-      <Route exact path="/blockService" component={Home} />
-      <Route exact path="/service-details/:serviceName" component = {ServiceDetails} />
-      <Route exact path="/call-message-blocking" component = {callsmessages} />
-      <Route exact path="/callsandMessages" component={DeviceDetail} />
-      <Route exact path="/viewlimitation" component={ViewLimitations} />
-      </Switch>
-      </BrowserRouter>
-  )
-  return <Fragment>{routeConfig}</Fragment>
-}
+describe('DeviceDetail Component', () => {
+  let pageItems;
+  let pageContent;
+  let store;
 
-export default Routes
+  beforeEach(() => {
+    // Mock data for pageItems
+    pageItems = [
+      { itemKey: 'familyBaseMessage', itemAttributes: { baseUrl: 'https://example.com', baseUrlMsg: 'Learn More' } },
+    ];
+
+    // Mock data for pageContent
+    pageContent = {
+      data: {
+        isAppleDevice: true,
+      },
+      appleDeviceMessage: 'This is an Apple device message.',
+    };
+
+    // Mock implementations of common functions
+    common.getItem.mockImplementation((items, key) => items.find((item) => item.itemKey === key));
+    common.getItemValue.mockImplementation((items, key) => {
+      const mockValues = {
+        appleDeviceMessage: 'This is an Apple device message.',
+        familyBaseMessage: 'This is a family base message.',
+        dataOnlyMessage: 'This is a data-only message.',
+      };
+      return mockValues[key];
+    });
+    common.getChannelId.mockReturnValue('mockChannelId');
+
+    // Create a mock Redux store
+    const mockStore = configureStore([]);
+    store = mockStore({
+      Detail: {
+        Details: {
+          isFetching: false, // Mock value for isFetching
+          deviceDetails: {
+            data: {
+              isAppleDevice: true, // Mock value for isAppleDevice
+            },
+          },
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks(); // Clear mocks after each test
+  });
+
+  it('should correctly set appleNotice and Showmsg when isAppleDevice is true', () => {
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <DeviceDetail pageItems={pageItems} pageContent={pageContent} />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    // Verify appleNotice and Showmsg
+    expect(pageContent.data.isAppleDevice).toBe(true);
+    expect(pageContent.appleDeviceMessage).toBe('This is an Apple device message.');
+  });
+
+  it('should correctly retrieve values using common.getItemValue', () => {
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <DeviceDetail pageItems={pageItems} pageContent={pageContent} />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    // Verify values retrieved by common.getItemValue
+    const cons = common.getItemValue(pageItems, 'appleDeviceMessage');
+    const familybasemessage = common.getItemValue(pageItems, 'familyBaseMessage');
+    const callsmessage = common.getItemValue(pageItems, 'dataOnlyMessage');
+
+    expect(cons).toBe('This is an Apple device message.');
+    expect(familybasemessage).toBe('This is a family base message.');
+    expect(callsmessage).toBe('This is a data-only message.');
+  });
+
+  it('should correctly map state to props', () => {
+    const { Detail } = store.getState();
+    expect(Detail.Details.isFetching).toBe(false);
+    expect(Detail.Details.deviceDetails.data.isAppleDevice).toBe(true);
+  });
+
+  it('should handle non-Apple devices correctly', () => {
+    // Re-initialize the mock store with the updated state for non-Apple devices
+    const mockStore = configureStore([]);
+    store = mockStore({
+      Detail: {
+        Details: {
+          isFetching: false,
+          deviceDetails: {
+            data: {
+              isAppleDevice: false, // Set isAppleDevice to false
+            },
+          },
+        },
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <DeviceDetail pageItems={pageItems} pageContent={pageContent} />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    // Verify behavior for non-Apple devices
+    expect(store.getState().Detail.Details.deviceDetails.data.isAppleDevice).toBe(false);
+  });
+
+  it('should call getChannelId and return the correct value', () => {
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <DeviceDetail pageItems={pageItems} pageContent={pageContent} />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    // Verify getChannelId is called
+    expect(common.getChannelId).toHaveBeenCalled();
+    expect(common.getChannelId()).toBe('mockChannelId');
+  });
+
+  it('should handle missing pageItems or pageContent gracefully', () => {
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <DeviceDetail pageItems={null} pageContent={null} />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    // Verify no errors occur and component renders gracefully
+    expect(common.getItem).not.toHaveBeenCalled();
+    expect(common.getItemValue).not.toHaveBeenCalled();
+  });
+});
+

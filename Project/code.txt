@@ -1,193 +1,109 @@
-import React from 'react';
-import { render, fireEvent, screen, waitFor } from '@testing-library/react';
-import BlockServices from '../index'; // adjust if your path differs
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import thunk from 'redux-thunk';
-import { MemoryRouter } from 'react-router-dom';
-import * as common from '../../../../../shared/utilities/util';
-import * as actions from '../../actions/blockServicesActions';
+FAIL  src/app/blocks/deviceDetail/components/Test/blockService.test.js (5.852 s)
+  ● BlockServices Component › renders correctly with service list and handles toggle                        
+                                                                                                            
+    TypeError: middleware is not a function                                                                 
+                                                                                                            
+      24 |                                                                                                  
+      25 |   beforeEach(() => {                                                                             
+    > 26 |     store = mockStore({                                                                          
+         |             ^
+      27 |       Home: {
+      28 |         getServicesResponse: {
+      29 |           status: 200,
 
-// Mock VDS component
-jest.mock('@vds/alert', () => ({ Alert: ({ children }) => <div>{children}</div> }));
-jest.mock('@vds/toggle', () => ({ Toggle: ({ toggled, onToggle }) => (
-  <button data-testid="toggle" onClick={() => onToggle(!toggled)}>
-    {toggled ? 'ON' : 'OFF'}
-  </button>
-)}));
-jest.mock('@vds/typography', () => ({
-  Body: ({ children }) => <div>{children}</div>,
-  Heading: ({ children }) => <div>{children}</div>,
-}));
-jest.mock('@vds/spinner', () => ({ Spinner: () => <div>Loading...</div> }));
-jest.mock('@vds/link', () => ({ Link: ({ children, onClick }) => (
-  <a href="#" onClick={onClick}>{children}</a>
-)}));
+      at middleware (node_modules/redux/src/applyMiddleware.ts:54:49)
+          at Array.map (<anonymous>)
+      at map (node_modules/redux/src/applyMiddleware.ts:54:31)
+      at mockStoreWithMiddleware (node_modules/redux-mock-store/dist/index-cjs.js:110:12)
+      at Object.mockStore (src/app/blocks/deviceDetail/components/Test/blockService.test.js:26:13)
 
-// Mock utils
-jest.mock('../../../../../shared/utilities/util', () => ({
-  getItemValue: jest.fn(),
-  getContentFromSection: jest.fn(),
-  getChannelId: jest.fn(),
-  mtnFormat: jest.fn((value) => `formatted-${value}`),
-}));
+  ● BlockServices Component › displays success message on post response
 
-const mockStore = configureStore([thunk]);
+    TypeError: middleware is not a function
 
-describe('BlockServices Component', () => {
-  let store;
+      24 |
+      25 |   beforeEach(() => {
+    > 26 |     store = mockStore({
+         |             ^
+      27 |       Home: {
+      28 |         getServicesResponse: {
+      29 |           status: 200,
 
-  beforeEach(() => {
-    store = mockStore({
-      Home: {
-        getServicesResponse: {
-          status: 200,
-          responseCode: '00',
-          serviceList: [
-            {
-              serviceName: 'Voicemail',
-              serviceStatus: 'Active',
-              type: 'CALL',
-              subType: 'VOICEMAIL',
-              displayName: 'Voicemail Service',
-            },
-            {
-              serviceName: 'International Calling',
-              serviceStatus: 'Inactive',
-              type: 'CALL',
-              subType: 'INTL',
-              displayName: 'International Calling',
-            },
-          ],
-        },
-        postServicesResponse: {
-          status: 200,
-          responseCode: '00',
-          message: 'Service updated successfully.',
-        },
-        postError: '',
-      },
-      Detail: {
-        blockServices: {
-          aemResponse: {
-            sections: [
-              {
-                name: 'blockServiceLandingSection',
-                items: [{ key: 'backToDevicePage', value: '/device' }],
-              },
-              {
-                name: 'blockServiceHeaderSection',
-                items: [{ key: 'blockServiceTitle', value: 'Manage Your Services' }],
-              },
-            ],
-          },
-        },
-      },
-    });
+      at middleware (node_modules/redux/src/applyMiddleware.ts:54:49)
+          at Array.map (<anonymous>)
+      at map (node_modules/redux/src/applyMiddleware.ts:54:31)
+      at mockStoreWithMiddleware (node_modules/redux-mock-store/dist/index-cjs.js:110:12)
+      at Object.mockStore (src/app/blocks/deviceDetail/components/Test/blockService.test.js:26:13)
 
-    // Mock utility return values
-    common.getContentFromSection.mockImplementation((content, sectionName) => {
-      return content.sections.find(sec => sec.name === sectionName);
-    });
+  ● BlockServices Component › displays error message on post failure
 
-    common.getItemValue.mockImplementation((items, key) => {
-      const item = items.find(i => i.key === key);
-      return item ? item.value : '';
-    });
+    TypeError: middleware is not a function
 
-    common.getChannelId.mockReturnValue('VZW');
-  });
+      24 |
+      25 |   beforeEach(() => {
+    > 26 |     store = mockStore({
+         |             ^
+      27 |       Home: {
+      28 |         getServicesResponse: {
+      29 |           status: 200,
 
-  it('renders correctly with service list and handles toggle', async () => {
-    const { container } = render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <BlockServices />
-        </MemoryRouter>
-      </Provider>
-    );
+      at middleware (node_modules/redux/src/applyMiddleware.ts:54:49)
+          at Array.map (<anonymous>)
+      at map (node_modules/redux/src/applyMiddleware.ts:54:31)
+      at mockStoreWithMiddleware (node_modules/redux-mock-store/dist/index-cjs.js:110:12)
+      at Object.mockStore (src/app/blocks/deviceDetail/components/Test/blockService.test.js:26:13)
 
-    expect(screen.getByText('Manage Your Services')).toBeInTheDocument();
-    expect(screen.getByText('Voicemail Service')).toBeInTheDocument();
-    expect(screen.getByText('International Calling')).toBeInTheDocument();
+  ● BlockServices Component › navigates back to device page
 
-    const toggleButtons = screen.getAllByTestId('toggle');
-    expect(toggleButtons.length).toBe(2);
+    TypeError: middleware is not a function
 
-    // Fire toggle event
-    fireEvent.click(toggleButtons[0]);
+      24 |
+      25 |   beforeEach(() => {
+    > 26 |     store = mockStore({
+         |             ^
+      27 |       Home: {
+      28 |         getServicesResponse: {
+      29 |           status: 200,
 
-    const actionsDispatched = store.getActions();
-    expect(actionsDispatched.some(action => action.type.includes('POST_SERVICES'))).toBe(true);
+      at middleware (node_modules/redux/src/applyMiddleware.ts:54:49)
+          at Array.map (<anonymous>)
+      at map (node_modules/redux/src/applyMiddleware.ts:54:31)
+      at mockStoreWithMiddleware (node_modules/redux-mock-store/dist/index-cjs.js:110:12)
+      at Object.mockStore (src/app/blocks/deviceDetail/components/Test/blockService.test.js:26:13)
 
-    expect(container).toMatchSnapshot();
-  });
+  ● BlockServices Component › renders loading state when getServices is not yet loaded
 
-  it('displays success message on post response', () => {
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <BlockServices />
-        </MemoryRouter>
-      </Provider>
-    );
+    TypeError: middleware is not a function
 
-    expect(screen.getByText('Service updated successfully.')).toBeInTheDocument();
-  });
+      24 |
+      25 |   beforeEach(() => {
+    > 26 |     store = mockStore({
+         |             ^
+      27 |       Home: {
+      28 |         getServicesResponse: {
+      29 |           status: 200,
 
-  it('displays error message on post failure', () => {
-    const errorStore = {
-      ...store.getState(),
-      Home: {
-        ...store.getState().Home,
-        postError: 'An error occurred',
-      },
-    };
+      at middleware (node_modules/redux/src/applyMiddleware.ts:54:49)
+          at Array.map (<anonymous>)
+      at map (node_modules/redux/src/applyMiddleware.ts:54:31)
+      at mockStoreWithMiddleware (node_modules/redux-mock-store/dist/index-cjs.js:110:12)
+      at Object.mockStore (src/app/blocks/deviceDetail/components/Test/blockService.test.js:26:13)
 
-    render(
-      <Provider store={mockStore(errorStore)}>
-        <MemoryRouter>
-          <BlockServices />
-        </MemoryRouter>
-      </Provider>
-    );
+📦 report is created on: C:\Users\xsklra\CXTDT-698840\onevz-soe-digital-devices-dotcom-static\app\jest_html_reporters.html
+Test Suites: 1 failed, 1 total
+Tests:       5 failed, 5 total
+Snapshots:   0 total
+Time:        9.67 s, estimated 10 s
 
-    expect(screen.getByText('An error occurred')).toBeInTheDocument();
-  });
+Active Filters: filename /blockService.test.js/
+ › Press c to clear filters.
 
-  it('navigates back to device page', () => {
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <BlockServices />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    const backLink = screen.getByText('Back');
-    expect(backLink).toBeInTheDocument();
-
-    fireEvent.click(backLink); // You can spy on useNavigate if needed
-  });
-
-  it('renders loading state when getServices is not yet loaded', () => {
-    const loadingStore = {
-      ...store.getState(),
-      Home: {
-        getServicesResponse: null,
-        postServicesResponse: null,
-        postError: '',
-      },
-    };
-
-    render(
-      <Provider store={mockStore(loadingStore)}>
-        <MemoryRouter>
-          <BlockServices />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-  });
-});
+Watch Usage
+ › Press a to run all tests.
+ › Press f to run only failed tests.
+ › Press o to only run tests related to changed files.
+ › Press q to quit watch mode.
+ › Press i to run failing tests interactively.
+ › Press p to filter by a filename regex pattern.
+ › Press t to filter by a test name regex pattern.
+ › Press Enter to trigger a test run.

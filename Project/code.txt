@@ -181,4 +181,13 @@ describe('BlockServices Component', () => {
     };
 
     render(
-      <Provider store={
+      <Provider store={mockStore(loadingStore)}>
+        <MemoryRouter>
+          <BlockServices />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+});

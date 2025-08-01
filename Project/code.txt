@@ -31,7 +31,7 @@ const mockLocationState = {
 };
 
 const mockActions = {
-  getDeviceDetail: jest.fn(), // async action
+  getDeviceDetail: jest.fn(), // mocked function to prevent Redux error
 };
 
 describe('DeviceDetail', () => {

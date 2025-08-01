@@ -4,7 +4,7 @@ import DeviceDetail from '../index';
 import { Provider } from 'react-redux';
 import configureStore from 'redux-mock-store';
 import { MemoryRouter } from 'react-router-dom';
-import * as common from '../../../../../shared/utilities/util'; // Adjust the import path as needed
+import * as common from '../../../../../shared/utilities/util';
 
 const mockStore = configureStore([]);
 
@@ -16,9 +16,7 @@ jest.mock('../../../../../shared/utilities/util', () => ({
     return found ? found.value : '';
   }),
   getContentFromSection: jest.fn(() => ({
-    data: {
-      isAppleDevice: true,
-    },
+    data: { isAppleDevice: true },
     appleDeviceMessage: 'This is an Apple device message.',
     sections: [],
   })),
@@ -32,6 +30,10 @@ const mockLocationState = {
   showAdvanceControls: false,
 };
 
+const mockActions = {
+  getDeviceDetail: jest.fn(), // async action
+};
+
 describe('DeviceDetail', () => {
   let store;
   let pageItems;
@@ -41,16 +43,16 @@ describe('DeviceDetail', () => {
     store = mockStore({
       Detail: {
         callsMsgs: {
-          callsMessages: ['Message 1', 'Message 2'], // Mock value for callsMessages
-          blockedNumbers: ['1234567890'], // Mock value for blockedNumbers
-          expiredNumbers: ['0987654321'], // Mock value for expiredNumbers
-          getCMError: null, // Mock value for getCMError
+          callsMessages: ['Message 1', 'Message 2'],
+          blockedNumbers: ['1234567890'],
+          expiredNumbers: ['0987654321'],
+          getCMError: null,
         },
         Details: {
-          isFetching: false, // Mock value for isFetching
+          isFetching: false,
           deviceDetails: {
             data: {
-              isAppleDevice: true, // Mock value for isAppleDevice
+              isAppleDevice: true,
             },
           },
         },
@@ -82,25 +84,10 @@ describe('DeviceDetail', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks(); // Clear mocks after each test
+    jest.clearAllMocks();
   });
 
-  it('renders without crashing', () => {
-    const { getByText } = render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail
-            pageItems={pageItems}
-            pageContent={pageContent}
-            location={{ state: mockLocationState }}
-          />
-        </MemoryRouter>
-      </Provider>
-    );
-    expect(getByText('iPhone 13')).toBeInTheDocument();
-  });
-
-  it('should correctly set appleNotice and Showmsg when isAppleDevice is true', () => {
+  const renderComponent = (customProps = {}) =>
     render(
       <Provider store={store}>
         <MemoryRouter>
@@ -108,107 +95,69 @@ describe('DeviceDetail', () => {
             pageItems={pageItems}
             pageContent={pageContent}
             location={{ state: mockLocationState }}
+            actions={mockActions}
+            {...customProps}
           />
         </MemoryRouter>
       </Provider>
     );
+
+  it('renders without crashing', () => {
+    const { getByText } = renderComponent();
+    expect(getByText('iPhone 13')).toBeInTheDocument();
+  });
+
+  it('should correctly set appleNotice and Showmsg when isAppleDevice is true', () => {
+    renderComponent();
     expect(pageContent.data.isAppleDevice).toBe(true);
     expect(pageContent.appleDeviceMessage).toBe('This is an Apple device message.');
   });
 
   it('renders with empty pageItems and pageContent gracefully', () => {
-    const { container } = render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail
-            pageItems={[]}
-            pageContent={{}}
-            location={{ state: mockLocationState }}
-          />
-        </MemoryRouter>
-      </Provider>
-    );
+    const { container } = renderComponent({
+      pageItems: [],
+      pageContent: {},
+    });
     expect(container).toBeDefined();
   });
 
   it('handles null pageItems and pageContent gracefully', () => {
-    const { container } = render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail
-            pageItems={null}
-            pageContent={null}
-            location={{ state: mockLocationState }}
-          />
-        </MemoryRouter>
-      </Provider>
-    );
+    const { container } = renderComponent({
+      pageItems: null,
+      pageContent: null,
+    });
     expect(container).toBeDefined();
   });
 
   it('handles null location.state gracefully', () => {
-    const { container } = render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail
-            pageItems={pageItems}
-            pageContent={pageContent}
-            location={{ state: null }}
-          />
-        </MemoryRouter>
-      </Provider>
-    );
+    const { container } = renderComponent({
+      location: { state: null },
+    });
     expect(container).toBeDefined();
   });
 
   it('handles undefined location.state gracefully', () => {
-    const { container } = render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail
-            pageItems={pageItems}
-            pageContent={pageContent}
-            location={{}}
-          />
-        </MemoryRouter>
-      </Provider>
-    );
+    const { container } = renderComponent({
+      location: {},
+    });
     expect(container).toBeDefined();
   });
 
   it('handles non-Apple devices correctly', () => {
     pageContent.data.isAppleDevice = false;
     pageContent.appleDeviceMessage = '';
-
-    const { queryByText } = render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail
-            pageItems={pageItems}
-            pageContent={pageContent}
-            location={{ state: mockLocationState }}
-          />
-        </MemoryRouter>
-      </Provider>
-    );
-
+    const { queryByText } = renderComponent();
     expect(queryByText('This is an Apple device message.')).not.toBeInTheDocument();
   });
 
   it('calls getChannelId and returns the correct value', () => {
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail
-            pageItems={pageItems}
-            pageContent={pageContent}
-            location={{ state: mockLocationState }}
-          />
-        </MemoryRouter>
-      </Provider>
-    );
-
+    renderComponent();
     expect(common.getChannelId).toHaveBeenCalled();
     expect(common.getChannelId()).toBe('mocked-channel-id');
+  });
+
+  it('calls getDeviceDetail if selectedDevice is present', () => {
+    renderComponent();
+    expect(mockActions.getDeviceDetail).toHaveBeenCalledWith('encrypted-value');
   });
 });

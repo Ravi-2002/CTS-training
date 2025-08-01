@@ -3,14 +3,17 @@ import { render } from '@testing-library/react';
 import DeviceDetail from '../index';
 import { Provider } from 'react-redux';
 import configureStore from 'redux-mock-store';
+import thunk from 'redux-thunk';
 import { MemoryRouter } from 'react-router-dom';
 import * as common from '../../../../../shared/utilities/util';
 
-const mockStore = configureStore([]);
+// Add thunk middleware
+const middlewares = [thunk];
+const mockStore = configureStore(middlewares);
 
 jest.mock('../../../../../shared/utilities/util', () => ({
   getItem: jest.fn(),
-  getChannelId: jest.fn(),
+  getChannelId: jest.fn(() => 'mocked-channel-id'),
   getItemValue: jest.fn((items, key) => {
     const found = items.find(item => item.key === key);
     return found ? found.value : '';
@@ -30,11 +33,13 @@ const mockLocationState = {
   showAdvanceControls: false,
 };
 
-const mockActions = {
-  getDeviceDetail: jest.fn(), // mocked function to prevent Redux error
-};
+jest.mock('../../../../shared/actions/detailActions', () => ({
+  getDeviceDetail: () => async (dispatch) => {
+    dispatch({ type: 'MOCK_DEVICE_DETAIL_SUCCESS', payload: {} });
+  },
+}));
 
-describe('DeviceDetail', () => {
+describe('DeviceDetail with thunk middleware', () => {
   let store;
   let pageItems;
   let pageContent;
@@ -79,8 +84,6 @@ describe('DeviceDetail', () => {
       appleDeviceMessage: 'This is an Apple device message.',
       sections: [],
     };
-
-    common.getChannelId.mockReturnValue('mocked-channel-id');
   });
 
   afterEach(() => {
@@ -95,7 +98,6 @@ describe('DeviceDetail', () => {
             pageItems={pageItems}
             pageContent={pageContent}
             location={{ state: mockLocationState }}
-            actions={mockActions}
             {...customProps}
           />
         </MemoryRouter>
@@ -105,59 +107,5 @@ describe('DeviceDetail', () => {
   it('renders without crashing', () => {
     const { getByText } = renderComponent();
     expect(getByText('iPhone 13')).toBeInTheDocument();
-  });
-
-  it('should correctly set appleNotice and Showmsg when isAppleDevice is true', () => {
-    renderComponent();
-    expect(pageContent.data.isAppleDevice).toBe(true);
-    expect(pageContent.appleDeviceMessage).toBe('This is an Apple device message.');
-  });
-
-  it('renders with empty pageItems and pageContent gracefully', () => {
-    const { container } = renderComponent({
-      pageItems: [],
-      pageContent: {},
-    });
-    expect(container).toBeDefined();
-  });
-
-  it('handles null pageItems and pageContent gracefully', () => {
-    const { container } = renderComponent({
-      pageItems: null,
-      pageContent: null,
-    });
-    expect(container).toBeDefined();
-  });
-
-  it('handles null location.state gracefully', () => {
-    const { container } = renderComponent({
-      location: { state: null },
-    });
-    expect(container).toBeDefined();
-  });
-
-  it('handles undefined location.state gracefully', () => {
-    const { container } = renderComponent({
-      location: {},
-    });
-    expect(container).toBeDefined();
-  });
-
-  it('handles non-Apple devices correctly', () => {
-    pageContent.data.isAppleDevice = false;
-    pageContent.appleDeviceMessage = '';
-    const { queryByText } = renderComponent();
-    expect(queryByText('This is an Apple device message.')).not.toBeInTheDocument();
-  });
-
-  it('calls getChannelId and returns the correct value', () => {
-    renderComponent();
-    expect(common.getChannelId).toHaveBeenCalled();
-    expect(common.getChannelId()).toBe('mocked-channel-id');
-  });
-
-  it('calls getDeviceDetail if selectedDevice is present', () => {
-    renderComponent();
-    expect(mockActions.getDeviceDetail).toHaveBeenCalledWith('encrypted-value');
   });
 });

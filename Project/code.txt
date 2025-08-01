@@ -1,20 +1,16 @@
 import React from 'react';
 import { render } from '@testing-library/react';
-import DeviceDetail from '../DeviceDetail';
+import DeviceDetail from '../index';
 import { Provider } from 'react-redux';
 import configureStore from 'redux-mock-store';
 import { MemoryRouter } from 'react-router-dom';
-import * as util from '../../../../shared/js/util';
-import * as common from '../../../../shared/js/common';
+import * as common from '../../../../../shared/utilities/util'; // Adjust the import path as needed
 
 const mockStore = configureStore([]);
 
-jest.mock('../../../../shared/js/util', () => ({
-  getChannelId: jest.fn(() => 'VZW'),
-  getItem: jest.fn(() => 'dummyItem'),
-}));
-
-jest.mock('../../../../shared/js/common', () => ({
+jest.mock('../../../../../shared/utilities/util', () => ({
+  getItem: jest.fn(),
+  getChannelId: jest.fn(),
   getItemValue: jest.fn((items, key) => {
     const found = items.find(item => item.key === key);
     return found ? found.value : '';
@@ -37,31 +33,57 @@ const mockLocationState = {
 };
 
 describe('DeviceDetail', () => {
-  const store = mockStore({
-    Detail: {
-      deviceDetails: {
-        model: 'iPhone 13',
-        manufacturer: 'Apple',
+  let store;
+  let pageItems;
+  let pageContent;
+
+  beforeEach(() => {
+    store = mockStore({
+      Detail: {
+        callsMsgs: {
+          callsMessages: ['Message 1', 'Message 2'], // Mock value for callsMessages
+          blockedNumbers: ['1234567890'], // Mock value for blockedNumbers
+          expiredNumbers: ['0987654321'], // Mock value for expiredNumbers
+          getCMError: null, // Mock value for getCMError
+        },
+        Details: {
+          isFetching: false, // Mock value for isFetching
+          deviceDetails: {
+            data: {
+              isAppleDevice: true, // Mock value for isAppleDevice
+            },
+          },
+        },
+        deviceDetails: {
+          model: 'iPhone 13',
+          manufacturer: 'Apple',
+        },
+        activeDevice: {
+          deviceId: '123456',
+          deviceType: 'Smartphone',
+        },
       },
-      activeDevice: {
-        deviceId: '123456',
-        deviceType: 'Smartphone',
+    });
+
+    pageItems = [
+      { key: 'model', value: 'iPhone 13' },
+      { key: 'manufacturer', value: 'Apple' },
+    ];
+
+    pageContent = {
+      data: {
+        isAppleDevice: true,
       },
-    },
+      appleDeviceMessage: 'This is an Apple device message.',
+      sections: [],
+    };
+
+    common.getChannelId.mockReturnValue('mocked-channel-id');
   });
 
-  const pageItems = [
-    { key: 'model', value: 'iPhone 13' },
-    { key: 'manufacturer', value: 'Apple' },
-  ];
-
-  const pageContent = {
-    data: {
-      isAppleDevice: true,
-    },
-    appleDeviceMessage: 'This is an Apple device message.',
-    sections: [],
-  };
+  afterEach(() => {
+    jest.clearAllMocks(); // Clear mocks after each test
+  });
 
   it('renders without crashing', () => {
     const { getByText } = render(
@@ -152,5 +174,41 @@ describe('DeviceDetail', () => {
       </Provider>
     );
     expect(container).toBeDefined();
+  });
+
+  it('handles non-Apple devices correctly', () => {
+    pageContent.data.isAppleDevice = false;
+    pageContent.appleDeviceMessage = '';
+
+    const { queryByText } = render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <DeviceDetail
+            pageItems={pageItems}
+            pageContent={pageContent}
+            location={{ state: mockLocationState }}
+          />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(queryByText('This is an Apple device message.')).not.toBeInTheDocument();
+  });
+
+  it('calls getChannelId and returns the correct value', () => {
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <DeviceDetail
+            pageItems={pageItems}
+            pageContent={pageContent}
+            location={{ state: mockLocationState }}
+          />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(common.getChannelId).toHaveBeenCalled();
+    expect(common.getChannelId()).toBe('mocked-channel-id');
   });
 });

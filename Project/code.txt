@@ -1,111 +1,466 @@
-import React from 'react';
-import { render } from '@testing-library/react';
-import DeviceDetail from '../index';
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import thunk from 'redux-thunk';
-import { MemoryRouter } from 'react-router-dom';
-import * as common from '../../../../../shared/utilities/util';
+import React, { Component } from "react";
+import { connect } from 'react-redux'
+import * as actions from '../../actions/fetchServices';
+import { bindActionCreators } from 'redux';
+import styled from "styled-components";
 
-// Add thunk middleware
-const middlewares = [thunk];
-const mockStore = configureStore(middlewares);
+import './style.css';
+import Alert from '../../../alert';
+import BSEmailDomains from "../blocksEmailDomains/BSEmailDomains";
+import { Modal, ModalBody, ModalFooter, ModalTitle } from "@vds/modals";
+import { Button, TextLink } from "@vds/buttons";
+import common from '../../../../../shared/utilities/util';
+import { Link } from "react-router-dom/cjs/react-router-dom.min";
+import { Body, Title } from "@vds/typography";
+import { Loader } from "@vds/loaders";
+import { Toggle } from "@vds/toggles";
+import { Col, Grid, Row } from "@vds/grids";
 
-jest.mock('../../../../../shared/utilities/util', () => ({
-  getItem: jest.fn(),
-  getChannelId: jest.fn(() => 'mocked-channel-id'),
-  getItemValue: jest.fn((items, key) => {
-    const found = items.find(item => item.key === key);
-    return found ? found.value : '';
-  }),
-  getContentFromSection: jest.fn(() => ({
-    data: { isAppleDevice: true },
-    appleDeviceMessage: 'This is an Apple device message.',
-    sections: [],
-  })),
-}));
+const BLOCK_EMAIL_DOMAIN = 'Emails & domains';
 
-const mockLocationState = {
-  devices: ['Device1', 'Device2'],
-  isSingleDevice: false,
-  selectedDevice: { encryptedMtn: 'encrypted-value' },
-  advanceControls: {},
-  showAdvanceControls: false,
-};
+class BlockServices extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      open: false,
+      services: {},
+      openSub: false,
+      modalStatus: false,
+      status:'',
+      longDesc: "",
+      shortDesc: "",
+      featureName: "",
+      successMsg:"",
+      loading:"",
+    }
+  }
 
-jest.mock('../../../../shared/actions/detailActions', () => ({
-  getDeviceDetail: () => async (dispatch) => {
-    dispatch({ type: 'MOCK_DEVICE_DETAIL_SUCCESS', payload: {} });
-  },
-}));
+  handleServices(e, accordion) {
+    e.preventDefault();
+    if (accordion === 'BS') {
+      window.scrollTo(0,0);
+      this.props.selectAccordian('BS')
+      this.props.actions.getServices(this.props.selectedDevice.encryptedMtn)
+    }
+  };
 
-describe('DeviceDetail with thunk middleware', () => {
-  let store;
-  let pageItems;
-  let pageContent;
+  componentDidUpdate(prevProps) {
+    if (
+      prevProps.services !== this.props.services &&
+      this.props.services &&
+      Object.keys(this.props.services).length > 0
+    ) {
+      const obj = {};
+      const additionalSer = "Additional Services";
+      let isAdditionalServiceAvailable = false;
+      const emailDomainObj = { [BLOCK_EMAIL_DOMAIN]: { isExpand: false } };
+  
+      Object.keys(this.props.services).forEach((key) => {
+        this.props.services[key].forEach((item) => {
+          item.showMore = false;
+        });
+  
+        if (key === additionalSer) isAdditionalServiceAvailable = true;
+  
+        obj[key] = {
+          isExpand: false,
+          data: this.props.services[key],
+        };
+      });
+  
+      const { [additionalSer]: additionalService, ...rest } = obj;
+  
+      this.setState({
+        services: isAdditionalServiceAvailable
+          ? { ...emailDomainObj, ...rest, [additionalSer]: additionalService }
+          : { ...emailDomainObj, ...rest },
+      });
+    }
+  }
 
-  beforeEach(() => {
-    store = mockStore({
-      Detail: {
-        callsMsgs: {
-          callsMessages: ['Message 1', 'Message 2'],
-          blockedNumbers: ['1234567890'],
-          expiredNumbers: ['0987654321'],
-          getCMError: null,
-        },
-        Details: {
-          isFetching: false,
-          deviceDetails: {
-            data: {
-              isAppleDevice: true,
-            },
-          },
-        },
-        deviceDetails: {
-          model: 'iPhone 13',
-          manufacturer: 'Apple',
-        },
-        activeDevice: {
-          deviceId: '123456',
-          deviceType: 'Smartphone',
-        },
-      },
+  handleSubServices(e, service) {
+    e.preventDefault();
+    const services = this.state.services;
+    Object.keys(this.state.services).forEach((key) => {
+      if(key==service){
+        services[key].isExpand = !services[key].isExpand;
+      }else{
+        services[key].isExpand = false;
+      }
     });
+    this.setState({
+      services
+    })
+  }
+  toggleOn(e, service, i) {
+    const { selectedDevice } = this.props
+    const { services } = this.state
+    e.preventDefault();
+    this.setState({
 
-    pageItems = [
-      { key: 'model', value: 'iPhone 13' },
-      { key: 'manufacturer', value: 'Apple' },
-    ];
+      successMsg:"",
+      loading:true
+    })
+    const newsfoEnabled =services[service].data[i].sfoEnabled == "Y" ? "N" : "Y";
+    const payload = {
+      "mdn": selectedDevice.encryptedMtn,
+      "sfoCode": services[service].data[i].sfoCode,
+      "sfoEnabled": newsfoEnabled
+    }
+    this.props.actions.postServices(payload).then((response) => {
+      // window.scrollTo( 0,elmnt.offsetTop);
+       setTimeout(()=>{
 
-    pageContent = {
-      data: {
-        isAppleDevice: true,
-      },
-      appleDeviceMessage: 'This is an Apple device message.',
-      sections: [],
-    };
-  });
+        if (this.props.confirmServices && this.props.confirmServices?.responseInfo?.responseCode=="00") {
+          if (services[service].data[i].sfoEnabled == "Y") {
+            services[service].data[i].sfoEnabled = "N"
+            this.setState({
+              services,
+              updatedService: services[service].data[i].sfoCode
+            })
+          }
+          else if (services[service].data[i].sfoEnabled == "N") {
+            services[service].data[i].sfoEnabled = "Y"
+            this.setState({
+              services,
+              updatedService: services[service].data[i].sfoCode
+            })
+          }
+          this.setState({
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+            successMsg:"We have successfully saved settings for "+'"'+services[service].data[i].serviceName+'"'
+          })
+        }
+        this.setState({
+          status:true,
+          loading:false
+        })        
+      },20000);
+    })
+  }
+  closePupup=(e)=>{
+    debugger;
+    this.setState({
+      showPopup:false,
+    })
+  }
+  render() {
+    const { services,showPopup,successMsg,status,loading } = this.state;
+    const { isFetching, confirmServices, servicesError, failServices, serviceFail} = this.props
+    let pageContent;
+    if (this.props?.serviceStatus && this.props?.serviceStatus?.body?.sections) {
+      pageContent = common.getContentFromSection(this.props?.serviceStatus?.body,'devicesBlocksMainSection');     
+      if(pageContent){
+        pageContent = pageContent?.sections?.[0];
+      }else {
+        window.location.reload();
+      }
+    }
+    let enableManageBlockserviceLinkFlag = common.getItemValue(this.props?.serviceStatus?.body?.pageAttributes,'enableManageBlockserviceLinkFlag')==='true';
+    const pageItems = pageContent && pageContent?.contents && pageContent?.contents?.[0]?.items;
+    const pageActions = pageContent && pageContent?.actions;
+    let showNotice = false
+    let Message = ""
+    let Type = ""
+    let trackingId = ""
+    if(this.props.serviceFail && this.props.serviceFail){
+      showNotice = true,
+        Message = this.props.failServices && failServices.errorMessage ? failServices.errorMessage:"Something went wrong, Please try again later",
+        Type = 3,
+        trackingId = "blockServicesFailureNotification"
+    }
+    else if(this.props.serviceErrorFlag && status && this.props.serviceErrorFlag == true){
+      showNotice = true,
+        Message = this.props.servicesError && servicesError ?  this.props.servicesError?.internalErrors?.[0]?.errorMessage : "Something went wrong, Please try again later!",
+        Type = 3,
+        trackingId = "blockServicesFailureNotification"
+    }
 
-  const renderComponent = (customProps = {}) =>
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <DeviceDetail
-            pageItems={pageItems}
-            pageContent={pageContent}
-            location={{ state: mockLocationState }}
-            {...customProps}
-          />
-        </MemoryRouter>
-      </Provider>
+    else if(this.props.confirmServiceFlag &&status&& this.props.confirmServiceFlag == true){
+      showNotice = true,
+        Message = this.props.confirmServices && confirmServices ? successMsg : 'Sucessfully blocked',
+        Type = 2,
+        trackingId = "blockServicesSuccessNotification"
+    }
+    return (
+      <div className="accordion">
+        <div className="accordion__item">
+          <div className="accordion__title"
+            role="button"
+            tabIndex="0" onClick={(e) => this.handleServices(e, 'BS')} onKeyPress={(e) => this.handleServices(e, 'BS')}
+            aria-expanded={this.props.selectedAccordian == 'BS' ? true : false}
+          >
+            <div className="u-position-relative">
+              <div className="accordion-title">
+                <FAQsHeadSection id="blockservices" data-testid="BlockServicesTestId">
+                  Block services
+                </FAQsHeadSection>
+              </div>
+              <div
+                id="blockservice"
+                className="accordion__arrow"
+                role="presentation"
+              />
+            </div>
+          </div>
+          <div data-testid="loader"> <Loader active={isFetching} /></div>
+          {this.state.loading &&(
+            <div data-testid="loader"> <Loader active={true} fullscreen /></div>)
+          }
+          
+          {<div id="myNotification">
+            {showNotice && <div data-track={trackingId}> <Alert Message={Message} Type={Type} closeBanner={true}> </Alert></div>}
+          </div>}
+
+
+          {
+            //  (this.props.serviceStatus && parseInt(this.props.serviceStatus.statusCode) == 0) && this.props.serviceFail != true &&
+            this.props.getServices &&
+            services && services && Object.keys(services).length > 0 && Object.keys(services).map((service, index) => {
+              return (
+
+                <Col colSizes={{ desktop: 3 }}>
+                  <div key={index}
+
+                    className={
+                      this.props.selectedAccordian == 'BS'
+                        ? "accordion__body"
+                        : "accordion__body accordion__body--hidden"
+                    }
+                    aria-hidden={this.props.selectedAccordian == 'BS' ? false : true}
+                  >
+
+                    <Grid
+                      bleed="1272"
+                      rowGutter="10px"
+                      colSizes={{
+                        mobile: 1,
+                        tablet: 2,
+                        desktop: 3,
+                      }}
+                    >
+                      <Row>
+                        <Col colSizes={{ desktop: 2,tablet:4, mobile: 0 }}></Col>
+                        <Col colSizes={{ desktop: 10.5,tablet:8, mobile: 4 }}>   {service != BLOCK_EMAIL_DOMAIN ?
+                          <div className="oneD row">
+                            <div className="col-lg-3">
+                            </div>
+                            <div className="col-lg-9 col-md-12 col-xs-12 col-xs-12">
+                              <div className="o-expander o-block-content o-sub-accordion">
+                                <div
+                                  role="tablist"
+                                  className="o-block-page panel-group ng-isolate-scope"
+                                >
+                                  {/* sub accordians */}
+                                  <div
+                                    onClick={(e) => this.handleSubServices(e, service)} onKeyPress={(e) => this.handleSubServices(e, service)}
+                                    aria-expanded={services[service].isExpand ? true : false}
+                                    className="accordion__title"
+                                    role="button"
+                                    tabIndex="0"
+                                    aria-label={service}
+                                  >
+                                    <div className="u-position-relative">
+                                      <div className="accordion-title">
+                                        <FAQs1HeadSection id={service}>
+                                          {service}
+                                        </FAQs1HeadSection>
+                                      </div>
+                                      <div
+                                        id={service}
+                                        className="accordion__arrow"
+                                        role="presentation"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div
+
+                                    className={
+                                      services[service].isExpand
+                                        ? "accordion__body"
+                                        : "accordion__body accordion__body--hidden"
+                                    }
+                                    aria-hidden={services[service].isExpand ? false : true}
+                                  >
+                                    {service == BLOCK_EMAIL_DOMAIN ?
+                                      <div className="o-expander o-block-subcontent ">
+                                        <BSEmailDomains selectedDevice={this.props.selectedDevice} />
+                                      </div> : null
+                                    }
+
+                                    <div className="o-expander o-block-subcontent ">
+                                      {
+                                        services[service].data && services[service].data.length > 0 && services[service].data.map((serviceDetail, i) => {
+                                          return (
+                                            <div key={serviceDetail.sfoCode} className="o-row o-clr " style={{ paddingBottom: '0%' }}>
+                                              <div className="col-lg-10 col-md-10 col-sm-10 col-xs-10">
+                                                <Body size='large' bold='true'>
+                                                  {serviceDetail.serviceName}
+                                                </Body>
+                                              </div>
+                                              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <Toggle
+                                                  value="default"
+                                                  surface="light"
+                                                  surfaceType="colorFill"
+                                                  showText={true}
+                                                  textWeight="regular"
+                                                  textSize="small"
+                                                  textPosition="left"
+                                                  on={serviceDetail.sfoEnabled === "Y" ? true : false}
+                                                  data-track={serviceDetail.serviceName.split(' ').join('') + "Toggle"}
+                                                  statusText={(e) => e ? 'On' : 'Off'}
+                                                  onChange={(e) => this.toggleOn(e, service, i)}
+                                                />
+                                              </div>
+                                              <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                                                <div className="o-short-desc width-100">
+                                                  <p className="o-concatText ng-binding" dangerouslySetInnerHTML={{ __html: serviceDetail.shortDescription }} />
+                                                  <br />
+                                                  {serviceDetail.showMore &&
+                                                    <React.Fragment>
+                                                      <br />
+                                                      <p className="o-concatText ng-binding" dangerouslySetInnerHTML={{ __html: serviceDetail.longDescription }} />
+                                                      <br />
+                                                    </React.Fragment>
+                                                  }
+
+                                                  <Modal
+                                                    toggleButton={<TextLink ><Body size='medium'> View More Details </Body></TextLink>}
+                                                    surface="light"
+                                                    fullScreenDialog={false}
+                                                    disableAnimation={false}
+                                                    disableOutsideClick={false}
+                                                    ariaLabel="Testing Modal"
+                                                  >
+                                                    <ModalTitle>
+                                                      <Title size='large' bold='true'>{serviceDetail.serviceName}</Title>
+                                                    </ModalTitle>
+                                                    <ModalBody>
+                                                      <p dangerouslySetInnerHTML={{ __html: serviceDetail.shortDescription }}></p>
+                                                      <br></br>
+                                                      <Title size='medium' bold='true'>Further details</Title>
+                                                      <br></br>
+                                                      <p dangerouslySetInnerHTML={{ __html: serviceDetail.longDescription }}></p>
+                                                    </ModalBody>
+
+                                                  </Modal>
+
+                                                  <br />
+                                                  <hr />
+
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )
+                                        })
+                                      }
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div> : ''}</Col>
+
+                      </Row>
+
+                    </Grid>
+
+                  </div>
+                </Col>
+              )
+            })
+          }
+          {this.props.selectedAccordian == 'BS' && this.props.getServices ?enableManageBlockserviceLinkFlag?
+            <div style={{ marginBottom: 15, paddingLeft: "27%" }} >
+              
+              <div><Body> <TextLink onClick={(e) => {
+                e.preventDefault();
+                let actionKey = pageContent && common.getActionKey(pageItems, `dcbLink`);
+                const actionKeyValue = pageContent && common.getActionByKey(pageActions, actionKey);
+                const actionValue = actionKeyValue && actionKeyValue.actionValue;
+                window.location.href = `${actionValue}`;
+              }} data-track="ViewMediaAppPurchases">{common.getItemValue(pageItems,'dcbLink')}</TextLink></Body></div><br />
+              <div ><Body> <TextLink onClick={(e) => {
+                e.preventDefault();
+                let actionKey = pageContent && common.getActionKey(pageItems, `videoLink`);
+                const actionKeyValue = pageContent && common.getActionByKey(pageActions, actionKey);
+                const actionValue = actionKeyValue && actionKeyValue.actionValue;
+                window.location.href = `${actionValue}`;
+              }} data-track="VideoForBlockServices">{common.getItemValue(pageItems,'videoLink')}</TextLink></Body></div><br />
+              <div ><Body><TextLink onClick={(e) => {
+                e.preventDefault();
+                let actionKey = pageContent && common.getActionKey(pageItems, `faqsLink`);
+                const actionKeyValue = pageContent && common.getActionByKey(pageActions, actionKey);
+                const actionValue = actionKeyValue && actionKeyValue.actionValue;
+                window.location.href = `${actionValue}`;              
+                }} data-track="BlockFAQ">{common.getItemValue(pageItems,'faqsLink')}</TextLink></Body></div><br />
+            </div> : 
+            <div style={{ marginBottom: 15, paddingLeft: "27%" }} >
+              <div><Body> <TextLink onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "https://myvpostpay.verizonwireless.com/ui/bill/secure/dcb"
+              }} data-track="ViewMediaAppPurchases">View Media &amp; App Purchases</TextLink></Body></div><br />
+              <div ><Body> <TextLink onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "https://www.verizonwireless.com/support/how-to-add-blocks-video/"
+              }} data-track="VideoForBlockServices">Video: How to block services</TextLink></Body></div><br />
+              <div ><Body><TextLink onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "https://www.verizonwireless.com/support/block-unblock-services-faqs/"
+              }} data-track="BlockFAQ">Block and unblock services FAQ</TextLink></Body></div><br />
+            </div> :null }
+        </div><br />
+      </div>
     );
+  }
+}
 
-  it('renders without crashing', () => {
-    const { getByText } = renderComponent();
-    expect(getByText('iPhone 13')).toBeInTheDocument();
-  });
-});
+const FAQsHeadSection = styled.div`
+  margin-top: 0px;
+  padding: 10px 0 12px;
+  border-bottom: 2px solid #000;
+  display: block;
+  width: 100%;
+  font-family: "NeueHaasGroteskDisplayBold", arial;
+  font-size: 18px;
+  color: #000000;
+  clear: both;
+`;
+
+const FAQs1HeadSection = styled.div`
+  margin-top: 0px;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid #000;
+  display: block;
+  width: 100%;
+  font-family: "NeueHaasGroteskDisplayBold", arial;
+  font-size: 18px;
+  color: #000000;
+  clear: both;
+`;
+
+const FAQsSection = styled.div`
+  border-top: none;
+`;
+
+const mapStateToProps = state => {
+  return {
+    services: state.Detail.serviceCalls.services,
+    serviceStatus: state.Detail.serviceCalls.serviceStatus,
+    getServices: state.Detail.serviceCalls.getServices,
+    failServices: state.Detail.serviceCalls.failServices,
+    serviceFail: state.Detail.serviceCalls.serviceFail,
+    confirmServices: state.Detail.serviceCalls.confirmServices,
+    serviceErrorFlag: state.Detail.serviceCalls.serviceErrorFlag,
+    confirmServiceFlag: state.Detail.serviceCalls.confirmServiceFlag,
+    servicesError: state.Detail.serviceCalls.servicesError,
+    isFetching: state.Detail.serviceCalls.isFetching,
+  }
+}
+
+const mapDispatchToProps = dispatch => ({
+  actions: bindActionCreators(actions, dispatch),
+})
+
+export default connect(mapStateToProps, mapDispatchToProps)(BlockServices)

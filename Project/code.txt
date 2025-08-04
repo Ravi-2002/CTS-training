@@ -1,564 +1,307 @@
-import React, { Component, Fragment } from "react";
-import { connect } from "react-redux";
-import { bindActionCreators } from "redux";
-import styled from "styled-components";
-import '../../../blocks/home/components/style.css';
-import { getCallsMessages, postBlockAgain, postaddBlockCallMsg, postEditBlockCallMsg, postDeleteBlockCallMsg, postEditAll } from "../actions/fetchCallsMessages";
-import Alert from "../../alert";
-import { Input } from "@vds/inputs";
-import { Body, Title } from "@vds/typography";
-import { Button, TextLink } from "@vds/buttons";
-import { mobileNumberFormat } from "../../../../shared/utilities/commonExp";
-import { Col, Grid, Row } from "@vds/grids";
-import { Loader } from "@vds/loaders";
-import '../../../blocks/styles.css'
+import React from "react";
+import { render, fireEvent, waitFor, screen } from "@testing-library/react";
+import BlockCallsMessages from "../BlockCallsMessages";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import * as util from "../../../../../shared/utilities/util";
+import * as actions from "../../actions/fetchCallsMessages";
+import { MemoryRouter } from "react-router-dom";
 
-class BlockCallsMessages extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      open: false,
-      powerCycle: false,
-      errorMsg: null,
-      newNumber: '',
-      applyAllFlag: false,
-      date: new Date(),
-      blockedList: [],
-      expiredList: [],
-      addSuccess: null,
-      failSuccess: null,
-      deleteSuccess: null,
-      blockAgainSuccess: null,
-      addnumberValid: null,
-      remainingBlockCount: null,
-      openToggleBCE: false,
-      openToggleSM: false,
-      trackingId: "",
-      successMsg: "",
-      failureMsg: "",
+jest.mock("../../../../../shared/utilities/util", () => ({
+  getItemValue: jest.fn(),
+  getChannelId: jest.fn(),
+  getContentFromSection: jest.fn(),
+  mtnFormat: jest.fn(),
+}));
 
-    }
-  }
-  checkAllowedPattern = (addStr) => {
-    let addPattern = /^[0-9a-zA-Z\s=,.:_-]+$/;
-    let spacePattern = /^[\s=,.:_-]+$/;
-    if ((addStr.length == 1) && addStr.match(spacePattern)) {
-      return false;
-    }
-    else if (addStr.match(addPattern) || addStr == "") {
-      return true;
-    } else
-      return false;
-  }
-  handleOnChange = (e, inputType, row) => {
-    let x = e.target.value
-      .replace(/\D/g, "")
-      .match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
-    let value = !x[2]
-      ? x[1]
-      : "" + x[1] + "." + x[2] + (x[3] ? "." + x[3] : "");
+jest.mock("../../actions/fetchCallsMessages", () => ({
+  postaddBlockCallMsg: jest.fn(),
+  postDeleteBlockCallMsg: jest.fn(),
+  posteditBlockCallMsg: jest.fn(),
+  posteditAllBlockCallMsg: jest.fn(),
+}));
 
-    this.setState({ newNumber: value }, () => this.handleInput(e, inputType, row));
-  };
-  handleInput = (event, inputType, row) => {
-    if (inputType == "number") {
-      let inputValue = this.state.newNumber;
-      let x = inputValue
-        .replace(/\D/g, "")
-        .match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
-      let changedValue = x[1] + x[2] + x[3];
-      const validateDigit = /^\d+$/;
-      if (validateDigit.test(changedValue) || changedValue == "") {
-          this.setState({ newNumber: inputValue });
-      }
-      if (changedValue.length === 10 && validateDigit.test(changedValue)) {
-          this.setState({ addnumberValid: true });
-      }
-      else {
-          this.setState({ newNumber: inputValue });
-          this.setState({ addnumberValid: false });
-        }
+const mockStore = configureStore([]);
+const mockNavigate = jest.fn();
 
-      }
-    else {
-      this.setState({
-        applyAllFlag: event.target.checked
-      });
-    }
-  }
-  handleAddNumber = (e) => {
-    let inputValue = this.state.newNumber;
-    let x = inputValue
-      .replace(/\D/g, "")
-      .match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
-    let changedValue = x[1] + x[2] + x[3];
-    let payload = {
-      mtn: this.props.selectedDevice?.encryptedMtn,
-      blockNumber: changedValue,
-      oldPhoneNumber: changedValue,
-      memo: this.state.newMemo,
-      expiredPhoneNumber: "",
-      blockedNumbers: [],
-      applyAll: this.state.applyAllFlag,
-      onlyMemo: false
-    }
-    this.props.postaddBlockCallMsg(payload).then(() => {
-      let elmnt = document.getElementById("myalert");
-      if (elmnt != null)
-        window.scrollTo(0, elmnt.offsetTop);
-      if (this.props.addBlockCallMsgRes.statusCode === "00") {
-        this.setState({
-          errorMsg: null,
-          powerCycle: this.props.addBlockCallMsgRes?.powerCycle,
-          newNumber: '',
-          newMemo: '',
-          blockedList: this.props.addBlockCallMsgRes.blockedPhoneNumbers,
-          expiredList: this.props.addBlockCallMsgRes.expiredBlockedPhoneNumbers,
-          remainingBlockCount: this.props.addBlockCallMsgRes.remainingBlockCount
-        })
-        if (this.props.addBlockCallMsgRes.hasFailureMsg && this.props.addBlockCallMsgRes.hasSuccessMsg) {
-          this.setState({
-            addSuccess: true,
-            failSuccess: true,
-            trackingId: "CallsMessagesSuccessFailureNotification",
-            deleteSuccess: null,
-            editSuccess: null,
-            blockAgainSuccess: null,
-            editAllSuccess: null,
-            newNumber: '',
-            newMemo: ''
-          })
-        }
-        else if (this.props.addBlockCallMsgRes.hasFailureMsg) {
-          this.setState({
-            addSuccess: null,
-            failSuccess: true,
-            trackingId: "CallsMessagesFailureNotification",
-            deleteSuccess: null,
-            editAllSuccess: null,
-            editSuccess: null,
-            blockAgainSuccess: null,
-            failureMsg: this.props.addBlockCallMsgRes.failureMsg
-          })
-        }
-        else if (this.props.addBlockCallMsgRes.hasSuccessMsg) {
-          this.setState({
-            addSuccess: true,
-            failSuccess: null,
-            trackingId: "CallsMessagesSuccessNotification",
-            deleteSuccess: null,
-            editAllSuccess: null,
-            editSuccess: null,
-            blockAgainSuccess: null,
-            successMsg: this.props.addBlockCallMsgRes.successMsg
-          })
+jest.mock("react-router-dom", () => ({
+  ...jest.requireActual("react-router-dom"),
+  useNavigate: () => mockNavigate,
+}));
 
-        }
-      }
-      else {
-        this.setState({
-          errorMsg: true,
-          addSuccess: null,
-          failSuccess: null,
-          deleteSuccess: null,
-          editAllSuccess: null,
-          editSuccess: null,
-          blockAgainSuccess: null,
-          trackingId: "CallsMessagesFailureNotification"
-        })
-      }
-
-    });
-    e.preventDefault();
-  }
-  componentDidUpdate(prevProps) {
-    if (prevProps.blockedNumbers !== this.props.blockedNumbers && prevProps.callsMessagesData !== this.props.callsMessagesData) {
-      this.setState({
-        blockedList: this.props.blockedNumbers,
-        remainingBlockCount: this.props?.callsMessagesData?.remainingBlockCount
-      });
-    }
-    if (prevProps.addBlockCallMsgRes !== this.props.addBlockCallMsgRes) {
-      this.setState({
-        blockedList: this.props.addBlockCallMsgRes?.blockedPhoneNumbers,
-        remainingBlockCount: this.props.addBlockCallMsgRes?.remainingBlockCount,
-        successMsg: this.props.addBlockCallMsgRes.successMsg,
-        failureMsg: this.props.addBlockCallMsgRes.failureMsg,
-        addSuccess: this.props.addBlockCallMsgRes.hasSuccessMsg,
-        failSuccess: this.props.addBlockCallMsgRes.hasFailureMsg,
-        newNumber:''
-
-      });
-    }
-
-    if (prevProps.deleteBlockCallMsgRes !== this.props.deleteBlockCallMsgRes) {
-      this.setState({
-        blockedList: this.props.deleteBlockCallMsgRes?.blockedPhoneNumbers,
-        remainingBlockCount: this.props.deleteBlockCallMsgRes?.remainingBlockCount,
-        successMsg: this.props.deleteBlockCallMsgRes.successMsg,
-        failureMsg: this.props.deleteBlockCallMsgRes.failureMsg,
-        deleteSuccess: this.props.deleteBlockCallMsgRes.hasSuccessMsg,
-        newNumber:''
-      });
-    }
-  }
-  deleteNumber = (e, number) => {
-    e.preventDefault();
-    if (reactGlobals.isCsr) {
-      return;
-    }
-    let payload = {
-      mtn: this.props.selectedDevice?.encryptedMtn,
-      blockNumber: number.phoneNumber,
-      oldPhoneNumber: number.phoneNumber,
-      expiredPhoneNumber: "",
-      blockedNumbers: [],
-      memo: number.memo,
-      applyAll: false,
-      onlyMemo: false
-    }
-
-    this.props.postDeleteBlockCallMsg(payload).then(() => {
-      let elmnt = document.getElementById("myalert");
-      if (elmnt != null)
-        window.scrollTo(0, elmnt.offsetTop);
-      if (this.props.deleteBlockCallMsgRes.statusCode == "00") {
-        this.setState({
-          deleteSuccess: true,
-          trackingId: "CallsMessagesSuccessNotification",
-          errorMsg: null,
-          failSuccess: null,
-          addSuccess: null,
-          failSuccess: null,
-          editSuccess: null,
-          editAllSuccess: null,
-          blockAgainSuccess: null,
-          blockedList: this.props.deleteBlockCallMsgRes.blockedPhoneNumbers,
-          expiredList: this.props.deleteBlockCallMsgRes.expiredBlockedPhoneNumbers,
-          remainingBlockCount: this.props.deleteBlockCallMsgRes.remainingBlockCount,
-          successMsg: this.props.deleteBlockCallMsgRes.successMsg,
-          failureMsg: this.props.deleteBlockCallMsgRes.failureMsg
-        })
-      } else {
-        this.setState({
-          addSuccess: null,
-          errorMsg: null,
-          deleteSuccess: false,
-          trackingId: "CallsMessagesFailureNotification",
-          editAllSuccess: null,
-
-          failSuccess: null,
-          editSuccess: null,
-          blockAgainSuccess: null
-        })
-      }
-    });
-  }
-
-  handleCallsMessages = (e) => {
-    e.preventDefault();
-    this.props.selectAccordian('CM');
-    const { open } = this.state
-    this.setState({
-      open: !open,
-      newNumber: '',
-      newMemo: '',
-      errorMsg: null,
-      failSuccess: null,
-      addSuccess: null,
-      deleteSuccess: null,
-      editAllSuccess: null,
-      editNumber: false,
-      editAllNumber: false,
-      editSuccess: null,
-      blockAgainSuccess: null,
-      addnumberValid: null
-    })
-    if (open == false || this.props.selectedAccordian == '') {
-      let payload = {
-        mtn: this.props.selectedDevice?.encryptedMtn
-      }
-      this.props.getCallsMessages(payload).then(() => {
-        let elmnt = document.getElementById("myalert");
-        if (elmnt != null)
-          window.scrollTo(0, elmnt.offsetTop);
-        if (this.props.blockedNumbers && this.props.blockedNumbers) {
-          let blockedNumbers = this.props.blockedNumbers;
-          blockedNumbers.forEach(element => {
-            element.isEdit = false,
-              element.oldMemo = element.memo
-          });
-          this.setState({ blockedList: blockedNumbers });
-          this.setState({ remainingBlockCount: this.props.callsMessagesData.remainingBlockCount, addedBlockCount: this.props.callsMessagesData.addedBlockCount })
-        } else {
-          this.setState({ blockedList: [] });
-        }
-        if (this.props.expiredNumbers && this.props.expiredNumbers) {
-          this.setState({ expiredList: this.props.expiredNumbers });
-        } else {
-          this.setState({ expiredList: [] });
-        }
-      });
-    }
-  }
-  
-
-  handleToggle = (event, openToggleBCE) => {
-
-    event.preventDefault();
-
-
-    if (event.target.id == "blockedcontactexperience") {
-      this.setState({
-        openToggleBCE: !openToggleBCE
-      });
-    }
-
-  };
-
-  handleToggleSM = (event, openToggleSM) => {
-    event.preventDefault();
-    if (event.target.id == "Reportsuspectedspamtextmessages") {
-      this.setState({
-        openToggleSM: !openToggleSM
-      });
-    }
-  };
-  navigateTo = (to) => {
-    if (to == '1')
-      window.open(reactGlobals.domainLink + "/support/block-numbers/", '_blank');
-    else if (to == '2')
-      window.open(reactGlobals.domainLink + "/support/how-to-add-blocks-video/", '_blank');
-  }
-  render() {
-    const { openToggleBCE, openToggleSM } = this.state
-    const blockedNumberList = this.state?.blockedList?.map(blockedNum => (
-      <div className="row row-p-b">
-        <Fragment>
-          <Row>
-            <div className="col-lg-10 col-sm-8 col-xs-8 col-md-10">
-              <Col >
-                <MobileNumber>
-                  <Body>{mobileNumberFormat(blockedNum.phoneNumber)}</Body>
-                </MobileNumber>
-              </Col>
-             </div>
-            <Col>
-              <Unblock >
-                <Body><TextLink className={reactGlobals.isCsr ? "o-link btn-disabled" : "o-link"} onClick={(e) => this.deleteNumber(e, blockedNum)} data-track="CallsMessagesDesktopDeleteButton" ><Body bold>Unblock</Body></TextLink></Body>
-              </Unblock>
-            </Col>
-          </Row>
-
-        </Fragment>
-
-      </div>
-    ));
-    return (
-      <div className="accordion">
-        <Loader active={this.props.isFetching} fullScreen/>
-        <div className="accordion__item">
-          <div className="accordion__title"
-            role="button"
-            tabIndex="0" onClick={(e) => this.handleCallsMessages(e)} onKeyPress={(e) => this.handleCallsMessages(e)} aria-expanded={this.props.selectedAccordian == 'CM' ? true : false}
-          >
-            <div className="u-position-relative">
-              <div className="accordion-title">
-                <FAQsHeadSection id="blocksCallsAndMessages">
-                  Block calls & messages
-                </FAQsHeadSection>
-              </div>
-              <div
-                id="blocksCallsAndMessages"
-                className="accordion__arrow"
-                role="presentation"
-              />
-            </div>
-          </div>
-          <div
-            className={this.props.selectedAccordian == 'CM'
-              ? 'accordion__body'
-              : 'accordion__body accordion__body--hidden'
-            }
-            aria-hidden={this.props.selectedAccordian == 'CM' ? false : true} >
-            <Body>
-              <div className="row">
-                <div className="col-lg-12 p-l-r-0" id="myalert" data-track={this.state.trackingId}>
-                  <Title size="medium" bold='true'>Block a new number</Title>
-                  {/* {this.props.getCMError.statusCode == "01" && <Alert Message={this.props.getCMError.errorMessage} Type={3} closeBanner={true}></Alert>} */}
-                  {/* <Alert  Message="my alert info" Type={1} closeBanner={false}></Alert>
-                <Alert  Message="my alert info" Type={2} closeBanner={true}></Alert> */}
-                  {this.state.addSuccess && <Alert Message={this.state.successMsg} Type={2} closeBanner={true}></Alert>}
-                  {this.state.failSuccess && <Alert Message={this.state.failureMsg} Type={3} closeBanner={true}></Alert>}
-                  {this.state.errorMsg && <Alert Message={this.props?.addBlockCallMsgRes?.errorMessage} Type={3} closeBanner={true}></Alert>}
-                  {(this.state.addSuccess && this.props?.addBlockCallMsgRes?.hasFailureMsg) && <Alert Message={this.statefailureMsg} Type={3} closeBanner={true}></Alert>}
-                  {this.state.editSuccess && <Alert Message={this.props.editBlockCallMsgRes.successMsg} Type={2} closeBanner={true}></Alert>}
-                  {this.state.editSuccess == false && <Alert Message={this.props.editBlockCallMsgRes.failureMsg} Type={3} closeBanner={true}></Alert>}
-                  {this.state.deleteSuccess && <Alert Message={this.state.successMsg} Type={2} closeBanner={true}></Alert>}
-                  {this.state.deleteSuccess == false && <Alert Message={this.state.failureMsg} Type={3} closeBanner={true}></Alert>}
-                  {this.state.blockAgainSuccess && <Alert Message={this.props.blockAgainResponse.successMsg} Type={2} closeBanner={true}></Alert>}
-                  {this.state.powerCycle && this.props.addBlockCallMsgRes?.hasSuccessMsg && <Alert Message={"<span>In order to complete your service change </span>, you'll need to power cycle your device, or turn it off and on again. Once your phone turns back on, you'll be able to enjoy all the benefits of your service change."} Type={3} closeBanner={true}></Alert>}
-                  {this.state.blockAgainSuccess == false && <Alert Message={this.props.blockAgainResponse.failureMsg} Type={3} closeBanner={true}></Alert>}
-                  {this.state.editAllSuccess && <Alert Message={this.props.editAllBlockCallMsgRes.successMsg} Type={2} closeBanner={true}></Alert>}
-                  {this.state.editAllSuccess == false && <Alert Message={this.props.editAllBlockCallMsgRes.failureMsg} Type={3} closeBanner={true}></Alert>}
-                  {this.state.remainingBlockCount == 0 && <Alert Message={"You have used all of your blocks. To block another number delete one of the blocks below or add Family Base. which allows you to permanently block up to 20 contacts for a low monthly fee. You'll also be able to monitor and limit minute, text and data usage for up to 10 devices on your account."} Type={1} closeBanner={true}></Alert>}
-                </div>
-              </div>
-              <div className="row">
-                <div className="col-lg-12 p-l-r-0">
-                  <div className="o-block-msg">
-                    <p className="p-t-b-10">
-                      Block calls and messages from up to {this.state.remainingBlockCount} numbers.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className={this.state.editNumber || this.state.editAllNumber || this.state.remainingBlockCount == 0 ? "radio-choose--disabled" : ""}>
-                <div className="row">
-                  <div className="col-lg-4 p-l-r-0">
-                    <label htmlFor="block_site_number">
-                      <Body bold='true' size='large' >Enter a number</Body>
-                      <Grid
-                      >
-                        <Row>
-                          <Col colSizes={{ desktop: 6, mobile: 4,tablet:8 }} id="block_site_number">
-                          <Input type="text"
-                        onChange={(e) => this.handleOnChange(e, 'number')}
-                        className={this.state.addnumberValid == false ? "txtError" : ""}
-                        placeholder="XXX.XXX.XXXX"
-                        
-                        name="block_site_number"
-                        aria-labelledby="phoneAlert"
-                        autoFocus
-                        pattern="^\d{3}.\d{3}.\d{4}$"
-                        touched={this.state.istouchedPrimary}
-                        value={this.state.newNumber}
-                        maxLength="12"
-                        autoComplete="off" />
-                          </Col>
-                        </Row>
-                      </Grid>
-                      
-                    </label>
-                    {this.state.addnumberValid == false && <p id="phoneAlert" className="mb-18"> Please enter valid phone number.</p>}
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="col-lg-12 p-l-r-0 p-t-b-10">
-                    <Button type="button" className="o-btn mb-0 btn-block" disabled={reactGlobals.isCsr || this.state.addnumberValid != true || this.state.remainingBlockCount===0} aria-labelledby="alertBlock" id="addSpamBtn" onClick={(e) => this.handleAddNumber(e)} data-track="CallsMessagesDesktopSaveButton" tabIndex="0" >Block</Button>
-                  </div>
-                </div>
-              </div>
-              {blockedNumberList.length > 0 &&
-                <div className="row">
-                  <div className="col-lg-11 col-md-11 col-sm-10 col-xs-10 p-l-r-0">
-                    <Title bold size="large">Currently blocked numbers</Title>
-                  </div>
-                  <br />
-
-                </div>}
-              {blockedNumberList.length > 0 && <Fragment>
-                {blockedNumberList}
-              </Fragment>}
-
-              <div className="row pt-25">
-                <div className="col-lg-12 p-l-r-0 pb-10">
-                  <div className="o-drawer-group o-accordion">
-                    <TextLink href="javascript:void(0);" className={this.state.openToggleSM ? "anchor-link o-caret-down o-toggle o-expanded"
-                      : "anchor-link o-caret-down o-toggle"} role="button"
-
-                      id="Reportsuspectedspamtextmessages" aria-expanded={this.state.openToggleSM} aria-disabled="false" style={{ textDecoration: 'none' }} onClick={(e) => this.handleToggleSM(e, openToggleSM)} data-track="Reportsuspectedspamtextmessages" tabIndex="0" >
-                      Report suspected spam text messages</TextLink>
-
-                    <div className={this.state.openToggleSM ? "accordion__body" : "accordion__body accordion__body--hidden"}
-                      aria-hidden={this.state.openToggleSM ? false : true} >
-                      <p style={{ margin: '5px' }}>You may forward the suspected Spam message to SMS short code 7726. Once received, you will receive an SMS requesting a reply with the "From" address. The result will be a free text message with a 'Thank you' notification and the investigation will begin. You will not receive any further updates once complete.</p>
-                      <p style={{ margin: '5px' }}>(Note: There are no charges for these messages sent to or received from 7726)</p>
-
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-              <div className="row">
-                <div className="col-lg-12 p-l-r-0 pb-10">
-                  <div className="o-drawer-group o-accordion">
-                    <TextLink href="javascript:void(0);" className={this.state.openToggleBCE ? "anchor-link o-caret-down o-toggle o-expanded"
-                      : "anchor-link o-caret-down o-toggle"} role="button"
-
-                      id="blockedcontactexperience" aria-expanded={this.state.openToggleBCE} aria-disabled="false" style={{ textDecoration: 'none' }} onClick={(e) => this.handleToggle(e, openToggleBCE)} data-track="blockedcontactexperience" tabIndex="0">
-                      What does a blocked contact experience?</TextLink>
-
-                    <div className={this.state.openToggleBCE ? "accordion__body" : "accordion__body accordion__body--hidden"}
-                      aria-hidden={this.state.openToggleBCE ? false : true} >
-                      <p style={{ margin: '5px' }}>Customers who call your number will hear: Welcome to Verizon Wireless. We're sorry the number you have dialed has calling restrictions that have prevented the completion of your call.</p>
-                      <p style={{ margin: '5px' }}>Customers who text your number will receive the reply: Message Failed.</p>
-
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Body>
-            <div ><Body> <TextLink style={{ textDecoration: 'none' }} onClick={(e) => {
-              e.preventDefault();
-              window.location.href = "https://www.verizonwireless.com/support/how-to-add-blocks-video/"
-            }} className="anchor-link" data-track="VideoForBlockServices">Video: How to block services</TextLink></Body></div>
-            <div style={{ padding: '5px' }}></div>
-            <div ><Body><TextLink style={{ textDecoration: 'none' }} onClick={(e) => {
-              e.preventDefault();
-              window.location.href = "https://www.verizonwireless.com/support/block-unblock-services-faqs/"
-            }} className="anchor-link" data-track="BlockFAQ">Block and unblock services FAQ</TextLink></Body></div><br />
-          </div>
-        </div>
-      </div >
-    );
-  }
-}
-
-const FAQsHeadSection = styled.div`
-        margin-top: 0px;
-        padding: 10px 0 12px;
-        border-bottom: 2px solid #000;
-        display: block;
-        width: 100%;
-        font-family: "NeueHaasGroteskDisplayBold", arial;
-        font-size: 18px;
-        color: #000000;
-        clear: both;
-        `;
-
-const FAQsSection = styled.div`
-        border-top: none;
-        `;
-const Unblock = styled.div`
-        padding-top:10px;
-        `;
-const MobileNumber = styled.div`
-        padding-right:450px;
-        padding-left:30px;
-        padding-bottom:10px;
-        padding-top:10px;
-`;
-
-const mapStateToProps = (state) => {
-
-  return {
-    callsMessagesData: state.Detail.callsMsgs.callsMessages,
-    blockedNumbers: state.Detail.callsMsgs.blockedNumbers,
-    expiredNumbers: state.Detail.callsMsgs.expiredNumbers,
-    getCMError: state.Detail.callsMsgs.getCMError,
-    blockAgainResponse: state.Detail.callsMsgs.blockAgainResponse,
-    addBlockCallMsgRes: state.Detail.callsMsgs.addBlockCallMsg,
-    editBlockCallMsgRes: state.Detail.callsMsgs.editBlockCallMsg,
-    deleteBlockCallMsgRes: state.Detail.callsMsgs.deleteBlockCallMsg,
-    editAllBlockCallMsgRes: state.Detail.callsMsgs.editAllBlockCallMsg,
-    deviceList: state.Detail.devices,
-    isFetching: state.Detail.callsMsgs.isFetching,
-
-  };
+const defaultStore = {
+  Detail: {
+    callsMsgs: {
+      blockedNumbers: [
+        { id: 1, type: "call", number: "9876543210", memo: "Block 1" },
+        { id: 2, type: "message", number: "9123456789", memo: "Block 2" },
+      ],
+      expiredNumbers: [
+        { id: 3, type: "call", number: "9988776655", memo: "Expired Memo" },
+      ],
+      addBlockCallMsg: {
+        successMsg: "Add success",
+        hasSuccessMsg: true,
+        hasFailureMsg: false,
+      },
+      deleteBlockCallMsg: {
+        successMsg: "Delete success",
+        hasSuccessMsg: true,
+        hasFailureMsg: false,
+      },
+      editBlockCallMsg: {
+        successMsg: "Edit success",
+        hasSuccessMsg: true,
+        hasFailureMsg: false,
+      },
+      editAllBlockCallMsg: {
+        successMsg: "Edit all success",
+        hasSuccessMsg: true,
+        hasFailureMsg: false,
+      },
+      isFetching: false,
+    },
+  },
 };
 
-export default connect(
-  mapStateToProps,
-  { getCallsMessages, postBlockAgain, postaddBlockCallMsg, postEditBlockCallMsg, postDeleteBlockCallMsg, postEditAll }
-)(BlockCallsMessages);
+describe("BlockCallsMessages Component", () => {
+  let store;
+
+  beforeEach(() => {
+    store = mockStore(defaultStore);
+
+    util.getItemValue.mockReturnValue("Mock Item Value");
+    util.getChannelId.mockReturnValue("Mock Channel ID");
+    util.getContentFromSection.mockReturnValue({
+      sections: [
+        {
+          items: [{ key: "label", value: "Blocked Number Label" }],
+        },
+      ],
+    });
+    util.mtnFormat.mockImplementation((num) => num);
+  });
+
+  test("renders correctly with blocked and expired numbers", () => {
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <BlockCallsMessages />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(screen.getByText("Blocked Number Label")).toBeInTheDocument();
+    expect(screen.getByText("9876543210")).toBeInTheDocument();
+    expect(screen.getByText("Block 1")).toBeInTheDocument();
+    expect(screen.getByText("9988776655")).toBeInTheDocument();
+    expect(screen.getByText("Expired Memo")).toBeInTheDocument();
+  });
+
+  test("handles add block number", async () => {
+    actions.postaddBlockCallMsg.mockResolvedValue();
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <BlockCallsMessages />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    fireEvent.click(screen.getByText("Add a number"));
+
+    fireEvent.change(screen.getByPlaceholderText("Enter number"), {
+      target: { value: "9876543210" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Memo"), {
+      target: { value: "New Memo" },
+    });
+
+    fireEvent.click(screen.getByText("Block"));
+
+    await waitFor(() =>
+      expect(actions.postaddBlockCallMsg).toHaveBeenCalled()
+    );
+  });
+
+  test("handles edit block number", async () => {
+    actions.posteditBlockCallMsg.mockResolvedValue();
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <BlockCallsMessages />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    fireEvent.click(screen.getAllByText("Edit")[0]);
+
+    fireEvent.change(screen.getByPlaceholderText("Memo"), {
+      target: { value: "Updated Memo" },
+    });
+
+    fireEvent.click(screen.getByText("Save"));
+
+    await waitFor(() =>
+      expect(actions.posteditBlockCallMsg).toHaveBeenCalled()
+    );
+  });
+
+  test("handles delete block number", async () => {
+    actions.postDeleteBlockCallMsg.mockResolvedValue();
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <BlockCallsMessages />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    fireEvent.click(screen.getAllByText("Remove")[0]);
+
+    await waitFor(() =>
+      expect(actions.postDeleteBlockCallMsg).toHaveBeenCalled()
+    );
+  });
+
+  test("handles edit all block numbers", async () => {
+    actions.posteditAllBlockCallMsg.mockResolvedValue();
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <BlockCallsMessages />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    fireEvent.click(screen.getByText("Edit All"));
+
+    fireEvent.change(screen.getAllByPlaceholderText("Memo")[0], {
+      target: { value: "Edited Memo All" },
+    });
+
+    fireEvent.click(screen.getByText("Save All"));
+
+    await waitFor(() =>
+      expect(actions.posteditAllBlockCallMsg).toHaveBeenCalled()
+    );
+  });
+
+  test("displays loader when isFetching is true", () => {
+    store = mockStore({
+      Detail: {
+        callsMsgs: {
+          ...defaultStore.Detail.callsMsgs,
+          isFetching: true,
+        },
+      },
+    });
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <BlockCallsMessages />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(screen.getByTestId("loader")).toBeInTheDocument();
+  });
+
+  test("handles error in postaddBlockCallMsg", async () => {
+    actions.postaddBlockCallMsg.mockRejectedValue(new Error("Add failed"));
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <BlockCallsMessages />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    fireEvent.click(screen.getByText("Add a number"));
+
+    fireEvent.change(screen.getByPlaceholderText("Enter number"), {
+      target: { value: "9876543210" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Memo"), {
+      target: { value: "Error Memo" },
+    });
+
+    fireEvent.click(screen.getByText("Block"));
+
+    await waitFor(() =>
+      expect(actions.postaddBlockCallMsg).toHaveBeenCalled()
+    );
+  });
+
+  test("handles error in posteditBlockCallMsg", async () => {
+    actions.posteditBlockCallMsg.mockRejectedValue(new Error("Edit failed"));
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <BlockCallsMessages />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    fireEvent.click(screen.getAllByText("Edit")[0]);
+
+    fireEvent.change(screen.getByPlaceholderText("Memo"), {
+      target: { value: "Fail Memo" },
+    });
+
+    fireEvent.click(screen.getByText("Save"));
+
+    await waitFor(() =>
+      expect(actions.posteditBlockCallMsg).toHaveBeenCalled()
+    );
+  });
+
+  test("handles error in postDeleteBlockCallMsg", async () => {
+    actions.postDeleteBlockCallMsg.mockRejectedValue(new Error("Delete fail"));
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <BlockCallsMessages />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    fireEvent.click(screen.getAllByText("Remove")[0]);
+
+    await waitFor(() =>
+      expect(actions.postDeleteBlockCallMsg).toHaveBeenCalled()
+    );
+  });
+
+  test("handles error in posteditAllBlockCallMsg", async () => {
+    actions.posteditAllBlockCallMsg.mockRejectedValue(new Error("Edit all failed"));
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter>
+          <BlockCallsMessages />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    fireEvent.click(screen.getByText("Edit All"));
+
+    fireEvent.change(screen.getAllByPlaceholderText("Memo")[0], {
+      target: { value: "Fail All Memo" },
+    });
+
+    fireEvent.click(screen.getByText("Save All"));
+
+    await waitFor(() =>
+      expect(actions.posteditAllBlockCallMsg).toHaveBeenCalled()
+    );
+  });
+});

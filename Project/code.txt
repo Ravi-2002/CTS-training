@@ -1,307 +1,250 @@
 import React from "react";
-import { render, fireEvent, waitFor, screen } from "@testing-library/react";
-import BlockCallsMessages from "../BlockCallsMessages";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import { Provider } from "react-redux";
 import configureStore from "redux-mock-store";
-import * as util from "../../../../../shared/utilities/util";
+import BlockCallsMessages from "../blockCallsMessages";
 import * as actions from "../../actions/fetchCallsMessages";
-import { MemoryRouter } from "react-router-dom";
-
-jest.mock("../../../../../shared/utilities/util", () => ({
-  getItemValue: jest.fn(),
-  getChannelId: jest.fn(),
-  getContentFromSection: jest.fn(),
-  mtnFormat: jest.fn(),
-}));
-
-jest.mock("../../actions/fetchCallsMessages", () => ({
-  postaddBlockCallMsg: jest.fn(),
-  postDeleteBlockCallMsg: jest.fn(),
-  posteditBlockCallMsg: jest.fn(),
-  posteditAllBlockCallMsg: jest.fn(),
-}));
 
 const mockStore = configureStore([]);
-const mockNavigate = jest.fn();
-
-jest.mock("react-router-dom", () => ({
-  ...jest.requireActual("react-router-dom"),
-  useNavigate: () => mockNavigate,
-}));
-
-const defaultStore = {
-  Detail: {
-    callsMsgs: {
-      blockedNumbers: [
-        { id: 1, type: "call", number: "9876543210", memo: "Block 1" },
-        { id: 2, type: "message", number: "9123456789", memo: "Block 2" },
-      ],
-      expiredNumbers: [
-        { id: 3, type: "call", number: "9988776655", memo: "Expired Memo" },
-      ],
-      addBlockCallMsg: {
-        successMsg: "Add success",
-        hasSuccessMsg: true,
-        hasFailureMsg: false,
-      },
-      deleteBlockCallMsg: {
-        successMsg: "Delete success",
-        hasSuccessMsg: true,
-        hasFailureMsg: false,
-      },
-      editBlockCallMsg: {
-        successMsg: "Edit success",
-        hasSuccessMsg: true,
-        hasFailureMsg: false,
-      },
-      editAllBlockCallMsg: {
-        successMsg: "Edit all success",
-        hasSuccessMsg: true,
-        hasFailureMsg: false,
-      },
-      isFetching: false,
-    },
-  },
-};
 
 describe("BlockCallsMessages Component", () => {
   let store;
 
   beforeEach(() => {
-    store = mockStore(defaultStore);
-
-    util.getItemValue.mockReturnValue("Mock Item Value");
-    util.getChannelId.mockReturnValue("Mock Channel ID");
-    util.getContentFromSection.mockReturnValue({
-      sections: [
-        {
-          items: [{ key: "label", value: "Blocked Number Label" }],
-        },
-      ],
+    store = mockStore({
+      Detail: {
+        callsMsgs: {
+          callsMessages: {
+            remainingBlockCount: 5,
+            addedBlockCount: 2
+          },
+          blockedNumbers: [
+            {
+              phoneNumber: "1234567890",
+              memo: "Test Memo",
+              isEdit: false
+            }
+          ],
+          expiredNumbers: [
+            {
+              phoneNumber: "9876543210",
+              memo: "Expired Memo"
+            }
+          ],
+          getCMError: { statusCode: "00", errorMessage: "" },
+          blockAgainResponse: {
+            successMsg: "Block again success",
+            failureMsg: "Block again failed"
+          },
+          addBlockCallMsg: {
+            statusCode: "00",
+            successMsg: "Add success",
+            failureMsg: "Add failed",
+            hasSuccessMsg: true,
+            hasFailureMsg: false
+          },
+          editBlockCallMsg: {
+            successMsg: "Edit success",
+            failureMsg: "Edit failed"
+          },
+          deleteBlockCallMsg: {
+            successMsg: "Delete success",
+            failureMsg: "Delete failed"
+          },
+          editAllBlockCallMsg: {
+            successMsg: "Edit all success",
+            failureMsg: "Edit all failed"
+          },
+          isFetching: false
+        }
+      }
     });
-    util.mtnFormat.mockImplementation((num) => num);
+
+    // Mock window.scrollTo
+    window.scrollTo = jest.fn();
+
+    // Mock window.location.href
+    delete window.location;
+    window.location = { href: "" };
   });
 
-  test("renders correctly with blocked and expired numbers", () => {
+  test("renders BlockCallsMessages component", () => {
     render(
       <Provider store={store}>
-        <MemoryRouter>
-          <BlockCallsMessages />
-        </MemoryRouter>
+        <BlockCallsMessages />
       </Provider>
     );
 
-    expect(screen.getByText("Blocked Number Label")).toBeInTheDocument();
-    expect(screen.getByText("9876543210")).toBeInTheDocument();
-    expect(screen.getByText("Block 1")).toBeInTheDocument();
-    expect(screen.getByText("9988776655")).toBeInTheDocument();
-    expect(screen.getByText("Expired Memo")).toBeInTheDocument();
-  });
-
-  test("handles add block number", async () => {
-    actions.postaddBlockCallMsg.mockResolvedValue();
-
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <BlockCallsMessages />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    fireEvent.click(screen.getByText("Add a number"));
-
-    fireEvent.change(screen.getByPlaceholderText("Enter number"), {
-      target: { value: "9876543210" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("Memo"), {
-      target: { value: "New Memo" },
-    });
-
-    fireEvent.click(screen.getByText("Block"));
-
-    await waitFor(() =>
-      expect(actions.postaddBlockCallMsg).toHaveBeenCalled()
-    );
-  });
-
-  test("handles edit block number", async () => {
-    actions.posteditBlockCallMsg.mockResolvedValue();
-
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <BlockCallsMessages />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    fireEvent.click(screen.getAllByText("Edit")[0]);
-
-    fireEvent.change(screen.getByPlaceholderText("Memo"), {
-      target: { value: "Updated Memo" },
-    });
-
-    fireEvent.click(screen.getByText("Save"));
-
-    await waitFor(() =>
-      expect(actions.posteditBlockCallMsg).toHaveBeenCalled()
-    );
-  });
-
-  test("handles delete block number", async () => {
-    actions.postDeleteBlockCallMsg.mockResolvedValue();
-
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <BlockCallsMessages />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    fireEvent.click(screen.getAllByText("Remove")[0]);
-
-    await waitFor(() =>
-      expect(actions.postDeleteBlockCallMsg).toHaveBeenCalled()
-    );
-  });
-
-  test("handles edit all block numbers", async () => {
-    actions.posteditAllBlockCallMsg.mockResolvedValue();
-
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <BlockCallsMessages />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    fireEvent.click(screen.getByText("Edit All"));
-
-    fireEvent.change(screen.getAllByPlaceholderText("Memo")[0], {
-      target: { value: "Edited Memo All" },
-    });
-
-    fireEvent.click(screen.getByText("Save All"));
-
-    await waitFor(() =>
-      expect(actions.posteditAllBlockCallMsg).toHaveBeenCalled()
-    );
+    expect(screen.getByText(/Block calls & messages/i)).toBeInTheDocument();
+    expect(screen.getByText(/Block a new number/i)).toBeInTheDocument();
   });
 
   test("displays loader when isFetching is true", () => {
     store = mockStore({
       Detail: {
         callsMsgs: {
-          ...defaultStore.Detail.callsMsgs,
-          isFetching: true,
-        },
-      },
+          isFetching: true
+        }
+      }
     });
 
     render(
       <Provider store={store}>
-        <MemoryRouter>
-          <BlockCallsMessages />
-        </MemoryRouter>
+        <BlockCallsMessages />
       </Provider>
     );
 
-    expect(screen.getByTestId("loader")).toBeInTheDocument();
+    expect(screen.getByTestId("vds-spinner")).toBeInTheDocument();
   });
 
-  test("handles error in postaddBlockCallMsg", async () => {
-    actions.postaddBlockCallMsg.mockRejectedValue(new Error("Add failed"));
-
+  test("handles handleOnChange for valid phone number", () => {
     render(
       <Provider store={store}>
-        <MemoryRouter>
-          <BlockCallsMessages />
-        </MemoryRouter>
+        <BlockCallsMessages />
       </Provider>
     );
 
-    fireEvent.click(screen.getByText("Add a number"));
+    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
+    fireEvent.change(input, { target: { value: "1234567890" } });
 
-    fireEvent.change(screen.getByPlaceholderText("Enter number"), {
-      target: { value: "9876543210" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("Memo"), {
-      target: { value: "Error Memo" },
-    });
-
-    fireEvent.click(screen.getByText("Block"));
-
-    await waitFor(() =>
-      expect(actions.postaddBlockCallMsg).toHaveBeenCalled()
-    );
+    expect(input.value).toBe("123.456.7890");
   });
 
-  test("handles error in posteditBlockCallMsg", async () => {
-    actions.posteditBlockCallMsg.mockRejectedValue(new Error("Edit failed"));
-
+  test("handles handleOnChange for invalid phone number", () => {
     render(
       <Provider store={store}>
-        <MemoryRouter>
-          <BlockCallsMessages />
-        </MemoryRouter>
+        <BlockCallsMessages />
       </Provider>
     );
 
-    fireEvent.click(screen.getAllByText("Edit")[0]);
+    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
+    fireEvent.change(input, { target: { value: "123" } });
 
-    fireEvent.change(screen.getByPlaceholderText("Memo"), {
-      target: { value: "Fail Memo" },
-    });
-
-    fireEvent.click(screen.getByText("Save"));
-
-    await waitFor(() =>
-      expect(actions.posteditBlockCallMsg).toHaveBeenCalled()
-    );
+    expect(input.value).toBe("123");
+    expect(screen.getByText(/Please enter valid phone number/i)).toBeInTheDocument();
   });
 
-  test("handles error in postDeleteBlockCallMsg", async () => {
-    actions.postDeleteBlockCallMsg.mockRejectedValue(new Error("Delete fail"));
+  test("handles handleAddNumber with success response", async () => {
+    const mockPostAddBlockCallMsg = jest.fn(() => Promise.resolve());
+    actions.postaddBlockCallMsg = mockPostAddBlockCallMsg;
 
     render(
       <Provider store={store}>
-        <MemoryRouter>
-          <BlockCallsMessages />
-        </MemoryRouter>
+        <BlockCallsMessages />
       </Provider>
     );
 
-    fireEvent.click(screen.getAllByText("Remove")[0]);
+    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
+    fireEvent.change(input, { target: { value: "1234567890" } });
 
-    await waitFor(() =>
-      expect(actions.postDeleteBlockCallMsg).toHaveBeenCalled()
-    );
+    const blockButton = screen.getByText("Block");
+    fireEvent.click(blockButton);
+
+    await waitFor(() => {
+      expect(mockPostAddBlockCallMsg).toHaveBeenCalled();
+      expect(screen.getByText(/Add success/i)).toBeInTheDocument();
+    });
   });
 
-  test("handles error in posteditAllBlockCallMsg", async () => {
-    actions.posteditAllBlockCallMsg.mockRejectedValue(new Error("Edit all failed"));
+  test("handles handleAddNumber with failure response", async () => {
+    const mockPostAddBlockCallMsg = jest.fn(() => Promise.reject());
+    actions.postaddBlockCallMsg = mockPostAddBlockCallMsg;
 
     render(
       <Provider store={store}>
-        <MemoryRouter>
-          <BlockCallsMessages />
-        </MemoryRouter>
+        <BlockCallsMessages />
       </Provider>
     );
 
-    fireEvent.click(screen.getByText("Edit All"));
+    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
+    fireEvent.change(input, { target: { value: "1234567890" } });
 
-    fireEvent.change(screen.getAllByPlaceholderText("Memo")[0], {
-      target: { value: "Fail All Memo" },
+    const blockButton = screen.getByText("Block");
+    fireEvent.click(blockButton);
+
+    await waitFor(() => {
+      expect(mockPostAddBlockCallMsg).toHaveBeenCalled();
+      expect(screen.getByText(/Add failed/i)).toBeInTheDocument();
     });
+  });
 
-    fireEvent.click(screen.getByText("Save All"));
+  test("handles deleteNumber with success response", async () => {
+    const mockPostDeleteBlockCallMsg = jest.fn(() => Promise.resolve());
+    actions.postDeleteBlockCallMsg = mockPostDeleteBlockCallMsg;
 
-    await waitFor(() =>
-      expect(actions.posteditAllBlockCallMsg).toHaveBeenCalled()
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
+
+    const deleteButton = screen.getByText(/Unblock/i);
+    fireEvent.click(deleteButton);
+
+    await waitFor(() => {
+      expect(mockPostDeleteBlockCallMsg).toHaveBeenCalled();
+      expect(screen.getByText(/Delete success/i)).toBeInTheDocument();
+    });
+  });
+
+  test("handles deleteNumber with failure response", async () => {
+    const mockPostDeleteBlockCallMsg = jest.fn(() => Promise.reject());
+    actions.postDeleteBlockCallMsg = mockPostDeleteBlockCallMsg;
+
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
+
+    const deleteButton = screen.getByText(/Unblock/i);
+    fireEvent.click(deleteButton);
+
+    await waitFor(() => {
+      expect(mockPostDeleteBlockCallMsg).toHaveBeenCalled();
+      expect(screen.getByText(/Delete failed/i)).toBeInTheDocument();
+    });
+  });
+
+  test("handles handleToggle for explanation section", () => {
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
+
+    const toggleButton = screen.getByText(/What does a blocked contact experience/i);
+    fireEvent.click(toggleButton);
+
+    expect(screen.getByText(/Customers who call your number will hear/i)).toBeInTheDocument();
+  });
+
+  test("handles handleToggleSM for spam info", () => {
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
+
+    const toggleButton = screen.getByText(/Report suspected spam text messages/i);
+    fireEvent.click(toggleButton);
+
+    expect(screen.getByText(/You may forward the suspected Spam message/i)).toBeInTheDocument();
+  });
+
+  test("handles navigateTo for support links", () => {
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
+
+    const videoLink = screen.getByText(/Video: How to block services/i);
+    fireEvent.click(videoLink);
+
+    expect(window.location.href).toBe(
+      "https://www.verizonwireless.com/support/how-to-add-blocks-video/"
     );
   });
 });

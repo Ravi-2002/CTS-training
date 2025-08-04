@@ -1,219 +1,867 @@
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import "@testing-library/jest-dom";
-import { Provider } from "react-redux";
-import configureStore from "redux-mock-store";
-import BlockCallsMessages from "../blockCallsMessages";
-import * as actions from "../../actions/fetchCallsMessages";
+>
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px;...
 
-const mockStore = configureStore([]);
+      155 |
+      156 |     await waitFor(() => {
+    > 157 |       expect(mockPostDeleteBlockCallMsg).toHaveBeenCalled();
+          |                                          ^
+      158 |       expect(screen.getByText(/Delete success/i)).toBeInTheDocument();
+      159 |     });
+      160 |   });
 
-describe("BlockCallsMessages Component", () => {
-  let store;
+      at toHaveBeenCalled (src/app/blocks/deviceDetail/components/Test/blocksCallsandMessage.test.js:157:42)
+      at callback (node_modules/@testing-library/dom/dist/config.js:47:12)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:127:76)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:121:16)
+      at Timeout.task [as _onTimeout] (node_modules/jsdom/lib/jsdom/browser/Window.js:520:19)
 
-  beforeEach(() => {
-    store = mockStore({
-      Detail: {
-        callsMsgs: {
-          callsMessages: { remainingBlockCount: 5, addedBlockCount: 2 },
-          blockedNumbers: [
-            { phoneNumber: "1234567890", memo: "Test Memo", isEdit: false },
-          ],
-          expiredNumbers: [
-            { phoneNumber: "9876543210", memo: "Expired Memo" },
-          ],
-          getCMError: { statusCode: "00", errorMessage: "" },
-          blockAgainResponse: { successMsg: "Block again success", failureMsg: "Block again failed" },
-          addBlockCallMsg: { statusCode: "00", successMsg: "Add success", failureMsg: "Add failed", hasSuccessMsg: true, hasFailureMsg: false },
-          editBlockCallMsg: { successMsg: "Edit success", failureMsg: "Edit failed" },
-          deleteBlockCallMsg: { successMsg: "Delete success", failureMsg: "Delete failed" },
-          editAllBlockCallMsg: { successMsg: "Edit all success", failureMsg: "Edit all failed" },
-          isFetching: false,
-        },
-      },
-    });
+  ● BlockCallsMessages Component › handles deleteNumber with failure response
 
-    // Mock window.scrollTo
-    window.scrollTo = jest.fn();
-    // Mock window.location.href
-    delete window.location;
-    window.location = { href: "" };
-  });
+    expect(jest.fn()).toHaveBeenCalled()
 
-  test("renders BlockCallsMessages component", () => {
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages />
-      </Provider>
-    );
+    Expected number of calls: >= 1
+    Received number of calls:    0
 
-    expect(screen.getByText(/Block calls & messages/i)).toBeInTheDocument();
-    expect(screen.getByText(/Block a new number/i)).toBeInTheDocument();
-  });
+    Ignored nodes: comments, script, style
+    <html
+      class="wf-loading wf-verizonnhgetx-n4-loading wf-verizonnhgeds-n4-loading"
+    >
+      <head>
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+      </head>
+      <body>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px;...
 
-  test("displays loader when isFetching is true", () => {
-    store = mockStore({
-      Detail: {
-        callsMsgs: {
-          isFetching: true,
-        },
-      },
-    });
+      174 |
+      175 |     await waitFor(() => {
+    > 176 |       expect(mockPostDeleteBlockCallMsg).toHaveBeenCalled();
+          |                                          ^
+      177 |       expect(screen.getByText(/Delete failed/i)).toBeInTheDocument();
+      178 |     });
+      179 |   });
 
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages />
-      </Provider>
-    );
+      at toHaveBeenCalled (src/app/blocks/deviceDetail/components/Test/blocksCallsandMessage.test.js:176:42)
+      at callback (node_modules/@testing-library/dom/dist/config.js:47:12)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:127:76)
+(node:26176) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ FAIL  src/app/blocks/deviceDetail/components/Test/blocksCallsandMessage.test.js (13.614 s)
+  ● BlockCallsMessages Component › handles handleAddNumber with success response
 
-  });
+    expect(jest.fn()).toHaveBeenCalled()
 
-  test("handles handleOnChange for valid phone number", () => {
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages />
-      </Provider>
-    );
+    Expected number of calls: >= 1
+    Received number of calls:    0
 
-    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
-    fireEvent.change(input, { target: { value: "1234567890" } });
+    Ignored nodes: comments, script, style
+    <html
+      class="wf-loading wf-verizonnhgetx-n4-loading wf-verizonnhgeds-n4-loading"
+    >
+      <head>
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+      </head>
+      <body>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px;...
 
-    expect(input.value).toBe("123.456.7890");
-  });
+      113 |
+      114 |     await waitFor(() => {
+    > 115 |       expect(mockPostAddBlockCallMsg).toHaveBeenCalled();
+          |                                       ^
+      116 |       expect(screen.getByText(/Add success/i)).toBeInTheDocument();
+      117 |     });
+      118 |   });
 
-  test("handles handleOnChange for invalid phone number", () => {
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages />
-      </Provider>
-    );
+      at toHaveBeenCalled (src/app/blocks/deviceDetail/components/Test/blocksCallsandMessage.test.js:115:39)
+      at callback (node_modules/@testing-library/dom/dist/config.js:47:12)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:127:76)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:121:16)
+      at Timeout.task [as _onTimeout] (node_modules/jsdom/lib/jsdom/browser/Window.js:520:19)
 
-    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
-    fireEvent.change(input, { target: { value: "123" } });
+  ● BlockCallsMessages Component › handles handleAddNumber with failure response
 
-    expect(input.value).toBe("123");
-    expect(screen.getByText(/Please enter valid phone number/i)).toBeInTheDocument();
-  });
+    TestingLibraryElementError: Found multiple elements with the text: /Block/i
 
-  test("handles handleAddNumber with success response", async () => {
-    const mockPostAddBlockCallMsg = jest.fn(() => Promise.resolve());
-    actions.postaddBlockCallMsg = mockPostAddBlockCallMsg;
+    Here are the matching elements:
 
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages />
-      </Provider>
-    );
+    Ignored nodes: comments, script, style
+    <div
+      class="sc-AxhCb gGMjRg"
+      id="blocksCallsAndMessages"
+    >
+      Block calls & messages
+    </div>
 
-    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
-    fireEvent.change(input, { target: { value: "1234567890" } });
+    Ignored nodes: comments, script, style
+    <h4
+      class="StyledTypography-VDS__sc-15sxhse-0 jMVllw StyledTitle-VDS__sc-f6e32a-0 fHDzCi"
+    >
+      Block a new number
+    </h4>
 
-    const blockButton = screen.getByText("Block");
-    fireEvent.click(blockButton);
+    Ignored nodes: comments, script, style
+    <p
+      class="p-t-b-10"
+    >
+      Block calls and messages from up to
+       numbers.
+    </p>
 
-    await waitFor(() => {
-      expect(mockPostAddBlockCallMsg).toHaveBeenCalled();
-      expect(screen.getByText(/Add success/i)).toBeInTheDocument();
-    });
-  });
+    Ignored nodes: comments, script, style
+    <span
+      class="StyledChildWrapper-VDS__sc-pwxi3s-1 jVUsie"
+      tabindex="-1"
+      width="auto"
+    >
+      Block
+    </span>
 
-  test("handles handleAddNumber with failure response", async () => {
-    const mockPostAddBlockCallMsg = jest.fn(() => Promise.reject());
-    actions.postaddBlockCallMsg = mockPostAddBlockCallMsg;
+    Ignored nodes: comments, script, style
+    <span
+      aria-hidden="true"
+      class="Wrapper-VDS__sc-2pjk45-1 XEfid"
+      tabindex="-1"
+      type="inline"
+    >
+      What does a blocked contact experience?
+    </span>
 
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages />
-      </Provider>
-    );
+    Ignored nodes: comments, script, style
+    <span
+      aria-hidden="true"
+      class="Wrapper-VDS__sc-2pjk45-1 XEfid"
+      tabindex="-1"
+      type="inline"
+    >
+      Video: How to block services
+    </span>
 
-    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
-    fireEvent.change(input, { target: { value: "1234567890" } });
+    Ignored nodes: comments, script, style
+    <span
+      aria-hidden="true"
+      class="Wrapper-VDS__sc-2pjk45-1 XEfid"
+      tabindex="-1"
+      type="inline"
+    >
+      Block and unblock services FAQ
+    </span>
 
-    const blockButton = screen.getByText(/Block/i);
-    fireEvent.click(blockButton);
+    (If this is intentional, then use the `*AllBy*` variant of the query (like `queryAllByText`, `getAllByText`, or `findAllByText`)).
 
-    await waitFor(() => {
-      expect(mockPostAddBlockCallMsg).toHaveBeenCalled();
-      expect(screen.getByText(/Add failed/i)).toBeInTheDocument();
-    });
-  });
+    Ignored nodes: comments, script, style
+    <body>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,sans-serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,sans-serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,sans-serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,sans-serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+      >
+        BESbswy
+      </span>
+      <span
+        aria-hidden="true"
+        style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,se...
 
-  test("handles deleteNumber with success response", async () => {
-    const mockPostDeleteBlockCallMsg = jest.fn(() => Promise.resolve());
-    actions.postDeleteBlockCallMsg = mockPostDeleteBlockCallMsg;
+      131 |     fireEvent.change(input, { target: { value: "1234567890" } });
+      132 |
+    > 133 |     const blockButton = screen.getByText(/Block/i);
+          |                                ^
+      134 |     fireEvent.click(blockButton);
+      135 |
+      136 |     await waitFor(() => {
 
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages />
-      </Provider>
-    );
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:20:35)
+      at getElementError (node_modules/@testing-library/dom/dist/query-helpers.js:23:10)
+      at getMultipleElementsFoundError (node_modules/@testing-library/dom/dist/query-helpers.js:55:13)
+      at query (node_modules/@testing-library/dom/dist/query-helpers.js:95:19)
+      at Object.getByText (src/app/blocks/deviceDetail/components/Test/blocksCallsandMessage.test.js:133:32)
 
-    const deleteButton = screen.getByText(/Unblock/i);
-    fireEvent.click(deleteButton);
+  ● BlockCallsMessages Component › handles deleteNumber with success response
 
-    await waitFor(() => {
-      expect(mockPostDeleteBlockCallMsg).toHaveBeenCalled();
-      expect(screen.getByText(/Delete success/i)).toBeInTheDocument();
-    });
-  });
+    expect(jest.fn()).toHaveBeenCalled()
 
-  test("handles deleteNumber with failure response", async () => {
-    const mockPostDeleteBlockCallMsg = jest.fn(() => Promise.reject());
-    actions.postDeleteBlockCallMsg = mockPostDeleteBlockCallMsg;
+    Expected number of calls: >= 1
+    Received number of calls:    0
 
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages />
-      </Provider>
-    );
+    Ignored nodes: comments, script, style
+    <html
+      class="wf-loading wf-verizonnhgetx-n4-loading wf-verizonnhgeds-n4-loading"
+    >
+      <head>
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+      </head>
+      <body>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eTX,sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: sans-serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px; padding: 0px; font-variant: normal; white-space: nowrap; font-family: Verizon-NHG-eDS,serif; font-style: normal; font-weight: 400;"
+        >
+          BESbswy
+        </span>
+        <span
+          aria-hidden="true"
+          style="display: block; position: absolute; top: -9999px; left: -9999px; font-size: 300px; width: auto; height: auto; line-height: normal; margin: 0px;...
 
-    const deleteButton = screen.getByText(/Unblock/i);
-    fireEvent.click(deleteButton);
+      154 |
+      155 |     await waitFor(() => {
+    > 156 |       expect(mockPostDeleteBlockCallMsg).toHaveBeenCalled();
+          |                                          ^
+      157 |       expect(screen.getByText(/Delete success/i)).toBeInTheDocument();
+      158 |     });
+      159 |   });
 
-    await waitFor(() => {
-      expect(mockPostDeleteBlockCallMsg).toHaveBeenCalled();
-      expect(screen.getByText(/Delete failed/i)).toBeInTheDocument();
-    });
-  });
+      at toHaveBeenCalled (src/app/blocks/deviceDetail/components/Test/blocksCallsandMessage.test.js:156:42)
+      at callback (node_modules/@testing-library/dom/dist/config.js:47:12)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:127:76)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:121:16)
+      at Timeout.task [as _onTimeout] (node_modules/jsdom/lib/jsdom/browser/Window.js:520:19)
 
-  test("handles handleToggle", () => {
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages />
-      </Provider>
-    );
+  ● BlockCallsMessages Component › handles deleteNumber with failure response
 
-    const toggleButton = screen.getByText(/What does a blocked contact experience/i);
-    fireEvent.click(toggleButton);
+    expect(jest.fn()).toHaveBeenCalled()
 
-    expect(screen.getByText(/Customers who call your number will hear/i)).toBeInTheDocument();
-  });
+    Expected number of calls: >= 1
+    Received number of calls:    0
 
-  test("handles handleToggleSM", () => {
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages />
-      </Provider>
-    );
+    Ignored nodes: comments, script, style
+    <html
+      class="wf-verizonnhgetx-n4-inactive wf-verizonnhgeds-n4-inactive wf-inactive"
+    >
+      <head>
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+        <link
+          href="https://respframework.verizon.com/verizon-nhg.css"
+          media="all"
+          rel="stylesheet"
+        />
+      </head>
+      <body>
+        <div>
+          <div
+            class="accordion"
+          >
+            <div
+              class="accordion__item"
+            >
+              <div
+                aria-expanded="false"
+                class="accordion__title"
+                role="button"
+                tabindex="0"
+              >
+                <div
+                  class="u-position-relative"
+                >
+                  <div
+                    class="accordion-title"
+                  >
+                    <div
+                      class="sc-AxhCb gGMjRg"
+                      id="blocksCallsAndMessages"
+                    >
+                      Block calls & messages
+                    </div>
+                  </div>
+                  <div
+                    class="accordion__arrow"
+                    id="blocksCallsAndMessages"
+                    role="presentation"
+                  />
+                </div>
+              </div>
+              <div
+                aria-hidden="true"
+                class="accordion__body accordion__body--hidden"
+              >
+                <p
+                  aria-hidden="false"
+                  class="StyledTypography-VDS__sc-15sxhse-0 hLllKa StyledBody-VDS__sc-1x4uqr-0 iuvLa"
+                >
+                  <div
+                    class="row"
+                  >
+                    <div
+                      class="col-lg-12 p-l-r-0"
+                      data-track=""
+                      id="myalert"
+                    >
+                      <h4
+                        class="StyledTypography-VDS__sc-15sxhse-0 jMVllw StyledTitle-VDS__sc-f6e32a-0 fHDzCi"
+                      >
+                        Block a new number
+                      </h4>
+                    </div>
+                  </div>
+                  <div
+                    class="row"
+                  >
+                    <div
+                      class="col-lg-12 p-l-r-0"
+                    >
+                      <div
+                        class="o-block-msg"
+                      >
+                        <p
+                          class="p-t-b-10"
+                        >
+                          Block calls and messages from up to
+                           numbers.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class=""
+                  >
+                    <div
+                      class="row"
+                    >
+                      <div
+                        class="col-lg-4 p-l-r-0"
+                      >
+                        <label
+                          for="block_site_number"
+                        >
+                          <p
+                            aria-hidden="false"
+                            class="StyledTypography-VDS__sc-15sxhse-0 bXRNxc StyledBody-VDS__sc-1x4uqr-0 iuvLa"
+                          >
+                            Enter a number
+                          </p>
+                          <div
+                            class="sc-AxjAm fcDvos"
+                            style="padding-right: 0px; padding-left: 0px; margin-right: 0px; margin-left: 0px; max-width: 100%; font-size: 16px; flex: 1;"
+                          >
+                            <div
+                              class="StyledGridContainer-VDS__sc-182nyaf-0 iKpvHb"
+                              height="100%"
+                            >
+                              <div
+                                class="RowWrapper-VDS__sc-1n498kw-0 gHBjTr"
+                              >
+                                <div
+                                  class="sc-AxirZ StyledRow-VDS__sc-1n498kw-1 cXpBuA"
+                                  style="flex-direction: row; justify-content: flex-start; margin-right: auto; margin-left: auto; padding-right: 0px; padding-left: 0px;"
+                                >
+                                  <div
+                                    class="sc-AxiKw hbmDGJ"
+                                    id="block_site_number"
+                                    style="margin-bottom: 0px;"
+                                  >
+                                    <div
+                                      class="ComponentContainer-VDS__sc-1nnt7hu-0 goOFHq"
+                                    >
+                                      <div
+                                        class="StyledContainer-VDS__sc-1nnt7hu-1 kjuQmJ"
+                                        data-testid="test-container"
+                                      >
+                                        <span
+           ...
 
-    const toggleButton = screen.getByText(/Report suspected spam text messages/i);
-    fireEvent.click(toggleButton);
+      173 |
+      174 |     await waitFor(() => {
+    > 175 |       expect(mockPostDeleteBlockCallMsg).toHaveBeenCalled();
+          |                                          ^
+      176 |       expect(screen.getByText(/Delete failed/i)).toBeInTheDocument();
+      177 |     });
+      178 |   });
 
-    expect(screen.getByText(/You may forward the suspected Spam message/i)).toBeInTheDocument();
-  });
+      at toHaveBeenCalled (src/app/blocks/deviceDetail/components/Test/blocksCallsandMessage.test.js:175:42)
+      at callback (node_modules/@testing-library/dom/dist/config.js:47:12)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:127:76)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:121:16)
+      at Timeout.task [as _onTimeout] (node_modules/jsdom/lib/jsdom/browser/Window.js:520:19)
 
-  test("handles navigateTo for support links", () => {
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages />
-      </Provider>
-    );
+📦 report is created on: C:\Users\xsklra\CXTDT-698840\onevz-soe-digital-devices-dotcom-static\app\jest_html_reporters.html
+Test Suites: 1 failed, 1 total
+Tests:       4 failed, 7 passed, 11 total
+Snapshots:   0 total
+Time:        21.372 s
 
-    const videoLink = screen.getByText(/Video: How to block services/i);
-    fireEvent.click(videoLink);
-
-    expect(window.location.href).toBe("https://www.verizonwireless.com/support/how-to-add-blocks-video/");
-  });
-
-});
+Watch Usage: Press w to show more.

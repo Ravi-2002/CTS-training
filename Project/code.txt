@@ -1,14 +1,15 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
-import { render } from '@testing-library/react';
 import configureStore from 'redux-mock-store';
 import thunk from 'redux-thunk';
 import BlockCallsMessages from '../BlockCallsMessages';
 
 const mockStore = configureStore([thunk]);
 
-describe('BlockCallsMessages - deleteNumber', () => {
+describe('BlockCallsMessages - deleteNumber method coverage', () => {
   let store;
+  let container;
 
   beforeEach(() => {
     store = mockStore({
@@ -22,28 +23,24 @@ describe('BlockCallsMessages - deleteNumber', () => {
       }
     });
 
-    // Mock reactGlobals locally
+    // reactGlobals mock
     global.reactGlobals = { isCsr: false };
 
-    // DOM setup for scroll target
+    // Add #myalert div for scrolling
     const alertDiv = document.createElement('div');
     alertDiv.setAttribute('id', 'myalert');
     document.body.appendChild(alertDiv);
+
+    // Create container for rendering
+    container = document.createElement('div');
+    document.body.appendChild(container);
   });
 
-  const renderWithRef = (props, store) => {
-    const ref = React.createRef();
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
 
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages ref={ref} {...props} />
-      </Provider>
-    );
-
-    return ref;
-  };
-
-  test('deleteNumber sets success state when statusCode is "00"', async () => {
+  test('should call deleteNumber and update state on success', async () => {
     const props = {
       selectedDevice: { encryptedMtn: 'encrypted123' },
       postDeleteBlockCallMsg: jest.fn(() => Promise.resolve()),
@@ -57,11 +54,29 @@ describe('BlockCallsMessages - deleteNumber', () => {
       }
     };
 
-    const ref = renderWithRef(props, store);
+    let componentInstance = null;
+
+    class Wrapper extends React.Component {
+      render() {
+        return (
+          <Provider store={store}>
+            <BlockCallsMessages
+              ref={(ref) => {
+                componentInstance = ref;
+              }}
+              {...props}
+            />
+          </Provider>
+        );
+      }
+    }
+
+    // Render manually via ReactDOM
+    await ReactDOM.render(<Wrapper />, container);
 
     const scrollSpy = jest.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-    await ref.current.deleteNumber({ preventDefault: () => {} }, {
+    await componentInstance.deleteNumber({ preventDefault: () => {} }, {
       phoneNumber: '9876543210',
       memo: 'spam'
     });
@@ -77,14 +92,14 @@ describe('BlockCallsMessages - deleteNumber', () => {
       onlyMemo: false
     });
 
-    expect(ref.current.state.deleteSuccess).toBe(true);
-    expect(ref.current.state.trackingId).toBe('CallsMessagesSuccessNotification');
-    expect(ref.current.state.successMsg).toBe('Deleted successfully');
+    expect(componentInstance.state.deleteSuccess).toBe(true);
+    expect(componentInstance.state.trackingId).toBe('CallsMessagesSuccessNotification');
+    expect(componentInstance.state.successMsg).toBe('Deleted successfully');
 
     scrollSpy.mockRestore();
   });
 
-  test('deleteNumber sets failure state when statusCode is not "00"', async () => {
+  test('should call deleteNumber and set failure state on non-00 status', async () => {
     const props = {
       selectedDevice: { encryptedMtn: 'encrypted123' },
       postDeleteBlockCallMsg: jest.fn(() => Promise.resolve()),
@@ -94,15 +109,32 @@ describe('BlockCallsMessages - deleteNumber', () => {
       }
     };
 
-    const ref = renderWithRef(props, store);
+    let componentInstance = null;
 
-    await ref.current.deleteNumber({ preventDefault: () => {} }, {
+    class Wrapper extends React.Component {
+      render() {
+        return (
+          <Provider store={store}>
+            <BlockCallsMessages
+              ref={(ref) => {
+                componentInstance = ref;
+              }}
+              {...props}
+            />
+          </Provider>
+        );
+      }
+    }
+
+    await ReactDOM.render(<Wrapper />, container);
+
+    await componentInstance.deleteNumber({ preventDefault: () => {} }, {
       phoneNumber: '1112223333',
       memo: 'testfail'
     });
 
     expect(props.postDeleteBlockCallMsg).toHaveBeenCalled();
-    expect(ref.current.state.deleteSuccess).toBe(false);
-    expect(ref.current.state.trackingId).toBe('CallsMessagesFailureNotification');
+    expect(componentInstance.state.deleteSuccess).toBe(false);
+    expect(componentInstance.state.trackingId).toBe('CallsMessagesFailureNotification');
   });
 });

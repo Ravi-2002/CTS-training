@@ -1,11 +1,56 @@
-checkAllowedPattern = (addStr) => {
-    let addPattern = /^[0-9a-zA-Z\s=,.:_-]+$/;
-    let spacePattern = /^[\s=,.:_-]+$/;
-    if ((addStr.length == 1) && addStr.match(spacePattern)) {
-      return false;
-    }
-    else if (addStr.match(addPattern) || addStr == "") {
-      return true;
-    } else
-      return false;
-  }
+import React from 'react';
+import { Provider } from 'react-redux';
+import thunk from 'redux-thunk';
+import configureStore from 'redux-mock-store';
+import { render } from '@testing-library/react';
+import BlockCallsMessages from '../BlockCallsMessages';
+
+const middlewares = [thunk];
+const mockStore = configureStore(middlewares);
+
+describe('BlockCallsMessages - checkAllowedPattern method', () => {
+  let instance;
+
+  beforeEach(() => {
+    const store = mockStore({
+      Detail: {
+        callsMessages: {
+          loading: false,
+          blockedNumbers: [],
+          postaddBlockCallMsgResponse: {},
+          postDeleteBlockCallMsgResponse: {},
+        },
+      },
+    });
+
+    const { container } = render(
+      <Provider store={store}>
+        <BlockCallsMessages ref={(ref) => (instance = ref)} />
+      </Provider>
+    );
+  });
+
+  it('returns false for single space character', () => {
+    expect(instance.checkAllowedPattern(' ')).toBe(false);
+  });
+
+  it('returns true for alphanumeric string', () => {
+    expect(instance.checkAllowedPattern('abc123')).toBe(true);
+  });
+
+  it('returns false for disallowed symbols', () => {
+    expect(instance.checkAllowedPattern('$%')).toBe(false);
+  });
+
+  it('returns true for underscore combined with alphanumeric', () => {
+    expect(instance.checkAllowedPattern('abc_123')).toBe(true);
+  });
+
+  it('returns true for empty string', () => {
+    expect(instance.checkAllowedPattern('')).toBe(true);
+  });
+
+  it('returns false for single special char like underscore', () => {
+    expect(instance.checkAllowedPattern('_')).toBe(false);
+  });
+});

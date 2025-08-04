@@ -1,109 +1,219 @@
-FAIL  src/app/blocks/deviceDetail/components/Test/blockService.test.js (5.852 s)
-  ● BlockServices Component › renders correctly with service list and handles toggle                        
-                                                                                                            
-    TypeError: middleware is not a function                                                                 
-                                                                                                            
-      24 |                                                                                                  
-      25 |   beforeEach(() => {                                                                             
-    > 26 |     store = mockStore({                                                                          
-         |             ^
-      27 |       Home: {
-      28 |         getServicesResponse: {
-      29 |           status: 200,
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import BlockCallsMessages from "../blockCallsMessages";
+import * as actions from "../../actions/fetchCallsMessages";
 
-      at middleware (node_modules/redux/src/applyMiddleware.ts:54:49)
-          at Array.map (<anonymous>)
-      at map (node_modules/redux/src/applyMiddleware.ts:54:31)
-      at mockStoreWithMiddleware (node_modules/redux-mock-store/dist/index-cjs.js:110:12)
-      at Object.mockStore (src/app/blocks/deviceDetail/components/Test/blockService.test.js:26:13)
+const mockStore = configureStore([]);
 
-  ● BlockServices Component › displays success message on post response
+describe("BlockCallsMessages Component", () => {
+  let store;
 
-    TypeError: middleware is not a function
+  beforeEach(() => {
+    store = mockStore({
+      Detail: {
+        callsMsgs: {
+          callsMessages: { remainingBlockCount: 5, addedBlockCount: 2 },
+          blockedNumbers: [
+            { phoneNumber: "1234567890", memo: "Test Memo", isEdit: false },
+          ],
+          expiredNumbers: [
+            { phoneNumber: "9876543210", memo: "Expired Memo" },
+          ],
+          getCMError: { statusCode: "00", errorMessage: "" },
+          blockAgainResponse: { successMsg: "Block again success", failureMsg: "Block again failed" },
+          addBlockCallMsg: { statusCode: "00", successMsg: "Add success", failureMsg: "Add failed", hasSuccessMsg: true, hasFailureMsg: false },
+          editBlockCallMsg: { successMsg: "Edit success", failureMsg: "Edit failed" },
+          deleteBlockCallMsg: { successMsg: "Delete success", failureMsg: "Delete failed" },
+          editAllBlockCallMsg: { successMsg: "Edit all success", failureMsg: "Edit all failed" },
+          isFetching: false,
+        },
+      },
+    });
 
-      24 |
-      25 |   beforeEach(() => {
-    > 26 |     store = mockStore({
-         |             ^
-      27 |       Home: {
-      28 |         getServicesResponse: {
-      29 |           status: 200,
+    // Mock window.scrollTo
+    window.scrollTo = jest.fn();
+    // Mock window.location.href
+    delete window.location;
+    window.location = { href: "" };
+  });
 
-      at middleware (node_modules/redux/src/applyMiddleware.ts:54:49)
-          at Array.map (<anonymous>)
-      at map (node_modules/redux/src/applyMiddleware.ts:54:31)
-      at mockStoreWithMiddleware (node_modules/redux-mock-store/dist/index-cjs.js:110:12)
-      at Object.mockStore (src/app/blocks/deviceDetail/components/Test/blockService.test.js:26:13)
+  test("renders BlockCallsMessages component", () => {
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
 
-  ● BlockServices Component › displays error message on post failure
+    expect(screen.getByText(/Block calls & messages/i)).toBeInTheDocument();
+    expect(screen.getByText(/Block a new number/i)).toBeInTheDocument();
+  });
 
-    TypeError: middleware is not a function
+  test("displays loader when isFetching is true", () => {
+    store = mockStore({
+      Detail: {
+        callsMsgs: {
+          isFetching: true,
+        },
+      },
+    });
 
-      24 |
-      25 |   beforeEach(() => {
-    > 26 |     store = mockStore({
-         |             ^
-      27 |       Home: {
-      28 |         getServicesResponse: {
-      29 |           status: 200,
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
 
-      at middleware (node_modules/redux/src/applyMiddleware.ts:54:49)
-          at Array.map (<anonymous>)
-      at map (node_modules/redux/src/applyMiddleware.ts:54:31)
-      at mockStoreWithMiddleware (node_modules/redux-mock-store/dist/index-cjs.js:110:12)
-      at Object.mockStore (src/app/blocks/deviceDetail/components/Test/blockService.test.js:26:13)
+  });
 
-  ● BlockServices Component › navigates back to device page
+  test("handles handleOnChange for valid phone number", () => {
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
 
-    TypeError: middleware is not a function
+    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
+    fireEvent.change(input, { target: { value: "1234567890" } });
 
-      24 |
-      25 |   beforeEach(() => {
-    > 26 |     store = mockStore({
-         |             ^
-      27 |       Home: {
-      28 |         getServicesResponse: {
-      29 |           status: 200,
+    expect(input.value).toBe("123.456.7890");
+  });
 
-      at middleware (node_modules/redux/src/applyMiddleware.ts:54:49)
-          at Array.map (<anonymous>)
-      at map (node_modules/redux/src/applyMiddleware.ts:54:31)
-      at mockStoreWithMiddleware (node_modules/redux-mock-store/dist/index-cjs.js:110:12)
-      at Object.mockStore (src/app/blocks/deviceDetail/components/Test/blockService.test.js:26:13)
+  test("handles handleOnChange for invalid phone number", () => {
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
 
-  ● BlockServices Component › renders loading state when getServices is not yet loaded
+    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
+    fireEvent.change(input, { target: { value: "123" } });
 
-    TypeError: middleware is not a function
+    expect(input.value).toBe("123");
+    expect(screen.getByText(/Please enter valid phone number/i)).toBeInTheDocument();
+  });
 
-      24 |
-      25 |   beforeEach(() => {
-    > 26 |     store = mockStore({
-         |             ^
-      27 |       Home: {
-      28 |         getServicesResponse: {
-      29 |           status: 200,
+  test("handles handleAddNumber with success response", async () => {
+    const mockPostAddBlockCallMsg = jest.fn(() => Promise.resolve());
+    actions.postaddBlockCallMsg = mockPostAddBlockCallMsg;
 
-      at middleware (node_modules/redux/src/applyMiddleware.ts:54:49)
-          at Array.map (<anonymous>)
-      at map (node_modules/redux/src/applyMiddleware.ts:54:31)
-      at mockStoreWithMiddleware (node_modules/redux-mock-store/dist/index-cjs.js:110:12)
-      at Object.mockStore (src/app/blocks/deviceDetail/components/Test/blockService.test.js:26:13)
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
 
-📦 report is created on: C:\Users\xsklra\CXTDT-698840\onevz-soe-digital-devices-dotcom-static\app\jest_html_reporters.html
-Test Suites: 1 failed, 1 total
-Tests:       5 failed, 5 total
-Snapshots:   0 total
-Time:        9.67 s, estimated 10 s
+    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
+    fireEvent.change(input, { target: { value: "1234567890" } });
 
-Active Filters: filename /blockService.test.js/
- › Press c to clear filters.
+    const blockButton = screen.getByText("Block");
+    fireEvent.click(blockButton);
 
-Watch Usage
- › Press a to run all tests.
- › Press f to run only failed tests.
- › Press o to only run tests related to changed files.
- › Press q to quit watch mode.
- › Press i to run failing tests interactively.
- › Press p to filter by a filename regex pattern.
- › Press t to filter by a test name regex pattern.
- › Press Enter to trigger a test run.
+    await waitFor(() => {
+      expect(mockPostAddBlockCallMsg).toHaveBeenCalled();
+      expect(screen.getByText(/Add success/i)).toBeInTheDocument();
+    });
+  });
+
+  test("handles handleAddNumber with failure response", async () => {
+    const mockPostAddBlockCallMsg = jest.fn(() => Promise.reject());
+    actions.postaddBlockCallMsg = mockPostAddBlockCallMsg;
+
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
+
+    const input = screen.getByPlaceholderText("XXX.XXX.XXXX");
+    fireEvent.change(input, { target: { value: "1234567890" } });
+
+    const blockButton = screen.getByText(/Block/i);
+    fireEvent.click(blockButton);
+
+    await waitFor(() => {
+      expect(mockPostAddBlockCallMsg).toHaveBeenCalled();
+      expect(screen.getByText(/Add failed/i)).toBeInTheDocument();
+    });
+  });
+
+  test("handles deleteNumber with success response", async () => {
+    const mockPostDeleteBlockCallMsg = jest.fn(() => Promise.resolve());
+    actions.postDeleteBlockCallMsg = mockPostDeleteBlockCallMsg;
+
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
+
+    const deleteButton = screen.getByText(/Unblock/i);
+    fireEvent.click(deleteButton);
+
+    await waitFor(() => {
+      expect(mockPostDeleteBlockCallMsg).toHaveBeenCalled();
+      expect(screen.getByText(/Delete success/i)).toBeInTheDocument();
+    });
+  });
+
+  test("handles deleteNumber with failure response", async () => {
+    const mockPostDeleteBlockCallMsg = jest.fn(() => Promise.reject());
+    actions.postDeleteBlockCallMsg = mockPostDeleteBlockCallMsg;
+
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
+
+    const deleteButton = screen.getByText(/Unblock/i);
+    fireEvent.click(deleteButton);
+
+    await waitFor(() => {
+      expect(mockPostDeleteBlockCallMsg).toHaveBeenCalled();
+      expect(screen.getByText(/Delete failed/i)).toBeInTheDocument();
+    });
+  });
+
+  test("handles handleToggle", () => {
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
+
+    const toggleButton = screen.getByText(/What does a blocked contact experience/i);
+    fireEvent.click(toggleButton);
+
+    expect(screen.getByText(/Customers who call your number will hear/i)).toBeInTheDocument();
+  });
+
+  test("handles handleToggleSM", () => {
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
+
+    const toggleButton = screen.getByText(/Report suspected spam text messages/i);
+    fireEvent.click(toggleButton);
+
+    expect(screen.getByText(/You may forward the suspected Spam message/i)).toBeInTheDocument();
+  });
+
+  test("handles navigateTo for support links", () => {
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages />
+      </Provider>
+    );
+
+    const videoLink = screen.getByText(/Video: How to block services/i);
+    fireEvent.click(videoLink);
+
+    expect(window.location.href).toBe("https://www.verizonwireless.com/support/how-to-add-blocks-video/");
+  });
+
+});

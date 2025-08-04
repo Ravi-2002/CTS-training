@@ -1,56 +1,52 @@
-import React from 'react';
-import { Provider } from 'react-redux';
-import thunk from 'redux-thunk';
-import configureStore from 'redux-mock-store';
-import { render } from '@testing-library/react';
-import BlockCallsMessages from '../BlockCallsMessages';
-
-const middlewares = [thunk];
-const mockStore = configureStore(middlewares);
-
-describe('BlockCallsMessages - checkAllowedPattern method', () => {
-  let instance;
-
-  beforeEach(() => {
-    const store = mockStore({
-      Detail: {
-        callsMessages: {
-          loading: false,
-          blockedNumbers: [],
-          postaddBlockCallMsgResponse: {},
-          postDeleteBlockCallMsgResponse: {},
-        },
-      },
+deleteNumber = (e, number) => {
+    e.preventDefault();
+    if (reactGlobals.isCsr) {
+      return;
+    }
+    let payload = {
+      mtn: this.props.selectedDevice?.encryptedMtn,
+      blockNumber: number.phoneNumber,
+      oldPhoneNumber: number.phoneNumber,
+      expiredPhoneNumber: "",
+      blockedNumbers: [],
+      memo: number.memo,
+      applyAll: false,
+      onlyMemo: false
+    }
+ 
+    this.props.postDeleteBlockCallMsg(payload).then(() => {
+      let elmnt = document.getElementById("myalert");
+      if (elmnt != null)
+        window.scrollTo(0, elmnt.offsetTop);
+      if (this.props.deleteBlockCallMsgRes.statusCode == "00") {
+        this.setState({
+          deleteSuccess: true,
+          trackingId: "CallsMessagesSuccessNotification",
+          errorMsg: null,
+          failSuccess: null,
+          addSuccess: null,
+          failSuccess: null,
+          editSuccess: null,
+          editAllSuccess: null,
+          blockAgainSuccess: null,
+          blockedList: this.props.deleteBlockCallMsgRes.blockedPhoneNumbers,
+          expiredList: this.props.deleteBlockCallMsgRes.expiredBlockedPhoneNumbers,
+          remainingBlockCount: this.props.deleteBlockCallMsgRes.remainingBlockCount,
+          successMsg: this.props.deleteBlockCallMsgRes.successMsg,
+          failureMsg: this.props.deleteBlockCallMsgRes.failureMsg
+        })
+      } else {
+        this.setState({
+          addSuccess: null,
+          errorMsg: null,
+          deleteSuccess: false,
+          trackingId: "CallsMessagesFailureNotification",
+          editAllSuccess: null,
+ 
+          failSuccess: null,
+          editSuccess: null,
+          blockAgainSuccess: null
+        })
+      }
     });
-
-    const { container } = render(
-      <Provider store={store}>
-        <BlockCallsMessages ref={(ref) => (instance = ref)} />
-      </Provider>
-    );
-  });
-
-  it('returns false for single space character', () => {
-    expect(instance.checkAllowedPattern(' ')).toBe(false);
-  });
-
-  it('returns true for alphanumeric string', () => {
-    expect(instance.checkAllowedPattern('abc123')).toBe(true);
-  });
-
-  it('returns false for disallowed symbols', () => {
-    expect(instance.checkAllowedPattern('$%')).toBe(false);
-  });
-
-  it('returns true for underscore combined with alphanumeric', () => {
-    expect(instance.checkAllowedPattern('abc_123')).toBe(true);
-  });
-
-  it('returns true for empty string', () => {
-    expect(instance.checkAllowedPattern('')).toBe(true);
-  });
-
-  it('returns false for single special char like underscore', () => {
-    expect(instance.checkAllowedPattern('_')).toBe(false);
-  });
-});
+  }

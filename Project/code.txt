@@ -1,52 +1,107 @@
-deleteNumber = (e, number) => {
-    e.preventDefault();
-    if (reactGlobals.isCsr) {
-      return;
-    }
-    let payload = {
-      mtn: this.props.selectedDevice?.encryptedMtn,
-      blockNumber: number.phoneNumber,
-      oldPhoneNumber: number.phoneNumber,
-      expiredPhoneNumber: "",
-      blockedNumbers: [],
-      memo: number.memo,
-      applyAll: false,
-      onlyMemo: false
-    }
- 
-    this.props.postDeleteBlockCallMsg(payload).then(() => {
-      let elmnt = document.getElementById("myalert");
-      if (elmnt != null)
-        window.scrollTo(0, elmnt.offsetTop);
-      if (this.props.deleteBlockCallMsgRes.statusCode == "00") {
-        this.setState({
-          deleteSuccess: true,
-          trackingId: "CallsMessagesSuccessNotification",
-          errorMsg: null,
-          failSuccess: null,
-          addSuccess: null,
-          failSuccess: null,
-          editSuccess: null,
-          editAllSuccess: null,
-          blockAgainSuccess: null,
-          blockedList: this.props.deleteBlockCallMsgRes.blockedPhoneNumbers,
-          expiredList: this.props.deleteBlockCallMsgRes.expiredBlockedPhoneNumbers,
-          remainingBlockCount: this.props.deleteBlockCallMsgRes.remainingBlockCount,
-          successMsg: this.props.deleteBlockCallMsgRes.successMsg,
-          failureMsg: this.props.deleteBlockCallMsgRes.failureMsg
-        })
-      } else {
-        this.setState({
-          addSuccess: null,
-          errorMsg: null,
-          deleteSuccess: false,
-          trackingId: "CallsMessagesFailureNotification",
-          editAllSuccess: null,
- 
-          failSuccess: null,
-          editSuccess: null,
-          blockAgainSuccess: null
-        })
+import React from 'react';
+import { Provider } from 'react-redux';
+import { render } from '@testing-library/react';
+import configureStore from 'redux-mock-store';
+import thunk from 'redux-thunk';
+import BlockCallsMessages from '../BlockCallsMessages';
+
+const mockStore = configureStore([thunk]);
+
+describe('BlockCallsMessages - deleteNumber', () => {
+  let store;
+
+  beforeEach(() => {
+    store = mockStore({
+      Detail: {
+        selectedDevice: {
+          encryptedMtn: 'encrypted123'
+        },
+        callsMessages: {
+          deleteBlockCallMsgRes: {}
+        }
       }
     });
-  }
+
+    // Set mock for reactGlobals directly (no import)
+    global.reactGlobals = { isCsr: false };
+
+    // Required div for scrolling
+    const alertDiv = document.createElement('div');
+    alertDiv.setAttribute('id', 'myalert');
+    document.body.appendChild(alertDiv);
+  });
+
+  test('deleteNumber sets success state when API returns statusCode "00"', async () => {
+    const props = {
+      selectedDevice: { encryptedMtn: 'encrypted123' },
+      postDeleteBlockCallMsg: jest.fn(() => Promise.resolve()),
+      deleteBlockCallMsgRes: {
+        statusCode: '00',
+        blockedPhoneNumbers: ['9876543210'],
+        expiredBlockedPhoneNumbers: [],
+        remainingBlockCount: 3,
+        successMsg: 'Deleted successfully',
+        failureMsg: ''
+      }
+    };
+
+    const { container } = render(
+      <Provider store={store}>
+        <BlockCallsMessages {...props} />
+      </Provider>
+    );
+
+    const instance = container.firstChild._owner.stateNode;
+    const scrollSpy = jest.spyOn(window, 'scrollTo').mockImplementation(() => {});
+
+    await instance.deleteNumber({ preventDefault: () => {} }, {
+      phoneNumber: '9876543210',
+      memo: 'spam'
+    });
+
+    expect(props.postDeleteBlockCallMsg).toHaveBeenCalledWith({
+      mtn: 'encrypted123',
+      blockNumber: '9876543210',
+      oldPhoneNumber: '9876543210',
+      expiredPhoneNumber: '',
+      blockedNumbers: [],
+      memo: 'spam',
+      applyAll: false,
+      onlyMemo: false
+    });
+
+    expect(instance.state.deleteSuccess).toBe(true);
+    expect(instance.state.trackingId).toBe('CallsMessagesSuccessNotification');
+    expect(instance.state.successMsg).toBe('Deleted successfully');
+
+    scrollSpy.mockRestore();
+  });
+
+  test('deleteNumber sets failure state when API returns error code', async () => {
+    const props = {
+      selectedDevice: { encryptedMtn: 'encrypted123' },
+      postDeleteBlockCallMsg: jest.fn(() => Promise.resolve()),
+      deleteBlockCallMsgRes: {
+        statusCode: '01',
+        failureMsg: 'Something went wrong'
+      }
+    };
+
+    const { container } = render(
+      <Provider store={store}>
+        <BlockCallsMessages {...props} />
+      </Provider>
+    );
+
+    const instance = container.firstChild._owner.stateNode;
+
+    await instance.deleteNumber({ preventDefault: () => {} }, {
+      phoneNumber: '1112223333',
+      memo: 'testfail'
+    });
+
+    expect(props.postDeleteBlockCallMsg).toHaveBeenCalled();
+    expect(instance.state.deleteSuccess).toBe(false);
+    expect(instance.state.trackingId).toBe('CallsMessagesFailureNotification');
+  });
+});

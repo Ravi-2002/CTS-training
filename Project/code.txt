@@ -1,171 +1,142 @@
-import React, { lazy, Fragment, Suspense } from "react";
-import { Switch, Route } from "react-router-dom";
-import styled from "styled-components";
+import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
+import { render, screen } from '@testing-library/react';
+import Routes from '../index';
+import * as common from '../../../shared/utilities/util';
 
-import Spinner from './../../shared/components/Loader/spinner';
-import common from "./../../shared/utilities/util";
+// Mock global vars
+global.reactGlobals = { transitionFallback: false };
+global._currentPageUrl = null;
 
-const Home = lazy(()=> import("./home/components/index"));
-const DeviceDetail = lazy(()=> import("./deviceDetail/components/index"));
-const ServiceDetails = lazy(()=> import("./home/components/servicedetails"));
-const ViewLimitations = lazy(()=> import("./deviceDetail/components/ViewLimitation"));
-const Callsmessages = lazy(()=> import("./deviceDetail/components/callsandmessages"));
+// Mock components (we return text so we can query it)
+jest.mock('../home/components/index', () => () => <div>Home Component</div>);
+jest.mock('../deviceDetail/components/index', () => () => <div>DeviceDetail Component</div>);
+jest.mock('../home/components/servicedetails', () => () => <div>ServiceDetails Component</div>);
+jest.mock('../deviceDetail/components/ViewLimitation', () => () => <div>ViewLimitations Component</div>);
+jest.mock('../deviceDetail/components/callsandmessages', () => () => <div>CallsMessages Component</div>);
+jest.mock('./../../../shared/components/Loader/spinner', () => () => <div>Spinner Component</div>);
+jest.mock('../history', () => ({ GlobalHistory: () => <div>History Component</div> }));
 
-
-import { GlobalHistory } from "./history";
-import { TransitionGroup, CSSTransition } from "react-transition-group";
-
-const loadingImg = (<Spinner />);
-const pageRoutes = [
-  "interstitial",
-  "landing",
-  "suspendoptions",
-  "confirmation"
-];
-
-const TransitionWrapper = styled(TransitionGroup)`
- height: 100%;
- width: 100%; 
- display: flex;
- flex-direction: column;
- overflow: hidden;
- `;
-
-
-const TransitionContainer = styled.div`
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  overflow: auto;
-  margin-right: 0%;
-  // padding: 0px 20px;
-`;
-let oldClass = "";
-const nativePlatform = common.getOsType(); //"ios";
-
-function getPageDirection(location) {
-  if (location && !reactGlobals.transitionFallback) {
-    const pageDirection = location.state && location.state.transition;
-    return pageDirection
-      ? `${nativePlatform} ${pageDirection}`
-      : `${nativePlatform} backWard`;
-  }
-  return null;
-}
-/* istanbul ignore next */
-function getNewUrl(location) {
-  if (location && location.pathname) {
-    const locationArray = location.pathname.split("/");
-    if (locationArray && locationArray.length > 2) {
-      return `${locationArray[1]}/${locationArray[2]}`;
-    }
-    return locationArray[1];
-  }
-  return null;
-}
-
-function getUrlIndex(url, pageRoutes) {
-  return pageRoutes.findIndex(item => item.toLowerCase() === url.toLowerCase());
-}
-
-function getClassBasedOnUrlComparison(newUrl, _currentPageUrl, pageRoutes) {
-  const newUrlIndex = getUrlIndex(newUrl, pageRoutes);
-  const oldUrlIndex = getUrlIndex(_currentPageUrl, pageRoutes);
-
-  if (oldUrlIndex === newUrlIndex && oldClass !== "") {
-    return `${nativePlatform} ${oldClass}`;
-  }
-
-  if (oldUrlIndex <= newUrlIndex) {
-    oldClass = "forWard";
-    return `${nativePlatform} forWard`;
-  }
-
-  oldClass = "backWard";
-  return `${nativePlatform} backWard`;
-}
-
-function getClassName(location) {
-  const pageDirection = getPageDirection(location);
-  if (pageDirection) return pageDirection;
-
-  if (
-    location &&
-    location.pathname &&
-    !(typeof _currentPageUrl === "undefined" || _currentPageUrl === null) &&
-    _currentPageUrl
-  ) {
-    const newUrl = getNewUrl(location);
-    if (newUrl) {
-      return getClassBasedOnUrlComparison(newUrl, _currentPageUrl, pageRoutes);
-    }
-  }
-
-  return `${nativePlatform} forWard`;
-}
-const childFactoryCreator = (classNames) => (child) =>
-  React.cloneElement(child, {
-    classNames,
+describe('Routes component full coverage', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-const isMVM = common.getChannelId() === "VZW-MFA";
+  it('renders /blockService with pageDirection branch (transition present)', async () => {
+    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
+    jest.spyOn(common, 'getChannelId').mockReturnValue('VZW-MFA'); // isMVM = true
 
-function renderRoutes(location) {
-  const className = `${getClassName(location)} pageSlider`;
-
-  return (
-    <TransitionWrapper childFactory={childFactoryCreator(className)}>
-      <CSSTransition
-        id="csstrans"
-        name="csstrans"
-        key={location.pathname}
-        timeout={isMVM ? 500 : 0}
-        classNames={className}
-        mountOnEnter={true}
-        unmountOnExit={true}
-      >
-        <TransitionContainer>
-          <GlobalHistory />
-          <Suspense fallback={loadingImg}>
-            <Switch location={location}>
-              <Route exact path="/blockService" component={Home} />
-              <Route
-                exact
-                path="/service-details/:serviceName"
-                component={ServiceDetails}
-              />
-              <Route
-                exact
-                path="/call-message-blocking"
-                component={Callsmessages}
-              />
-              <Route
-                exact
-                path="/callsandMessages"
-                component={DeviceDetail}
-              />
-              <Route
-                exact
-                path="/viewlimitation"
-                component={ViewLimitations}
-              />
-            </Switch>
-          </Suspense>
-        </TransitionContainer>
-      </CSSTransition>
-    </TransitionWrapper>
-  );
-}
-
-class Routes extends React.Component {
-  render() {
-    return (
-      <Fragment>
-        <Route render={({ location }) => renderRoutes(location)} />
-      </Fragment>
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/blockService', state: { transition: 'forward' } }]}>
+        <Routes />
+      </MemoryRouter>
     );
-  }
-}
 
-export default Routes;
+    expect(await screen.findByText('Home Component')).toBeInTheDocument();
+    expect(screen.getByText('History Component')).toBeInTheDocument();
+  });
+
+  it('covers getClassName URL comparison: oldClass reused', async () => {
+    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
+    jest.spyOn(common, 'getChannelId').mockReturnValue('OTHER'); // isMVM = false
+    global._currentPageUrl = 'landing';
+    // First render to set oldClass
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/landing', state: {} }]}>
+        <Routes />
+      </MemoryRouter>
+    );
+    // Second render with same index triggers oldClass reuse
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/landing', state: {} }]}>
+        <Routes />
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('Home Component')).toBeInTheDocument();
+  });
+
+  it('covers getClassName URL comparison: forward case', async () => {
+    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
+    global._currentPageUrl = 'interstitial';
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/landing', state: {} }]}>
+        <Routes />
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('Home Component')).toBeInTheDocument();
+  });
+
+  it('covers getClassName URL comparison: backward case', async () => {
+    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
+    global._currentPageUrl = 'suspendoptions';
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/landing', state: {} }]}>
+        <Routes />
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('Home Component')).toBeInTheDocument();
+  });
+
+  it('covers getClassName fallback when _currentPageUrl undefined', async () => {
+    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
+    global._currentPageUrl = null;
+    render(
+      <MemoryRouter initialEntries={['/somepage']}>
+        <Routes />
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('Home Component')).toBeInTheDocument();
+  });
+
+  it('covers reactGlobals.transitionFallback = true path', async () => {
+    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
+    global.reactGlobals.transitionFallback = true;
+    render(
+      <MemoryRouter initialEntries={['/blockService']}>
+        <Routes />
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('Home Component')).toBeInTheDocument();
+    global.reactGlobals.transitionFallback = false; // reset
+  });
+
+  it('renders /service-details/:serviceName', async () => {
+    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
+    render(
+      <MemoryRouter initialEntries={['/service-details/testService']}>
+        <Routes />
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('ServiceDetails Component')).toBeInTheDocument();
+  });
+
+  it('renders /call-message-blocking', async () => {
+    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
+    render(
+      <MemoryRouter initialEntries={['/call-message-blocking']}>
+        <Routes />
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('CallsMessages Component')).toBeInTheDocument();
+  });
+
+  it('renders /callsandMessages', async () => {
+    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
+    render(
+      <MemoryRouter initialEntries={['/callsandMessages']}>
+        <Routes />
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('DeviceDetail Component')).toBeInTheDocument();
+  });
+
+  it('renders /viewlimitation', async () => {
+    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
+    render(
+      <MemoryRouter initialEntries={['/viewlimitation']}>
+        <Routes />
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('ViewLimitations Component')).toBeInTheDocument();
+  });
+});

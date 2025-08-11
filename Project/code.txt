@@ -1,483 +1,134 @@
-VZW_B6NV_onevz-soe-digital-acct-staticsrc/.../components/ProfileLanding/PrivacyAndPermissions/PrivacyPreferences.jsx
-
-Open in IDE
-See all issues in this file
+import React, { lazy, Fragment, Suspense } from "react";
+import { Switch, Route } from "react-router-dom";
+import styled from "styled-components";
 
-*
+import Spinner from './../../shared/components/Loader/spinner';
+import common from "./../../shared/utilities/util";
 
-    newStr.splice(3, 0, '-');
-    newStr.splice(7, 0, '-');
-    return newStr.join('')
+const Home = lazy(()=> import("./home/components"));
+const DeviceDetail = lazy(()=> import("./deviceDetail/components"));
+const AssignDevice = lazy(()=> import("./assignDevice/components"));
+
+import { GlobalHistory } from "./history";
+import { TransitionGroup, CSSTransition } from "react-transition-group";
+
+const loadingImg = (<Spinner />);
+const pageRoutes = [
+  "interstitial",
+  "landing",
+  "suspendoptions",
+  "confirmation"
+];
+const TransitionWrapper = styled(TransitionGroup)`
+ height: 100%;
+ width: 100%; 
+ display: flex;
+ flex-direction: column;
+ overflow: hidden;
+ `;
+
+
+const TransitionContainer = styled.div`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: auto;
+  margin-right: 0%;
+  // padding: 0px 20px;
+`;
+let oldClass = "";
+const nativePlatform = common.getOsType(); //"ios";
+
+function getClassName(location) {
+  if (location && !reactGlobals.transitionFallback) {
+    let pageDirection = location.state && location.state.transition;
+    if (pageDirection) return nativePlatform + " " + pageDirection;
+    else return nativePlatform + " " + "backWard";
+  } else if (
+    location &&
+    location.pathname &&
+    !(typeof _currentPageUrl === "undefined" || _currentPageUrl === null) &&
+    _currentPageUrl
+  ) {
+    const locationArray = location.pathname.split("/");
+    let newUrl = "";
+    if (locationArray && locationArray.length > 2) {
+      newUrl = locationArray[1] + "/" + locationArray[2];
+    } else {
+      newUrl = locationArray[1];
+    }
+    const newUrlIndex = pageRoutes.findIndex(
+      item => item.toLowerCase() === newUrl.toLowerCase()
+    );
+    const oldUrlIndex = pageRoutes.findIndex(
+      item => item.toLowerCase() === _currentPageUrl.toLowerCase()
+    );
+    if (oldUrlIndex == newUrlIndex && oldClass != "") {
+      return nativePlatform + " " + oldClass;
+    }
+    if (oldUrlIndex <= newUrlIndex) {
+      oldClass = "forWard";
+      return nativePlatform + " " + "forWard";
+    } else {
+      oldClass = "backWard";
+      return nativePlatform + " " + "backWard";
+    }
+  } else {
+    return nativePlatform + " " + "forWard";
   }
+}
+
+const childFactoryCreator = classNames => child =>
+  React.cloneElement(child, {
+    classNames
+  });
+
+const isMVM = common.getChannelId() === "VZW-MFA";
+
+class Routes extends React.Component {
+  constructor(props) {
+    super(props);
+
+  }
+
+  routeConfig = (
+    <Route
+      render={({ location }) => (
+        <TransitionWrapper
+          childFactory={childFactoryCreator(
+            `${getClassName(location)} pageSlider`
+          )}
+        >
+          <CSSTransition
+            id="csstrans"
+            name="csstrans"
+            key={location.pathname}
+            timeout={isMVM ? 500 : 0}
+            classNames={`${getClassName(location)} pageSlider`}
+            mountOnEnter={true}
+            unmountOnExit={true}
+          >
+            <TransitionContainer >
+              <GlobalHistory />
+              <Suspense fallback={loadingImg}>
+                <Switch location={location}>
+                  <Route exact path="/" component={Home} />
+                  <Route exact path="/deviceDetail" component={DeviceDetail} />
+                  <Route exact path="/deviceDetail/:mtn" component={DeviceDetail} />
+                  <Route exact path="/assignDevice" component={AssignDevice} />
+                  <Route exact path="/ManageDevice/:mtn" component={DeviceDetail} />
+                </Switch>
+              </Suspense>
+            </TransitionContainer>
+          </CSSTransition>
+        </TransitionWrapper>
+      )}
+    />
+  );
   render() {
-Refactor this function to reduce its Cognitive Complexity from 63 to the 15 allowed.
-    console.log("stateData :", this.props.privacyDetails);
-    const { privacyDetails } = this.props;
-    const privacyOptOutFlag =
-      this.props.privacyDetails?.privacyChoiceOptOutSettings?.data
-        ?.privacyChoiceOptOutResponse?.globalOptOutPrefs[0]?.optOutFlags[0]
-        ?.value;
-    let acctHolder =
-      reactGlobals.mdnRole.toLocaleLowerCase() == "accountholder";
-    let acctManager =
-      reactGlobals.mdnRole.toLocaleLowerCase() == "accountmanager";
-    //let acctMember = reactGlobals.mdnRole.toLocaleLowerCase() == "mobilesecure";
-    const rowStyles = {
-      display: "flex",
-      "align-items": "baseline",
-    };
-    let cpniCond,
-      businessMarketingCond,
-      identityVerificationCond,
-      optExpCond,
-      optExpPlusCond;
-    this.props.privacyDetails 
-&&
-      this.props.privacyDetails.privacySettings.privacySettingItems &&
-      this.props.privacyDetails.privacySettings.privacySettingItems.map(
-        (settingsObj, index) => {
-          JSON.parse(this.props.originalValues) &&
-            JSON.parse(this.props.originalValues).map(
+    return <Fragment>{this.routeConfig}</Fragment>
+  }
+}
 
-
-        }
-      );
-    const { userEditMode } = this.props;
-    const editableClassName =
-      userEditMode 
-&& reactGlobals.fraudIndicatorView !== "V"
-        
-? "description_box--edit-view"
-        : "description_box_disabled";
-    const pageContent = this.props?.privacyDetails?.privacySettings?.content;
-    const manageSettingsLink = pageContent.nsa_manageSettingdLink;
-    const nevadaPrivacyIndex = -1;
-    return (
-      
-      <Wrapper>
-        {(acctHolder || acctManager
-) && (
-          <div>
-            <div
-              onClick={this.handleMouseClick}
-              className="cpni"
-              id="focusCpni"
-              aria-hidden={userEditMode 
-? false : true}
-            >
-              <div className={`row  ${editableClassName}`}>
-                <Accordion
-                  id="cpni"
-                  inverted={false}
-
-
-                      <AccordionTitle
-                        viewport={detectedPlatform}
-                        primitive="h2"
-                      >
-                        <div className="header_container">
-                          {pageContent?.cpniTitle 
-? pageContent?.cpniTitle : "Customer Proprietary Network Information (CPNI)" }
-                        </div>
-                      </AccordionTitle>{" "}
-                    </AccordionHeader>
-                    {managePrivacyPreferencesMVAFFlag 
-?
-                      <AccordionDetail>
-                        <div>
-                          <p className="cpni-description">CPNI is data collected about a customer's telephone calls</p>
-                          {this.renderTellMeMoreLink(pageContent, "Cpni")}
-                          <div className="row" >
-
-
-                                            <span className="radio_table__share">
-                                              Share
-                                            </span>
-                                          </div>
-                                        </div>
-                                        {this.props.privacyDetails 
-&&
-                                          this.props.privacyDetails.privacySettings
-                                          
-? this.renderRadioButtons(
-                                            this.props.privacyDetails
-                                              .privacySettings
-                                              .privacySettingItems,
-                                            "cpniOptOutInd",
-                                            [
-
-
-            <div
-              onClick={this.handleMouseClick}
-              className="businessmarketinginsights"
-              id="focusBusinessmarketinginsights"
-              aria-hidden={userEditMode 
-? false : true}
-            >
-              <div className={`row  ${editableClassName}`}>
-                <Accordion
-                  id="businessmarketinginsights"
-                  inverted={false}
-
-
-                      <AccordionTitle
-                        viewport={detectedPlatform}
-                        primitive="h2"
-                      >
-                        <div className="header_container">
-                          {pageContent?.BMTitle 
-? pageContent.BMTitle : "Business & Marketing Insights"}
-                        </div>
-                      </AccordionTitle>{" "}
-                    </AccordionHeader>
-                    {managePrivacyPreferencesMVAFFlag 
-?
-                      <AccordionDetail>
-                        <div>
-                          <p className="bmi-description">We collect information such as usage,demographics,and interests in aggregate to help us better understand our customers</p>
-                          {this.renderTellMeMoreLink(pageContent, "Bmi")}
-                          <div className="row" >
-
-
-                                            <span className="radio_table__share">
-                                              Use
-                                            </span>
-                                          </div>
-                                        </div>
-                                        {this.props.privacyDetails 
-&&
-                                          this.props.privacyDetails.privacySettings
-                                          
-? this.renderRadioButtons(
-                                            this.props.privacyDetails
-                                              .privacySettings
-                                              .privacySettingItems,
-                                            "businessMarketingReportsOptOutInd",
-                                            [
-
-
-        <div
-          onClick={this.handleMouseClick}
-          id="focusIdentityverificationsettings"
-          className="identityverificationsettings"
-          aria-hidden={userEditMode 
-? false : true}
-        >
-          <div className={`row  ${editableClassName}`}>
-            <Accordion
-              id="identityverificationsettings"
-              inverted={false}
-
-
-                    )
-                  }
-                >
-                  <AccordionTitle viewport={detectedPlatform} primitive="h2">
-                    <div className="header_container">
-                      {pageContent?.cdiTitle 
-? pageContent?.cdiTitle : "Identity Verification Settings"}
-                    </div>
-                  </AccordionTitle>{" "}
-                </AccordionHeader>
-                {managePrivacyPreferencesMVAFFlag 
-?
-                  <AccordionDetail>
-                    <div>
-                      <p className="cdiOptOutInd-description">This helps companies verify your identity and help protect you against identity theft and account takeover</p>
-                      {this.renderTellMeMoreLink(pageContent, "Ivs")}
-                      <div className="row" >
-
-
-                                        <span className="radio_table__share">
-                                          Agree
-                                        </span>
-                                      </div>
-                                    </div>
-                                    {this.props.privacyDetails 
-&&
-                                      this.props.privacyDetails.privacySettings
-                                      
-? this.renderRadioButtons(
-                                        this.props.privacyDetails
-                                          .privacySettings.privacySettingItems,
-                                        "cdiOptOutInd",
-                                        [
-                                          "Don't agree to allow Identity Verification",
-                                          "Agree to allow Identity Verification",
-                                        ],
-                                        ""
-                                      )
-                                      : ""}
-                                  </div>{" "}
-                                </div>
-                                {nevadaPrivacyIndex !== -1 
-&&
-                                  (Object.keys(
-                                    this.props.privacyDetails 
-&&
-                                    this.props.privacyDetails.privacySettings
-                                      .privacySettingItems[nevadaPrivacyIndex]
-                                      .mtnSettingsMap
-                                  ).length 
-&& reactGlobals.nevadaPolicy.title 
-? (
-                                    <div>
-                                      {" "}
-                                      <h3 className="details__title">
-                                        {reactGlobals.nevadaPolicy.title}
-                                      </h3>
-
-
-                                                  .radioTabelOption2
-                                              }
-                                            </span>
-                                          </div>
-                                        </div>
-                                        {this.props.privacyDetails 
-&&
-                                          this.props.privacyDetails.privacySettings
-                                          
-? this.renderRadioButtons(
-                                            this.props.privacyDetails
-                                              .privacySettings
-                                              .privacySettingItems,
-                                            "doNotSellInd",
-                                            [
-
-
-        <div
-          onClick={this.handleMouseClick}
-          id="focusCustomexperience"
-          className="customexperience"
-          aria-hidden={userEditMode 
-? false : true}
-        >
-          <div className={`row ${editableClassName}`}>
-            <Accordion
-              id="customexperience"
-              inverted={false}
-              type="single"
-              topLineType="light"
-            >
-              <AccordionItem
-                opened={this.props.urlEndpoint === "customexperience"}
-              >
-                <AccordionHeader
-                  triggerType={"icon"}
-                  viewport={detectedPlatform}
-                  onClick={(event, activeState) =>
-                    this.expandSettings("customexperience", activeState)
-                  }
-                >
-                  <AccordionTitle viewport={detectedPlatform} primitive="h2">
-                    <div className="header_container">
-                      {pageContent?.customExperience 
-? pageContent?.customExperience : "Custom Experience"}
-                    </div>
-                  </AccordionTitle>{" "}
-                </AccordionHeader>
-                {managePrivacyPreferencesMVAFFlag 
-?
-                  <AccordionDetail>
-                    <div>
-                      <p className="specialEligibility-description">Our program uses inforamtion about websites you visit and apps you use to personalize our recommendations for you</p>
-                      {this.renderTellMeMoreLink(pageContent, "Ce")}
-                      <div className="row" >
-
-
-                                <div>
-                                  <p>{pageContent.specialEligibilityIndicator}</p>
-                                  <p>{pageContent.specialEligibilityPara1}</p>
-                                  <p>
-                                    {!this.state.disableCeManageSettings 
-? (
-                                      <span
-                                        dangerouslySetInnerHTML={{
-                                          __html: manageSettingsLink,
-                                        }}
-                                      />
-
-
-                                      <Tooltip
-                                        size="medium"
-                                        surface="light"
-                                        ariaLabel={
-                                          pageContent.ce_global_privacy_control_tooltip
-                                            
-? "Global Privacy Control More information"
-                                            : "More information"
-                                        }
-                                      >
-                                        {
-                                          pageContent.ce_global_privacy_control_tooltip
-
-
-                                    aria-labelledby="share_cpin_CE"
-                                  >
-                                    <div
-                                      className={
-                                        privacyOptOutFlag == "Y" ||
-                                      this.state.isGpcEnabled || (optOutChildFeatureFlag 
-&&privacyOptOutFlag == "V")
-                                          
-? "row disable"
-                                          : "row"
-                                      }
-                                      style={rowStyles}
-                                    >
-                                      <div className="col-xs-6 radio_table__header">
-
-
-                                        <span className="radio_table__share">
-                                          Use
-                                        </span>
-                                      </div>
-                                    </div>
-                                    {this.props.privacyDetails 
-&&
-                                      this.props.privacyDetails.privacySettings
-                                      
-? this.renderRadioButtons(
-                                        this.props.privacyDetails
-                                          .privacySettings.privacySettingItems,
-                                        "specialEligibilityIndicator",
-                                        [
-                                          "Don't use my information for Custom Experience",
-                                          "Use my information for Custom Experience",
-                                        ],
-                                        "",
-                                        this.state.isGpcEnabled,
-                                        privacyOptOutFlag
-                                      )
-                                      : ""}
-                                  </div>
-                                  <div className="row description_box__control-btn btngrp">
-                                    {privacyOptOutFlag == "Y" ||
-                                  this.state.isGpcEnabled ||(optOutChildFeatureFlag 
-&&privacyOptOutFlag == "V") 
-? (
-                                      <Button
-                                        id="cancel_CE"
-                                        className="btn btn--round-invert"
-                                        disabled
-                                        style={{ padding: "0px" }}
-
-
-        <div
-          onClick={this.handleMouseClick}
-          id="focusCustomexperienceplus"
-          className="customexperienceplus"
-          aria-hidden={userEditMode 
-? false : true}
-        >
-          <div className={`row ${editableClassName}`}>
-            <Accordion
-              id="customexperienceplus"
-              inverted={false}
-
-
-                    <div className="header_container">
-                      Custom Experience Plus
-                    </div>
-                  </AccordionTitle>{" "}
-                </AccordionHeader>
-                {managePrivacyPreferencesMVAFFlag 
-?
-                  <AccordionDetail>
-                    <div>
-                      <p className="mcmEligibilityIndicator-description">Our program uses inforamtion about websites you visit and apps you use to personalize our recommendations for you</p>
-                      {this.renderTellMeMoreLink(pageContent, "Cep")}
-                      <div className="row" >
-
-
-                                  <p>
-                                    {pageContent.mcmEligibilityIndicatorPara3}
-                                  </p>
-                                  <p>
-                                    {" "}
-                                    {!this.state.disableCeManageSettings 
-? (
-                                      <span
-                                        dangerouslySetInnerHTML={{
-                                          __html: manageSettingsLink,
-                                        }}
-                                      />
-
-
-                                      <Tooltip
-                                        size="medium"
-                                        surface="light"
-                                        ariaLabel={
-                                          pageContent.ce_global_privacy_control_tooltip
-                                            
-? "Global Privacy Control More information"
-                                            : "More information"
-                                        }
-                                      >
-                                        {
-                                          pageContent.ce_global_privacy_control_tooltip
-
-
-                                    aria-labelledby="share_cpin_CE+"
-                                  >
-                                    <div
-                                      className={
-                                        privacyOptOutFlag == "Y" ||
-                                      this.state.isGpcEnabled ||(optOutChildFeatureFlag 
-&&privacyOptOutFlag == "V")
-                                          
-? "row disable"
-                                          : "row"
-                                      }
-                                      style={rowStyles}
-                                    >
-                                      <div className="col-xs-6 radio_table__header">
-
-
-                                        <span className="radio_table__share">
-                                          Use
-                                        </span>
-                                      </div>
-                                    </div>
-                                    {this.props.privacyDetails 
-&&
-                                      this.props.privacyDetails.privacySettings
-                                      
-? this.renderRadioButtons(
-                                        this.props.privacyDetails
-                                          .privacySettings.privacySettingItems,
-                                        "mcmEligibilityIndicator",
-                                        [
-                                          "Don't use my information for Custom Experience Plus",
-                                          "Use my information for Custom Experience Plus",
-                                        ],
-                                        "",
-                                        this.state.isGpcEnabled,
-                                        privacyOptOutFlag
-                                      )
-                                      : ""}
-                                  </div>
-                                  <div className="row description_box__control-btn btngrp">
-                                    {privacyOptOutFlag == "Y" ||
-                                  this.state.isGpcEnabled ||(optOutChildFeatureFlag 
-&&privacyOptOutFlag == "V")
-? (
-                                      <Button
-                                      id = "cancel_CE+"
-                                        className="btn btn--round-invert"
-                                        disabled
-                                        style={{ padding: "0px" }}
-
-
-                                      disabled={
-                                        reactGlobals.isCsr ||
-                                        optExpPlusCond ||
-                                        this.props.isPrivacySettingEdit ||
-                                        this.state.isGpcEnabled ||
-                                      privacyOptOutFlag == "Y"||(optOutChildFeatureFlag 
-&&privacyOptOutFlag == "V")
-                                      }
-                                      analyticstrack="custom-experience-plus-save"
-                                      data-track="custom experience plus save"
-                                    >
-                                      Save Changes
+export default Routes;

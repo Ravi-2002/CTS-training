@@ -5,9 +5,12 @@ import styled from "styled-components";
 import Spinner from './../../shared/components/Loader/spinner';
 import common from "./../../shared/utilities/util";
 
-const Home = lazy(()=> import("./home/components"));
-const DeviceDetail = lazy(()=> import("./deviceDetail/components"));
-const AssignDevice = lazy(()=> import("./assignDevice/components"));
+const Home = lazy(()=> import("./home/components/index"));
+const DeviceDetail = lazy(()=> import("./deviceDetail/components/index"));
+const ServiceDetails = lazy(()=> import("./home/components/servicedetails"));
+const ViewLimitations = lazy(()=> import("./deviceDetail/components/ViewLimitation"));
+const Callsmessages = lazy(()=> import("./deviceDetail/components/callsandmessages"));
+
 
 import { GlobalHistory } from "./history";
 import { TransitionGroup, CSSTransition } from "react-transition-group";
@@ -19,6 +22,7 @@ const pageRoutes = [
   "suspendoptions",
   "confirmation"
 ];
+
 const TransitionWrapper = styled(TransitionGroup)`
  height: 100%;
  width: 100%; 
@@ -40,94 +44,127 @@ const TransitionContainer = styled.div`
 let oldClass = "";
 const nativePlatform = common.getOsType(); //"ios";
 
-function getClassName(location) {
+function getPageDirection(location) {
   if (location && !reactGlobals.transitionFallback) {
-    let pageDirection = location.state && location.state.transition;
-    if (pageDirection) return nativePlatform + " " + pageDirection;
-    else return nativePlatform + " " + "backWard";
-  } else if (
+    const pageDirection = location.state && location.state.transition;
+    return pageDirection
+      ? `${nativePlatform} ${pageDirection}`
+      : `${nativePlatform} backWard`;
+  }
+  return null;
+}
+/* istanbul ignore next */
+function getNewUrl(location) {
+  if (location && location.pathname) {
+    const locationArray = location.pathname.split("/");
+    if (locationArray && locationArray.length > 2) {
+      return `${locationArray[1]}/${locationArray[2]}`;
+    }
+    return locationArray[1];
+  }
+  return null;
+}
+
+function getUrlIndex(url, pageRoutes) {
+  return pageRoutes.findIndex(item => item.toLowerCase() === url.toLowerCase());
+}
+
+function getClassBasedOnUrlComparison(newUrl, _currentPageUrl, pageRoutes) {
+  const newUrlIndex = getUrlIndex(newUrl, pageRoutes);
+  const oldUrlIndex = getUrlIndex(_currentPageUrl, pageRoutes);
+
+  if (oldUrlIndex === newUrlIndex && oldClass !== "") {
+    return `${nativePlatform} ${oldClass}`;
+  }
+
+  if (oldUrlIndex <= newUrlIndex) {
+    oldClass = "forWard";
+    return `${nativePlatform} forWard`;
+  }
+
+  oldClass = "backWard";
+  return `${nativePlatform} backWard`;
+}
+
+function getClassName(location) {
+  const pageDirection = getPageDirection(location);
+  if (pageDirection) return pageDirection;
+
+  if (
     location &&
     location.pathname &&
     !(typeof _currentPageUrl === "undefined" || _currentPageUrl === null) &&
     _currentPageUrl
   ) {
-    const locationArray = location.pathname.split("/");
-    let newUrl = "";
-    if (locationArray && locationArray.length > 2) {
-      newUrl = locationArray[1] + "/" + locationArray[2];
-    } else {
-      newUrl = locationArray[1];
+    const newUrl = getNewUrl(location);
+    if (newUrl) {
+      return getClassBasedOnUrlComparison(newUrl, _currentPageUrl, pageRoutes);
     }
-    const newUrlIndex = pageRoutes.findIndex(
-      item => item.toLowerCase() === newUrl.toLowerCase()
-    );
-    const oldUrlIndex = pageRoutes.findIndex(
-      item => item.toLowerCase() === _currentPageUrl.toLowerCase()
-    );
-    if (oldUrlIndex == newUrlIndex && oldClass != "") {
-      return nativePlatform + " " + oldClass;
-    }
-    if (oldUrlIndex <= newUrlIndex) {
-      oldClass = "forWard";
-      return nativePlatform + " " + "forWard";
-    } else {
-      oldClass = "backWard";
-      return nativePlatform + " " + "backWard";
-    }
-  } else {
-    return nativePlatform + " " + "forWard";
   }
-}
 
-const childFactoryCreator = classNames => child =>
+  return `${nativePlatform} forWard`;
+}
+const childFactoryCreator = (classNames) => (child) =>
   React.cloneElement(child, {
-    classNames
+    classNames,
   });
 
 const isMVM = common.getChannelId() === "VZW-MFA";
 
-class Routes extends React.Component {
-  constructor(props) {
-    super(props);
+function renderRoutes(location) {
+  const className = `${getClassName(location)} pageSlider`;
 
-  }
-
-  routeConfig = (
-    <Route
-      render={({ location }) => (
-        <TransitionWrapper
-          childFactory={childFactoryCreator(
-            `${getClassName(location)} pageSlider`
-          )}
-        >
-          <CSSTransition
-            id="csstrans"
-            name="csstrans"
-            key={location.pathname}
-            timeout={isMVM ? 500 : 0}
-            classNames={`${getClassName(location)} pageSlider`}
-            mountOnEnter={true}
-            unmountOnExit={true}
-          >
-            <TransitionContainer >
-              <GlobalHistory />
-              <Suspense fallback={loadingImg}>
-                <Switch location={location}>
-                  <Route exact path="/" component={Home} />
-                  <Route exact path="/deviceDetail" component={DeviceDetail} />
-                  <Route exact path="/deviceDetail/:mtn" component={DeviceDetail} />
-                  <Route exact path="/assignDevice" component={AssignDevice} />
-                  <Route exact path="/ManageDevice/:mtn" component={DeviceDetail} />
-                </Switch>
-              </Suspense>
-            </TransitionContainer>
-          </CSSTransition>
-        </TransitionWrapper>
-      )}
-    />
+  return (
+    <TransitionWrapper childFactory={childFactoryCreator(className)}>
+      <CSSTransition
+        id="csstrans"
+        name="csstrans"
+        key={location.pathname}
+        timeout={isMVM ? 500 : 0}
+        classNames={className}
+        mountOnEnter={true}
+        unmountOnExit={true}
+      >
+        <TransitionContainer>
+          <GlobalHistory />
+          <Suspense fallback={loadingImg}>
+            <Switch location={location}>
+              <Route exact path="/blockService" component={Home} />
+              <Route
+                exact
+                path="/service-details/:serviceName"
+                component={ServiceDetails}
+              />
+              <Route
+                exact
+                path="/call-message-blocking"
+                component={Callsmessages}
+              />
+              <Route
+                exact
+                path="/callsandMessages"
+                component={DeviceDetail}
+              />
+              <Route
+                exact
+                path="/viewlimitation"
+                component={ViewLimitations}
+              />
+            </Switch>
+          </Suspense>
+        </TransitionContainer>
+      </CSSTransition>
+    </TransitionWrapper>
   );
+}
+
+class Routes extends React.Component {
   render() {
-    return <Fragment>{this.routeConfig}</Fragment>
+    return (
+      <Fragment>
+        <Route render={({ location }) => renderRoutes(location)} />
+      </Fragment>
+    );
   }
 }
 

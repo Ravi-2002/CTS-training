@@ -1,119 +1,136 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Title, Body } from "@vds/typography";
-import { Input } from "@vds/inputs";
 import { Button, TextLink } from "@vds/buttons";
+import { ButtonIcon} from "@vds/button-icons";
+import { Icon } from "@vds/icons";
 import { Loader } from "@vds/loaders";
 import styled from "styled-components";
 import {
   getCallsMessages,
   postaddBlockCallMsg,
+  postDeleteBlockCallMsg,
 } from "../actions/fetchCallsMessages";
-//import { useLocation } from "react-router-dom";
-import { withRouter } from "react-router-dom";
+import { Line } from "@vds/lines";
+import { ListGroup } from "@vds/lists";
 import { nativeSetTitle } from "../../../../shared/utilities/native";
 import common from "../../../../shared/utilities/util";
-import { Notification } from "@vds/notifications";
 
-const BlockCallsEmpty = (props) => {
+const BlockCallsList = ({ history }) => {
+  useEffect(() => {
+    nativeSetTitle('Block Calls & Messages',false);
+  },[]);
   const dispatch = useDispatch();
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const { blockedNumbers, addBlockCallMsg, isFetching } = useSelector((state) => state.Detail);
-  const Content = useSelector((state)=>state.Detail.callsMessages?.aemResponse)
-  const mtn = Content?.sections?.[0]?.sections?.[0]?.data.mtn;
-  console.log(props,'props in BlockCallsEmpty')
+  const [blockedList, setBlockedList] = useState([]);
+  const mdn = localStorage.getItem('mdn');
+  const {
+    blockedNumbers,
+    addBlockCallMsg,
+    deleteBlockCallMsg,
+    isFetching,
+  } = useSelector((state) => state.Detail);
+  const Content = useSelector((state)=>state.Detail.callsMessages.aemResponse)
+  const mtn = Content.sections[0].sections[0].data.mtn;
   let pageContent;
     if (Content && Content?.sections[0]) {
       pageContent = common.getContentFromSection(Content, 'devicesBlocksMainSection');
       pageContent = pageContent.sections[0];
     }
   let pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
-  localStorage.setItem('viewLimitationHeader',common.getItemValue(pageItems,"ViewLimitationTitle"))
   useEffect(() => {
-    nativeSetTitle('Block Calls & Messages',false);
-  },[]);
-  const location =  props.location
-  const allowInput = location.state?.allowInput??false;
-  const query = location.search.slice(1);
-  const MDN = query.split("&").find(q=>q.startsWith("mdn="))?.split("=")[1];
-  console.log(MDN,'MDN')
-  useEffect(() => {
-    dispatch(getCallsMessages(MDN));
+    dispatch(getCallsMessages(mdn));
   }, [dispatch]);
-  if(MDN){
-  localStorage.setItem('mdn',MDN);
-  }
-  let mdn = MDN?MDN:location.state?.mtn;
-  console.log(mdn,'mdn')  
-  console.log(allowInput,'mdn')
+
   useEffect(() => {
-    if (
-      (!allowInput&&blockedNumbers.length > 0 )
-    ) {
-      props.history.push("/call-message-blocking");
+    if (addBlockCallMsg?.blockedPhoneNumbers) {
+      setBlockedList(addBlockCallMsg.blockedPhoneNumbers);
     }
-  }, [blockedNumbers,allowInput, history]);
-  const handleAdd = () => {
+    else if(blockedNumbers){
+      setBlockedList(blockedNumbers)
+    }
+  }, [addBlockCallMsg,blockedNumbers]);
+
+  useEffect(() => {
+    if (deleteBlockCallMsg?.blockedPhoneNumbers) {
+      setBlockedList(deleteBlockCallMsg.blockedPhoneNumbers);
+    }
+  }, [deleteBlockCallMsg]);
+
+  
+
+  const handleRemove = (num) => {
     let payload = {
       mtn: mdn,
-      blockNumber: phoneNumber,
-      oldPhoneNumber: phoneNumber,
+      blockNumber: num,
+      oldPhoneNumber: num,
       memo: "",
       expiredPhoneNumber: "",
       blockedNumbers: [],
       applyAll: false,
       onlyMemo: false
     }
-    dispatch(postaddBlockCallMsg(payload));
-    setPhoneNumber("");
-    if(addBlockCallMsg.statusCode =='00'){
-      props.history.push('/call-message-blocking')}
-    
+    dispatch(postDeleteBlockCallMsg(payload));
   };
-  
 
   return (
     <PageWrapper>
       <Loader active={isFetching} fullscreen />
       <Title size="large" bold>{common.getItemValue(pageItems,"callsandMessageTitle")}</Title>
-      <br></br>
-      <p className="text-muted mb-4">{common.mtnFormat(mtn)}</p>
-      <br></br><br></br>
-      <Body>Enter phone number</Body>
+      <MdnWrapper>
+      <Body size='large'>{common.mtnFormat(mtn)}</Body>
+      </MdnWrapper>
+      <TextWrapper>
+        <Body bold size='large'>You are blocking {blockedList.length} of 5 numbers.</Body>
+      </TextWrapper>
+      {blockedList.map((item, idx) => (
+          <ListGroupWrapper key={idx}>
+          <ListGroup>
+            <RemoveWrapper>
+              <Body size="large">{item.phoneNumber}</Body>
+              <ButtonIcon
+                kind="ghost"
+                size="small"
+                onClick={() => handleRemove(item.phoneNumber)}
+                renderIcon={(props) => <Icon name="close" {...props} />}
+              />
+            </RemoveWrapper>
+            <Line type="secondary" surface="light" />
+          </ListGroup>
+        </ListGroupWrapper>
+      ))}
       
-      <Input
-        value={phoneNumber}
-        maxLength={10}
-        onChange={(e) => setPhoneNumber(e.target.value)}
-      />
-      <br></br>
-      <Body size="large">
+    <LimitationWrapper>
+      <Body>
         There is no charge to block.{" "}
         <TextLink
           type="standAlone"
           surface="light"
-          onClick={() =>props.history.push("/viewlimitation")}
+          onClick={() => history.push("/viewlimitation")}
         >
-          {common.getItemValue(pageItems,"ViewLimitationHeader")}
+          View Limitations
         </TextLink>
       </Body>
-      <ButtonWrapper>
-        <Button
-          disabled={!phoneNumber.trim()}
-          onClick={handleAdd}
-        >
-          Block number
-        </Button>
-      </ButtonWrapper>
+      </LimitationWrapper>
+          <ButtonWrapper>
+            <Button disabled={blockedList.length>=5} 
+                onClick={() => 
+                history.push({
+                  pathname: "/callsandMessages",
+                  state: { allowInput: true, mtn: mdn },
+                })}>
+              Add a number
+            </Button>
+          </ButtonWrapper>
     </PageWrapper>
   );
 };
 
 const PageWrapper = styled.div` padding: 20px; `;
-const ButtonWrapper = styled.div` display: flex;
-  justify-content: center;
-  margin-top: auto;
-  padding-top: 450px;
-  `;
+const MdnWrapper = styled.div` padding-top: 7px; padding-bottom:7px`;
+const LimitationWrapper = styled.div` padding-top: 7px; padding-bottom:7px; display: flex; justify-content: center;`;
+const ButtonWrapper = styled.div` display: flex; justify-content: center; padding: 20px 0; `;
+const TextWrapper = styled.div` margin-bottom: 1rem; display: flex; justify-content: center; padding-top:30px; padding-bottom:20px `;
+const ListGroupWrapper = styled.div` padding-bottom: 10px; `;
+const RemoveWrapper = styled.div` display: flex; justify-content: space-between; align-items: center; `;
 
-  export default withRouter(BlockCallsEmpty);
+export default BlockCallsList;

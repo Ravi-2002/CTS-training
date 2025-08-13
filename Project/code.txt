@@ -1,142 +1,119 @@
-import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
-import { render, screen } from '@testing-library/react';
-import Routes from '../index';
-import * as common from '../../../shared/utilities/util';
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Title, Body } from "@vds/typography";
+import { Input } from "@vds/inputs";
+import { Button, TextLink } from "@vds/buttons";
+import { Loader } from "@vds/loaders";
+import styled from "styled-components";
+import {
+  getCallsMessages,
+  postaddBlockCallMsg,
+} from "../actions/fetchCallsMessages";
+//import { useLocation } from "react-router-dom";
+import { withRouter } from "react-router-dom";
+import { nativeSetTitle } from "../../../../shared/utilities/native";
+import common from "../../../../shared/utilities/util";
+import { Notification } from "@vds/notifications";
 
-// Mock global vars
-global.reactGlobals = { transitionFallback: false };
-global._currentPageUrl = null;
+const BlockCallsEmpty = (props) => {
+  const dispatch = useDispatch();
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const { blockedNumbers, addBlockCallMsg, isFetching } = useSelector((state) => state.Detail);
+  const Content = useSelector((state)=>state.Detail.callsMessages?.aemResponse)
+  const mtn = Content?.sections?.[0]?.sections?.[0]?.data.mtn;
+  console.log(props,'props in BlockCallsEmpty')
+  let pageContent;
+    if (Content && Content?.sections[0]) {
+      pageContent = common.getContentFromSection(Content, 'devicesBlocksMainSection');
+      pageContent = pageContent.sections[0];
+    }
+  let pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
+  localStorage.setItem('viewLimitationHeader',common.getItemValue(pageItems,"ViewLimitationTitle"))
+  useEffect(() => {
+    nativeSetTitle('Block Calls & Messages',false);
+  },[]);
+  const location =  props.location
+  const allowInput = location.state?.allowInput??false;
+  const query = location.search.slice(1);
+  const MDN = query.split("&").find(q=>q.startsWith("mdn="))?.split("=")[1];
+  console.log(MDN,'MDN')
+  useEffect(() => {
+    dispatch(getCallsMessages(MDN));
+  }, [dispatch]);
+  if(MDN){
+  localStorage.setItem('mdn',MDN);
+  }
+  let mdn = MDN?MDN:location.state?.mtn;
+  console.log(mdn,'mdn')  
+  console.log(allowInput,'mdn')
+  useEffect(() => {
+    if (
+      (!allowInput&&blockedNumbers.length > 0 )
+    ) {
+      props.history.push("/call-message-blocking");
+    }
+  }, [blockedNumbers,allowInput, history]);
+  const handleAdd = () => {
+    let payload = {
+      mtn: mdn,
+      blockNumber: phoneNumber,
+      oldPhoneNumber: phoneNumber,
+      memo: "",
+      expiredPhoneNumber: "",
+      blockedNumbers: [],
+      applyAll: false,
+      onlyMemo: false
+    }
+    dispatch(postaddBlockCallMsg(payload));
+    setPhoneNumber("");
+    if(addBlockCallMsg.statusCode =='00'){
+      props.history.push('/call-message-blocking')}
+    
+  };
+  
 
-// Mock components (we return text so we can query it)
-jest.mock('../home/components/index', () => () => <div>Home Component</div>);
-jest.mock('../deviceDetail/components/index', () => () => <div>DeviceDetail Component</div>);
-jest.mock('../home/components/servicedetails', () => () => <div>ServiceDetails Component</div>);
-jest.mock('../deviceDetail/components/ViewLimitation', () => () => <div>ViewLimitations Component</div>);
-jest.mock('../deviceDetail/components/callsandmessages', () => () => <div>CallsMessages Component</div>);
-jest.mock('./../../../shared/components/Loader/spinner', () => () => <div>Spinner Component</div>);
-jest.mock('../history', () => ({ GlobalHistory: () => <div>History Component</div> }));
+  return (
+    <PageWrapper>
+      <Loader active={isFetching} fullscreen />
+      <Title size="large" bold>{common.getItemValue(pageItems,"callsandMessageTitle")}</Title>
+      <br></br>
+      <p className="text-muted mb-4">{common.mtnFormat(mtn)}</p>
+      <br></br><br></br>
+      <Body>Enter phone number</Body>
+      
+      <Input
+        value={phoneNumber}
+        maxLength={10}
+        onChange={(e) => setPhoneNumber(e.target.value)}
+      />
+      <br></br>
+      <Body size="large">
+        There is no charge to block.{" "}
+        <TextLink
+          type="standAlone"
+          surface="light"
+          onClick={() =>props.history.push("/viewlimitation")}
+        >
+          {common.getItemValue(pageItems,"ViewLimitationHeader")}
+        </TextLink>
+      </Body>
+      <ButtonWrapper>
+        <Button
+          disabled={!phoneNumber.trim()}
+          onClick={handleAdd}
+        >
+          Block number
+        </Button>
+      </ButtonWrapper>
+    </PageWrapper>
+  );
+};
 
-describe('Routes component full coverage', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+const PageWrapper = styled.div` padding: 20px; `;
+const ButtonWrapper = styled.div` display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 450px;
+  `;
 
-  it('renders /blockService with pageDirection branch (transition present)', async () => {
-    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
-    jest.spyOn(common, 'getChannelId').mockReturnValue('VZW-MFA'); // isMVM = true
-
-    render(
-      <MemoryRouter initialEntries={[{ pathname: '/blockService', state: { transition: 'forward' } }]}>
-        <Routes />
-      </MemoryRouter>
-    );
-
-    expect(await screen.findByText('Home Component')).toBeInTheDocument();
-    expect(screen.getByText('History Component')).toBeInTheDocument();
-  });
-
-  it('covers getClassName URL comparison: oldClass reused', async () => {
-    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
-    jest.spyOn(common, 'getChannelId').mockReturnValue('OTHER'); // isMVM = false
-    global._currentPageUrl = 'landing';
-    // First render to set oldClass
-    render(
-      <MemoryRouter initialEntries={[{ pathname: '/landing', state: {} }]}>
-        <Routes />
-      </MemoryRouter>
-    );
-    // Second render with same index triggers oldClass reuse
-    render(
-      <MemoryRouter initialEntries={[{ pathname: '/landing', state: {} }]}>
-        <Routes />
-      </MemoryRouter>
-    );
-    expect(await screen.findByText('Home Component')).toBeInTheDocument();
-  });
-
-  it('covers getClassName URL comparison: forward case', async () => {
-    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
-    global._currentPageUrl = 'interstitial';
-    render(
-      <MemoryRouter initialEntries={[{ pathname: '/landing', state: {} }]}>
-        <Routes />
-      </MemoryRouter>
-    );
-    expect(await screen.findByText('Home Component')).toBeInTheDocument();
-  });
-
-  it('covers getClassName URL comparison: backward case', async () => {
-    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
-    global._currentPageUrl = 'suspendoptions';
-    render(
-      <MemoryRouter initialEntries={[{ pathname: '/landing', state: {} }]}>
-        <Routes />
-      </MemoryRouter>
-    );
-    expect(await screen.findByText('Home Component')).toBeInTheDocument();
-  });
-
-  it('covers getClassName fallback when _currentPageUrl undefined', async () => {
-    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
-    global._currentPageUrl = null;
-    render(
-      <MemoryRouter initialEntries={['/somepage']}>
-        <Routes />
-      </MemoryRouter>
-    );
-    expect(await screen.findByText('Home Component')).toBeInTheDocument();
-  });
-
-  it('covers reactGlobals.transitionFallback = true path', async () => {
-    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
-    global.reactGlobals.transitionFallback = true;
-    render(
-      <MemoryRouter initialEntries={['/blockService']}>
-        <Routes />
-      </MemoryRouter>
-    );
-    expect(await screen.findByText('Home Component')).toBeInTheDocument();
-    global.reactGlobals.transitionFallback = false; // reset
-  });
-
-  it('renders /service-details/:serviceName', async () => {
-    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
-    render(
-      <MemoryRouter initialEntries={['/service-details/testService']}>
-        <Routes />
-      </MemoryRouter>
-    );
-    expect(await screen.findByText('ServiceDetails Component')).toBeInTheDocument();
-  });
-
-  it('renders /call-message-blocking', async () => {
-    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
-    render(
-      <MemoryRouter initialEntries={['/call-message-blocking']}>
-        <Routes />
-      </MemoryRouter>
-    );
-    expect(await screen.findByText('CallsMessages Component')).toBeInTheDocument();
-  });
-
-  it('renders /callsandMessages', async () => {
-    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
-    render(
-      <MemoryRouter initialEntries={['/callsandMessages']}>
-        <Routes />
-      </MemoryRouter>
-    );
-    expect(await screen.findByText('DeviceDetail Component')).toBeInTheDocument();
-  });
-
-  it('renders /viewlimitation', async () => {
-    jest.spyOn(common, 'getOsType').mockReturnValue('ios');
-    render(
-      <MemoryRouter initialEntries={['/viewlimitation']}>
-        <Routes />
-      </MemoryRouter>
-    );
-    expect(await screen.findByText('ViewLimitations Component')).toBeInTheDocument();
-  });
-});
+  export default withRouter(BlockCallsEmpty);

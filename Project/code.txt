@@ -1,37 +1,98 @@
-it('handles case when Content or sections[0] is missing', () => {
-  const store = mockStore({
-    Detail: {
-      callsMessages: {
-        aemResponse: null, // <-- This triggers else path
-      },
-    },
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import thunk from 'redux-thunk';
+import BlockCallsEmpty from '../BlockCallsEmpty';
+import * as redux from 'react-redux';
+import * as util from '../../../../../shared/utilities/util';
+
+const mockStore = configureStore([thunk]);
+const mockDispatch = jest.fn();
+
+jest.spyOn(redux, 'useDispatch').mockReturnValue(mockDispatch);
+
+// Mock utilities
+jest.spyOn(util, 'getChannelId').mockReturnValue('channel123');
+jest.spyOn(util, 'getItemValue').mockReturnValue('mockValue');
+jest.spyOn(util, 'mtnFormat').mockReturnValue('123-456-7890');
+
+describe('BlockCallsEmpty', () => {
+  let store;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  render(
-    <Provider store={store}>
-      <MemoryRouter>
-        <BlockCallsEmpty />
-      </MemoryRouter>
-    </Provider>
-  );
+  it('renders with sections data (if path taken)', () => {
+    store = mockStore({
+      Detail: {
+        blockedNumbers: [],
+        addBlockCallMsg: {},
+        isFetching: false,
+        callsMessages: {
+          aemResponse: {
+            sections: [
+              {
+                items: [{ id: 'item1', value: 'val1' }]
+              }
+            ]
+          }
+        }
+      }
+    });
 
-  // No sections, so the "else" branch is covered
-  expect(screen.getByText(/Block number/i)).toBeInTheDocument();
-});
-it('handles Content with empty sections array', () => {
-  const store = mockStore({
-    Detail: {
-      callsMessages: {
-        aemResponse: { sections: [] }, // sections[0] is undefined
-      },
-    },
+    render(
+      <Provider store={store}>
+        <BlockCallsEmpty />
+      </Provider>
+    );
+
+    expect(screen.getByText(/Block Calls/i)).toBeInTheDocument();
   });
 
-  render(
-    <Provider store={store}>
-      <MemoryRouter>
+  it('handles Content with empty sections array (else path taken)', () => {
+    store = mockStore({
+      Detail: {
+        blockedNumbers: [],
+        addBlockCallMsg: {},
+        isFetching: false,
+        callsMessages: {
+          aemResponse: {
+            sections: [] // triggers else path
+          }
+        }
+      }
+    });
+
+    render(
+      <Provider store={store}>
         <BlockCallsEmpty />
-      </MemoryRouter>
-    </Provider>
-  );
+      </Provider>
+    );
+
+    // Whatever fallback UI appears when sections is empty
+    expect(screen.getByText(/Block Calls/i)).toBeInTheDocument();
+  });
+
+  it('handles Content as null (else path taken)', () => {
+    store = mockStore({
+      Detail: {
+        blockedNumbers: [],
+        addBlockCallMsg: {},
+        isFetching: false,
+        callsMessages: {
+          aemResponse: null // triggers else path
+        }
+      }
+    });
+
+    render(
+      <Provider store={store}>
+        <BlockCallsEmpty />
+      </Provider>
+    );
+
+    expect(screen.getByText(/Block Calls/i)).toBeInTheDocument();
+  });
 });

@@ -19,11 +19,6 @@ it("stores MDN in localStorage when MDN is present in query", () => {
     })
   );
 
-  useLocation.mockReturnValue({
-    state: {},
-    search: "?mdn=1234567890&foo=bar"
-  });
-
   const store = mockStore({});
   const history = createMemoryHistory();
 

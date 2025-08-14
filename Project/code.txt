@@ -1,17 +1,37 @@
-it('stores MDN in localStorage when MDN is provided', () => {
-  // Arrange
-  const mockSetItem = jest.spyOn(window.localStorage.__proto__, 'setItem');
-  mockSetItem.mockImplementation(() => {});
-  
-  const MDN = '9876543210';
+it('handles case when Content or sections[0] is missing', () => {
+  const store = mockStore({
+    Detail: {
+      callsMessages: {
+        aemResponse: null, // <-- This triggers else path
+      },
+    },
+  });
 
-  // Act
-  if (MDN) {
-    localStorage.setItem('mdn', MDN);
-  }
+  render(
+    <Provider store={store}>
+      <MemoryRouter>
+        <BlockCallsEmpty />
+      </MemoryRouter>
+    </Provider>
+  );
 
-  // Assert
-  expect(mockSetItem).toHaveBeenCalledWith('mdn', MDN);
+  // No sections, so the "else" branch is covered
+  expect(screen.getByText(/Block number/i)).toBeInTheDocument();
+});
+it('handles Content with empty sections array', () => {
+  const store = mockStore({
+    Detail: {
+      callsMessages: {
+        aemResponse: { sections: [] }, // sections[0] is undefined
+      },
+    },
+  });
 
-  mockSetItem.mockRestore();
+  render(
+    <Provider store={store}>
+      <MemoryRouter>
+        <BlockCallsEmpty />
+      </MemoryRouter>
+    </Provider>
+  );
 });

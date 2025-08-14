@@ -1,120 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Title, Body } from "@vds/typography";
-import { Input } from "@vds/inputs";
-import { Button, TextLink } from "@vds/buttons";
-import { Loader } from "@vds/loaders";
-import styled from "styled-components";
-import {
-  getCallsMessages,
-  postaddBlockCallMsg,
-} from "../actions/fetchCallsMessages";
-//import { useLocation } from "react-router-dom";
-import { withRouter } from "react-router-dom";
-import { nativeSetTitle } from "../../../../shared/utilities/native";
-import common from "../../../../shared/utilities/util";
-import { Notification } from "@vds/notifications";
+it('stores MDN in localStorage when MDN is present in query', () => {
+  const mockSetItem = jest.spyOn(Storage.prototype, 'setItem');
 
-const BlockCallsEmpty = ( props) => {
-  const dispatch = useDispatch();
-  const [phoneNumber, setPhoneNumber] = useState("");
-  useEffect(() => {
-    nativeSetTitle('Block Calls & Messages',false);
-  },[]);
-  const location =  props?.location
-  const allowInput = location?.state?.allowInput??false;
-  const query = location?.search.slice(1);
-  const MDN = query.split("&").find(q=>q.startsWith("mdn="))?.split("=")[1];
-  useEffect(() => {
-    dispatch(getCallsMessages(MDN));
-  }, [dispatch]);
-  const { blockedNumbers, addBlockCallMsg, isFetching } = useSelector((state) => state?.Detail);
-  const Content = useSelector((state)=>state?.Detail?.callsMessages?.aemResponse)
-  const mtn = Content?.sections?.[0]?.sections?.[0]?.data.mtn;
-  const [triggerAdd,setTriggerAdd] = useState(false);
-  let pageContent;
-    if (Content && Content?.sections[0]) {
-      pageContent = common.getContentFromSection(Content, 'devicesBlocksMainSection');
-      pageContent = pageContent?.sections?.[0];
-    }
-  let pageItems = pageContent && pageContent?.contents && pageContent?.contents?.[0]?.items;
-  localStorage.setItem('viewLimitationHeader',common.getItemValue(pageItems,"ViewLimitationTitle"))
-  if(MDN){
-  localStorage.setItem('mdn',MDN);
-  }
-  let mdn = MDN?MDN:location?.state?.mtn;
-  useEffect(() => {
-    if (
-      (!allowInput&&blockedNumbers.length > 0 )
-    ) {
-      props.history.push("/call-message-blocking");
-    }
-  }, [blockedNumbers,allowInput, history]);
-  const handleAdd = () => {
-    let payload = {
-      mtn: mdn,
-      blockNumber: phoneNumber,
-      oldPhoneNumber: phoneNumber,
-      memo: "",
-      expiredPhoneNumber: "",
-      blockedNumbers: [],
-      applyAll: false,
-      onlyMemo: false
-    }
-    dispatch(postaddBlockCallMsg(payload));
-    setPhoneNumber("");
-    setTriggerAdd(true);
-  };
-  useEffect(() => {
-    if(triggerAdd&&addBlockCallMsg?.statusCode ==="00"){
-        props.history.push("/call-message-blocking");
-      
-    }
-  },[addBlockCallMsg,triggerAdd,props.history]);
-  
-
-  return (
-    <PageWrapper>
-      <Loader active={isFetching} fullscreen />
-      <Title size="large" bold>{common.getItemValue(pageItems,"callsandMessageTitle")}</Title>
-      <br></br>
-      <p className="text-muted mb-4">{common.mtnFormat(mtn)}</p>
-      <br></br><br></br>
-      <Body>Enter phone number</Body>
-      
-      <Input
-        value={phoneNumber}
-        maxLength={10}
-        onChange={(e) => setPhoneNumber(e.target.value)}
-      />
-      <br></br>
-      <Body size="large">
-        There is no charge to block.{" "}
-        <TextLink
-          type="standAlone"
-          surface="light"
-          onClick={() =>props.history.push("/viewlimitation")}
-        >
-          {common.getItemValue(pageItems,"ViewLimitationHeader")}
-        </TextLink>
-      </Body>
-      <ButtonWrapper>
-        <Button
-          disabled={!phoneNumber.trim()}
-          onClick={handleAdd}
-        >
-          Block number
-        </Button>
-      </ButtonWrapper>
-    </PageWrapper>
+  render(
+    <Provider store={store}>
+      <MemoryRouter>
+        <BlockCallsEmpty
+          location={{
+            search: '?mdn=1234567890&foo=bar', // MDN param present
+            state: {}
+          }}
+          history={{ push: jest.fn() }}
+        />
+      </MemoryRouter>
+    </Provider>
   );
-};
 
-const PageWrapper = styled.div` padding: 20px; `;
-const ButtonWrapper = styled.div` display: flex;
-  justify-content: center;
-  margin-top: auto;
-  padding-top: 450px;
-  `;
-
-  export default withRouter(BlockCallsEmpty);
+  expect(mockSetItem).toHaveBeenCalledWith('mdn', '1234567890');
+});

@@ -1,35 +1,36 @@
-it("covers MDN truthy branch and stores MDN from query string", () => {
-  useDispatch.mockReturnValue(mockDispatch);
-  useSelector.mockImplementation(cb =>
-    cb({
+import { render } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import { MemoryRouter } from 'react-router-dom';
+import BlockCallsEmpty from '../BlockCallsEmpty';
+
+const mockStore = configureStore([]);
+
+describe('BlockCallsEmpty', () => {
+  it('covers MDN truthy branch and stores MDN in localStorage', () => {
+    const store = mockStore({
       Detail: {
-        blockedNumbers: [],
-        addBlockCallMsg: {},
-        isFetching: false,
         callsMessages: {
-          aemResponse: { sections: [{ sections: [{ data: { mtn: "7703463247" } }] }] }
-        }
-      }
-    })
-  );
+          blockedNumbers: [],
+          addBlockCallMsg: {},
+          isFetching: false,
+        },
+      },
+    });
 
-  useLocation.mockReturnValue({
-    state: {}, // no mtn in state
-    search: "?mdn=5556667777"
+    // Spy on localStorage
+    const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
+
+    render(
+      <Provider store={store}>
+        <MemoryRouter
+          initialEntries={['/callsandMessages?MDN=5556667777']}
+        >
+          <BlockCallsEmpty />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(setItemSpy).toHaveBeenCalledWith('mdn', '5556667777');
   });
-
-  const store = mockStore({});
-  const history = createMemoryHistory();
-
-  const setItemSpy = jest.spyOn(Storage.prototype, "setItem");
-
-  render(
-    <Provider store={store}>
-      <Router history={history}>
-        <BlockCallsEmpty history={history} />
-      </Router>
-    </Provider>
-  );
-
-  expect(setItemSpy).toHaveBeenCalledWith("mdn", "5556667777");
 });

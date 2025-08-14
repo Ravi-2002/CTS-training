@@ -1,33 +1,35 @@
-import React from 'react';
-import { render } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import { MemoryRouter } from 'react-router-dom';
-import BlockCallsEmpty from '../BlockCallsEmpty'; // adjust path
-
-const mockStore = configureStore([]);
-
-describe('BlockCallsEmpty', () => {
-  it('handles Content as null (else path taken)', () => {
-    const store = mockStore({
+it("covers MDN truthy branch and stores MDN from query string", () => {
+  useDispatch.mockReturnValue(mockDispatch);
+  useSelector.mockImplementation(cb =>
+    cb({
       Detail: {
         blockedNumbers: [],
         addBlockCallMsg: {},
         isFetching: false,
         callsMessages: {
-          aemResponse: null, // Content is null
-        },
-      },
-    });
+          aemResponse: { sections: [{ sections: [{ data: { mtn: "7703463247" } }] }] }
+        }
+      }
+    })
+  );
 
-    render(
-      <Provider store={store}>
-        <MemoryRouter>
-          <BlockCallsEmpty />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    // you can assert here if needed, but this mainly covers the else path
+  useLocation.mockReturnValue({
+    state: {}, // no mtn in state
+    search: "?mdn=5556667777"
   });
+
+  const store = mockStore({});
+  const history = createMemoryHistory();
+
+  const setItemSpy = jest.spyOn(Storage.prototype, "setItem");
+
+  render(
+    <Provider store={store}>
+      <Router history={history}>
+        <BlockCallsEmpty history={history} />
+      </Router>
+    </Provider>
+  );
+
+  expect(setItemSpy).toHaveBeenCalledWith("mdn", "5556667777");
 });

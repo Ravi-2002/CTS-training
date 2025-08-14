@@ -28,7 +28,7 @@ it("stores MDN in localStorage when MDN is present in query", () => {
         <BlockCallsEmpty
           history={history}
           location={{
-            search: "?mdn=1234567890&foo=bar",
+            search: "?mdn=1234567890&foo=bar", // must be exactly like this
             state: {}
           }}
         />

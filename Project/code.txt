@@ -1,89 +1,149 @@
-// SettingPreferences.test.tsx
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import SettingPreferences from '../SettingPreferences';
+'use client';
 
-// mock utils
-jest.mock('../utils', () => ({
-  getActionkey: jest.fn(() => 'mockKey'),
-  getOnClickInfo: jest.fn(() => ({ actionHref: 'https://verizon.com/block/' })),
-  getOnClickInfoMobile: jest.fn(() => ({ actionHref: 'https://verizon.com/mobile-block/' })),
-}));
+import {
+  Accordion,
+  AccordionDetail,
+  AccordionHeader,
+  AccordionItem,
+  AccordionTitle,
+  AccordionSubTitle, ListGroup, ListGroupItem, ListGroupItemTitle
+} from '@vds/core';
+import { getClientChannelId } from "@vz/next-util";
+import { useSearchParams } from 'next/navigation';
+import React, {useState} from 'react';
+import styled from 'styled-components';
 
-// window.location mock
-const originalLocation = window.location;
-beforeAll(() => {
-  delete (window as any).location;
-  (window as any).location = { href: '' };
-});
-afterAll(() => {
-  window.location = originalLocation;
-});
+import { getItemValue, getActionKey, getOnClickInfo, getOnClickInfoMobile } from '@/helpers/utils';
 
-describe('SettingPreferences', () => {
-  const defaultProps = {
-    pageContent: {},
-    pageItems: [{ key: 'blockSpecificServicesBtn' }],
-    deviceDetails: { encryptedMtnDES: 'ABC123' },
-    preferences: { blockSpecificServicesBtn: true },
-    singletink: { blockSpecificServicesBtn: true },
-    enableBlocksMVA: false,
+const ListGroupItemTitleContent = styled.span`
+  font-size: 18px;
+  line-height: 20px;
+`;
+
+const SettingPreferences = (props: any) => {
+
+  const searchParams = useSearchParams();
+  const deviceInfo = props?.deviceDetails?.body?.sections?.[0]?.sections?.[0]?.data; 
+  const selectedMdn = searchParams?.get('encryptedMdn');
+  const selectedDevice = deviceInfo?.find((encryptMdn: any) => encryptMdn?.encryptedMtnDES == selectedMdn)
+
+  const preferencesArray = selectedDevice?.preferences || {};
+
+  const pageContent = props?.deviceDetails?.body?.sections[0]?.sections[0];
+  const pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
+  const pageAttributes = props?.deviceDetails?.body?.pageAttributes || {};
+  console.log(pageContent,"pageContent");
+  console.log(pageItems,"pageItems");
+  console.log(pageAttributes,"pageAttributes");
+  const [accordionIsOpen, setAccordionIsOpen] = useState<boolean>(false);
+  const selectedDeviceDetailMdn = selectedDevice?.mtn;
+   const enableBlocksMVA=getItemValue(pageAttributes,"manageBlocksMVAFFlag")==='true';
+   console.log("enableBlocksMVA--",enableBlocksMVA);
+  // const encrypterMDN=selectedDevice?.encryptedMtnDES;
+  function handlePreferences(preferencesArray: any) {
+
+    const tempArray: string[] = [];
+    Object.keys(preferencesArray)?.forEach((singleLinkValue) => {
+      if (preferencesArray[singleLinkValue]) {
+        tempArray.push(singleLinkValue);
+      }
+    });
+    return tempArray?.map(renderPreferenceLink);
+  }
+
+  function listGroupCommonCode(pageItems: any, singleLink: any) {
+    const itemVal = `${getItemValue(pageItems, singleLink)}`
+    return (
+      <ListGroupItemTitle bold={false}>
+        <ListGroupItemTitleContent
+          data-track={itemVal}
+          aria-label={itemVal}
+        >
+          {getItemValue(pageItems, `${singleLink}`)}
+
+        </ListGroupItemTitleContent>
+      </ListGroupItemTitle>
+    );
   };
 
-  it('renders without crashing', () => {
-    render(<SettingPreferences {...defaultProps} />);
-    expect(screen.getByTestId('blockSpecificServicesBtn')).toBeInTheDocument();
-  });
+  const callMdotAndDdotRedirectURLs = (pageContent: any ,actionKey: any) =>{
+    console.log("Inside else callMdotAndDdotRedirectURLs Settings");
+    const click_info = getOnClickInfo(pageContent, actionKey);
+    click_info?.onclick();
+  }
 
-  it('redirects using getOnClickInfoMobile when enableBlocksMVA is false', () => {
-    const { getOnClickInfoMobile } = require('../utils');
-    (getOnClickInfoMobile as jest.Mock).mockReturnValueOnce({ actionHref: 'https://test-mobile/' });
+  function renderPreferenceLink(singleLink: any, index: any) {
 
-    render(<SettingPreferences {...defaultProps} enableBlocksMVA={false} />);
+    const { preferences } = selectedDevice || {};
+    return preferences && preferences[`${singleLink}`] ? (
 
-    fireEvent.click(screen.getByTestId('blockSpecificServicesBtn'));
-    expect(window.location.href).toBe('https://test-mobile/ABC123');
-  });
+        <ListGroup topLine={index != 0} bottomLine={false} surface='light' viewport='desktop' id="SettingPreferencesAccordion">
+          <ListGroupItem
+            ariaLabel={`${getItemValue(pageItems, singleLink)}`}
+            actionElement='icon'
+            id={`${singleLink}`}
+            onClick={ () => {
+              const actionKey = pageContent && getActionKey(pageItems, singleLink);
+              console.log("actionKey TS--",actionKey);
+              if((singleLink === 'backupContentToVerizonCloudBtn' ||singleLink === 'blockCallsAndMessagesBtn' || singleLink === 'blockSpecificServicesBtn')){
+                const channelIdVal = getClientChannelId();
+                console.log("channelIdVal TS--",channelIdVal);
+                const channelIsMVA= (channelIdVal && (channelIdVal === 'VZW-MFA'));
+                console.log("channelId isit MVA TS--",channelIsMVA);
+                if(channelIsMVA){
+                  if(enableBlocksMVA && (singleLink === 'blockCallsAndMessagesBtn' || singleLink === 'blockSpecificServicesBtn')){
+                    const actionKey = pageContent && getActionKey(pageItems, `${singleLink}`);
+                    const click_info = getOnClickInfo(pageContent, `nsa_${actionKey}_mva`);
+                    window.location.href = `${click_info?.actionHref}${selectedDevice?.encryptedMtnDES}`;
+                  }
+                  else{
+                  console.log("Inside if MVA Settings");
+                  const click_info = getOnClickInfoMobile(pageContent, `${actionKey}_native`, selectedDeviceDetailMdn);
+                  click_info?.onclick();
+                  }
+                }
+                else{
+                  console.log("Inside if else Settings");
+                  callMdotAndDdotRedirectURLs(pageContent, actionKey);
+                } 
+              }
+              else { 
+                callMdotAndDdotRedirectURLs(pageContent, actionKey);
+              }
+            }}
+          >
+            {listGroupCommonCode(pageItems, singleLink)}
+          </ListGroupItem>
+        </ListGroup>
+    ) : null;
+  };
 
-  it('redirects using getOnClickInfo when enableBlocksMVA is true and blockSpecificServicesBtn', () => {
-    const { getOnClickInfo } = require('../utils');
-    (getOnClickInfo as jest.Mock).mockReturnValueOnce({ actionHref: 'https://test-mva/' });
+  return (
 
-    render(<SettingPreferences {...defaultProps} enableBlocksMVA={true} />);
+    <div className="py-2 px-6 h-min-[100px] bg-white rounded-xl flex flex-col gap-4" data-testid="settings-preferences-container">
+      <Accordion topLine={false} bottomLine={false}>
+        <AccordionItem opened={accordionIsOpen}>
+          <AccordionHeader trigger={{ type: 'icon',
+          ariaLabel: getItemValue(pageItems, 'settingPreferencesText'),
+          openLabel: 'Expanded',
+          closeLabel: 'Collapsed'
 
-    fireEvent.click(screen.getByTestId('blockSpecificServicesBtn'));
-    expect(window.location.href).toBe('https://test-mva/ABC123');
-  });
-
-  it('redirects using getOnClickInfo when enableBlocksMVA is true and blockCallsAndMessagesBtn', () => {
-    const { getOnClickInfo } = require('../utils');
-    (getOnClickInfo as jest.Mock).mockReturnValueOnce({ actionHref: 'https://calls-msg/' });
-
-    render(
-      <SettingPreferences
-        {...defaultProps}
-        enableBlocksMVA={true}
-        singletink={{ blockCallsAndMessagesBtn: true }}
-        preferences={{ blockCallsAndMessagesBtn: true }}
-        pageItems={[{ key: 'blockCallsAndMessagesBtn' }]}
-      />
-    );
-
-    fireEvent.click(screen.getByTestId('blockCallsAndMessagesBtn'));
-    expect(window.location.href).toBe('https://calls-msg/ABC123');
-  });
-
-  it('does nothing if button is not in preferences', () => {
-    render(
-      <SettingPreferences
-        {...defaultProps}
-        preferences={{}} // button not enabled
-      />
-    );
-
-    fireEvent.click(screen.getByTestId('blockSpecificServicesBtn'));
-    // should remain unchanged
-    expect(window.location.href).toBe('');
-  });
-});
+           }} topLine={false}
+           onClick={() => setAccordionIsOpen(!accordionIsOpen)} 
+            data-track={`${accordionIsOpen ? 'collapsed' : 'expanded'}`}>
+            <AccordionTitle>
+              {getItemValue(pageItems, 'settingPreferencesText')}
+            </AccordionTitle>
+            <AccordionSubTitle>
+              {getItemValue(pageItems, 'settingsAndPreferencesSubHeaderText')}
+            </AccordionSubTitle>
+          </AccordionHeader>
+          <AccordionDetail data-testid="settings-preferences-accordion-detail">
+            {handlePreferences(preferencesArray)}
+          </AccordionDetail>
+        </AccordionItem>
+      </Accordion>
+    </div>
+  );
+}
+export default SettingPreferences;

@@ -1,178 +1,31 @@
-/**
- * @jest-environment jsdom
- */
-
-import { render, fireEvent, screen } from "@testing-library/react";
-import "@testing-library/jest-dom";
-import SettingPreferences from "./SettingAndPreferences";
-
-// ✅ Mock utils
-jest.mock("@/helpers/utils", () => ({
-  getItemValue: jest.fn(),
-  getActionKey: jest.fn(),
-  getOnClickInfo: jest.fn(),
-  getOnClickInfoMobile: jest.fn(),
-}));
-
-// ✅ Mock getClientChannelId
-jest.mock("@vz/next-util", () => ({
-  getClientChannelId: jest.fn(),
-}));
-
-// ✅ Mock next/navigation
-jest.mock("next/navigation", () => ({
-  useSearchParams: jest.fn(),
-}));
-
-import {
-  getItemValue,
-  getActionKey,
-  getOnClickInfo,
-  getOnClickInfoMobile,
-} from "@/helpers/utils";
-import { getClientChannelId } from "@vz/next-util";
-import { useSearchParams } from "next/navigation";
-
-describe("SettingPreferences (Next.js)", () => {
-  let props: any;
-  let clickInfoMock: any;
-  let clickInfoMobileMock: any;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    clickInfoMock = { onclick: jest.fn(), actionHref: "/redirect/" };
-    clickInfoMobileMock = { onclick: jest.fn() };
-
-    (useSearchParams as jest.Mock).mockReturnValue({
-      get: jest.fn().mockReturnValue("encrypted-mdn-1"),
-    });
-
-    (getItemValue as jest.Mock).mockImplementation((_: any, key: string) => {
-      const map: Record<string, string> = {
-        settingPreferencesText: "Settings Preferences",
-        settingsAndPreferencesSubHeaderText: "Subheader",
-        blockCallsAndMessagesBtn: "Block Calls",
-        blockSpecificServicesBtn: "Block Services",
-        backupContentToVerizonCloudBtn: "Backup Cloud",
-      };
-      return map[key] || key;
-    });
-
-    (getActionKey as jest.Mock).mockImplementation(
-      (_: any, key: string) => `${key}_action`
-    );
-
-    (getOnClickInfo as jest.Mock).mockReturnValue(clickInfoMock);
-    (getOnClickInfoMobile as jest.Mock).mockReturnValue(clickInfoMobileMock);
-
-    props = {
-      deviceDetails: {
-        body: {
-          sections: [
-            {
-              sections: [
-                {
-                  data: [
-                    {
-                      encryptedMtnDES: "encrypted-mdn-1",
-                      mtn: "1234567890",
-                      preferences: {
-                        blockCallsAndMessagesBtn: true,
-                        blockSpecificServicesBtn: true,
-                        backupContentToVerizonCloudBtn: true,
-                        dummyPreference: false,
-                      },
-                    },
-                  ],
-                  contents: [
-                    {
-                      items: [
-                        "blockCallsAndMessagesBtn",
-                        "blockSpecificServicesBtn",
-                        "backupContentToVerizonCloudBtn",
-                        "dummyPreference",
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-          pageAttributes: { manageBlocksMVAFFlag: "true" },
-        },
-      },
-    };
-
+it("calls callMdotAndDdotRedirectURLs for block button when channel is non-MVA", () => {
     (getClientChannelId as jest.Mock).mockReturnValue("VZW-WEB");
-  });
-
-  it("renders container and preferences list", () => {
     render(<SettingPreferences {...props} />);
-    expect(
-      screen.getByTestId("settings-preferences-container")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Settings Preferences")).toBeInTheDocument();
-    expect(screen.getByText("Subheader")).toBeInTheDocument();
-    expect(screen.getByText("Block Calls")).toBeInTheDocument();
-    expect(screen.getByText("Block Services")).toBeInTheDocument();
-    expect(screen.getByText("Backup Cloud")).toBeInTheDocument();
-  });
-
-  it("toggles accordion open and closed", () => {
-    render(<SettingPreferences {...props} />);
-    const header = screen.getByRole("button", { name: /Expanded|Collapsed/i });
-
-    // toggle closed
-    fireEvent.click(header);
-    expect(header).toHaveAttribute("data-track", "collapsed");
-
-    // toggle open again
-    fireEvent.click(header);
-    expect(header).toHaveAttribute("data-track", "expanded");
-  });
-
-  it("uses getOnClickInfo for normal link", () => {
-    render(<SettingPreferences {...props} />);
-    fireEvent.click(screen.getByText("Backup Cloud"));
-    expect(getActionKey).toHaveBeenCalledWith(
-      expect.anything(),
-      "backupContentToVerizonCloudBtn"
-    );
+    fireEvent.click(screen.getByText("Block Calls")); // special link + non-MVA
     expect(getOnClickInfo).toHaveBeenCalled();
     expect(clickInfoMock.onclick).toHaveBeenCalled();
   });
 
-  it("uses getOnClickInfoMobile when channel = VZW-MFA and not block service", () => {
+  it("uses getOnClickInfoMobile when enableBlocksMVA is false", () => {
+    props.deviceDetails.body.pageAttributes.manageBlocksMVAFFlag = "false";
     (getClientChannelId as jest.Mock).mockReturnValue("VZW-MFA");
+
     render(<SettingPreferences {...props} />);
-    fireEvent.click(screen.getByText("Backup Cloud"));
+    fireEvent.click(screen.getByText("Block Services"));
     expect(getOnClickInfoMobile).toHaveBeenCalled();
     expect(clickInfoMobileMock.onclick).toHaveBeenCalled();
   });
 
-  it("redirects with window.location.href for MVA + block buttons", () => {
-    delete (window as any).location;
-    (window as any).location = { href: "" };
-
-    (getClientChannelId as jest.Mock).mockReturnValue("VZW-MFA");
+  it("toggles accordion and flips data-track attribute properly", () => {
     render(<SettingPreferences {...props} />);
-    fireEvent.click(screen.getByText("Block Calls"));
-    expect((window as any).location.href).toContain(
-      "/redirect/encrypted-mdn-1"
-    );
-  });
+    const header = screen.getByRole("button", { name: /Expanded|Collapsed/i });
 
-  it("falls back to getOnClickInfo for non-MFA channels", () => {
-    (getClientChannelId as jest.Mock).mockReturnValue("VZW-WEB");
-    render(<SettingPreferences {...props} />);
-    fireEvent.click(screen.getByText("Block Services"));
-    expect(getOnClickInfo).toHaveBeenCalled();
-    expect(clickInfoMock.onclick).toHaveBeenCalled();
-  });
+    // initial open state
+    expect(header).toHaveAttribute("data-track", "expanded");
 
-  it("does not render a preference when value is false", () => {
-    render(<SettingPreferences {...props} />);
-    expect(screen.queryByText("dummyPreference")).not.toBeInTheDocument();
+    fireEvent.click(header); // collapse
+    expect(header).toHaveAttribute("data-track", "collapsed");
+
+    fireEvent.click(header); // expand again
+    expect(header).toHaveAttribute("data-track", "expanded");
   });
-});

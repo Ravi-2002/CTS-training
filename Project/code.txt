@@ -1,39 +1,37 @@
-it("redirects via getOnClickInfo with nsa_action_mva key for blockCallsAndMessagesBtn", () => {
-    delete (window as any).location;
-    (window as any).location = { href: "" };
+it("redirects when enableBlocksMVA=true and singleLink=blockCallsAndMessagesBtn", () => {
+  // Arrange
+  props.deviceDetails.body.pageAttributes.manageBlocksMVAFFlag = "true"; // enableBlocksMVA = true
+  (getClientChannelId as jest.Mock).mockReturnValue("VZW-MFA");          // channel is MVA
+  (getActionKey as jest.Mock).mockReturnValue("blockCallsAndMessagesBtn");
+  (getOnClickInfo as jest.Mock).mockReturnValue({ actionHref: "/calls" });
 
-    (getClientChannelId as jest.Mock).mockReturnValue("VZW-MFA");
-    (getOnClickInfo as jest.Mock).mockImplementation((_, key) => {
-      if (key.includes("nsa_blockCallsAndMessagesBtn_action_mva")) {
-        return { actionHref: "/calls-redirect/", onclick: jest.fn() };
-      }
-      return { actionHref: "/fallback/", onclick: jest.fn() };
-    });
+  // Act
+  render(<SettingPreferences {...props} />);
+  fireEvent.click(screen.getByText("Block Calls"));
 
-    render(<SettingPreferences {...props} />);
-    fireEvent.click(screen.getByText("Block Calls"));
+  // Assert
+  expect(window.location.href).toBe("/callsENCRYPTED"); // adjust suffix
+  expect(getOnClickInfo).toHaveBeenCalledWith(
+    expect.anything(),
+    "nsa_blockCallsAndMessagesBtn_mva"
+  );
+});
 
-    expect((window as any).location.href).toBe(
-      "/calls-redirect/encrypted-mdn-1"
-    );
-  });
+it("redirects when enableBlocksMVA=true and singleLink=blockSpecificServicesBtn", () => {
+  // Arrange
+  props.deviceDetails.body.pageAttributes.manageBlocksMVAFFlag = "true"; // enableBlocksMVA = true
+  (getClientChannelId as jest.Mock).mockReturnValue("VZW-MFA");          // channel is MVA
+  (getActionKey as jest.Mock).mockReturnValue("blockSpecificServicesBtn");
+  (getOnClickInfo as jest.Mock).mockReturnValue({ actionHref: "/services" });
 
-  it("redirects via getOnClickInfo with nsa_action_mva key for blockSpecificServicesBtn", () => {
-    delete (window as any).location;
-    (window as any).location = { href: "" };
+  // Act
+  render(<SettingPreferences {...props} />);
+  fireEvent.click(screen.getByText("Block Services"));
 
-    (getClientChannelId as jest.Mock).mockReturnValue("VZW-MFA");
-    (getOnClickInfo as jest.Mock).mockImplementation((_, key) => {
-      if (key.includes("nsa_blockSpecificServicesBtn_action_mva")) {
-        return { actionHref: "/services-redirect/", onclick: jest.fn() };
-      }
-      return { actionHref: "/fallback/", onclick: jest.fn() };
-    });
-
-    render(<SettingPreferences {...props} />);
-    fireEvent.click(screen.getByText("Block Services"));
-
-    expect((window as any).location.href).toBe(
-      "/services-redirect/encrypted-mdn-1"
-    );
-  });
+  // Assert
+  expect(window.location.href).toBe("/servicesENCRYPTED"); // adjust suffix
+  expect(getOnClickInfo).toHaveBeenCalledWith(
+    expect.anything(),
+    "nsa_blockSpecificServicesBtn_mva"
+  );
+});

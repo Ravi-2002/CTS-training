@@ -1,148 +1,89 @@
-// __tests__/SettingPreferences.spec.tsx
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import SettingPreferences from "../SettingPreferences";
+// SettingPreferences.test.tsx
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import SettingPreferences from '../SettingPreferences';
 
-// ---- mocks ----
-const mockCallMdotAndDdotRedirectURLs = jest.fn();
-const mockGetOnClickInfo = jest.fn();
-const mockGetOnClickInfoMobile = jest.fn();
-const mockGetActionKey = jest.fn();
-
-jest.mock("../../common", () => ({
-  __esModule: true,
-  callMdotAndDdotRedirectURLs: (...args: any[]) =>
-    mockCallMdotAndDdotRedirectURLs(...args),
-  getOnClickInfo: (...args: any[]) => mockGetOnClickInfo(...args),
-  getOnClickInfoMobile: (...args: any[]) => mockGetOnClickInfoMobile(...args),
-  getActionKey: (...args: any[]) => mockGetActionKey(...args),
+// mock utils
+jest.mock('../utils', () => ({
+  getActionkey: jest.fn(() => 'mockKey'),
+  getOnClickInfo: jest.fn(() => ({ actionHref: 'https://verizon.com/block/' })),
+  getOnClickInfoMobile: jest.fn(() => ({ actionHref: 'https://verizon.com/mobile-block/' })),
 }));
 
-// reset mocks
-beforeEach(() => {
-  jest.clearAllMocks();
+// window.location mock
+const originalLocation = window.location;
+beforeAll(() => {
   delete (window as any).location;
-  (window as any).location = { href: "" };
+  (window as any).location = { href: '' };
+});
+afterAll(() => {
+  window.location = originalLocation;
 });
 
-// ---- helpers ----
-const baseProps = {
-  enableBlocksMVA: false,
-  selectedDevice: { encryptedMtnDES: "abc123" },
-  channelIsMVA: false,
-  pageContent: { sections: [{ items: [{ id: "pref1", label: "Pref 1" }] }] },
-  pageItems: [{ id: "pref1", label: "Pref 1" }],
-};
+describe('SettingPreferences', () => {
+  const defaultProps = {
+    pageContent: {},
+    pageItems: [{ key: 'blockSpecificServicesBtn' }],
+    deviceDetails: { encryptedMtnDES: 'ABC123' },
+    preferences: { blockSpecificServicesBtn: true },
+    singletink: { blockSpecificServicesBtn: true },
+    enableBlocksMVA: false,
+  };
 
-describe("SettingPreferences", () => {
-  it("renders accordion closed by default", () => {
-    render(<SettingPreferences {...baseProps} />);
-    expect(screen.getByText("Settings & Preferences")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /Pref 1/i })
-    ).not.toBeInTheDocument();
+  it('renders without crashing', () => {
+    render(<SettingPreferences {...defaultProps} />);
+    expect(screen.getByTestId('blockSpecificServicesBtn')).toBeInTheDocument();
   });
 
-  it("toggles accordion open and closed", () => {
-    render(<SettingPreferences {...baseProps} />);
-    fireEvent.click(screen.getByText("Settings & Preferences"));
-    expect(screen.getByRole("button", { name: "Pref 1" })).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Settings & Preferences"));
-    expect(
-      screen.queryByRole("button", { name: "Pref 1" })
-    ).not.toBeInTheDocument();
+  it('redirects using getOnClickInfoMobile when enableBlocksMVA is false', () => {
+    const { getOnClickInfoMobile } = require('../utils');
+    (getOnClickInfoMobile as jest.Mock).mockReturnValueOnce({ actionHref: 'https://test-mobile/' });
+
+    render(<SettingPreferences {...defaultProps} enableBlocksMVA={false} />);
+
+    fireEvent.click(screen.getByTestId('blockSpecificServicesBtn'));
+    expect(window.location.href).toBe('https://test-mobile/ABC123');
   });
 
-  it("calls callMdotAndDdotRedirectURLs for normal preference", () => {
-    render(<SettingPreferences {...baseProps} />);
-    fireEvent.click(screen.getByText("Settings & Preferences"));
-    fireEvent.click(screen.getByRole("button", { name: "Pref 1" }));
-    expect(mockCallMdotAndDdotRedirectURLs).toHaveBeenCalledWith(
-      "pref1",
-      baseProps.pageContent,
-      baseProps.pageItems
-    );
+  it('redirects using getOnClickInfo when enableBlocksMVA is true and blockSpecificServicesBtn', () => {
+    const { getOnClickInfo } = require('../utils');
+    (getOnClickInfo as jest.Mock).mockReturnValueOnce({ actionHref: 'https://test-mva/' });
+
+    render(<SettingPreferences {...defaultProps} enableBlocksMVA={true} />);
+
+    fireEvent.click(screen.getByTestId('blockSpecificServicesBtn'));
+    expect(window.location.href).toBe('https://test-mva/ABC123');
   });
 
-  it("handles backupContentToVerizonCloudBtn with non-MVA", () => {
-    render(
-      <SettingPreferences
-        {...baseProps}
-        pageItems={[{ id: "backupContentToVerizonCloudBtn", label: "Backup" }]}
-      />
-    );
-    fireEvent.click(screen.getByText("Settings & Preferences"));
-    fireEvent.click(screen.getByRole("button", { name: "Backup" }));
-    expect(mockCallMdotAndDdotRedirectURLs).toHaveBeenCalled();
-  });
-
-  it("handles blockCallsAndMessagesBtn with channelIsMVA=false", () => {
-    render(
-      <SettingPreferences
-        {...baseProps}
-        pageItems={[{ id: "blockCallsAndMessagesBtn", label: "Block Calls" }]}
-      />
-    );
-    fireEvent.click(screen.getByText("Settings & Preferences"));
-    fireEvent.click(screen.getByRole("button", { name: "Block Calls" }));
-    expect(mockCallMdotAndDdotRedirectURLs).toHaveBeenCalled();
-  });
-
-  it("handles blockCallsAndMessagesBtn with channelIsMVA=true, enableBlocksMVA=false", () => {
-    render(
-      <SettingPreferences
-        {...baseProps}
-        channelIsMVA={true}
-        enableBlocksMVA={false}
-        pageItems={[{ id: "blockCallsAndMessagesBtn", label: "Block Calls" }]}
-      />
-    );
-    fireEvent.click(screen.getByText("Settings & Preferences"));
-    fireEvent.click(screen.getByRole("button", { name: "Block Calls" }));
-    expect(mockGetOnClickInfoMobile).toHaveBeenCalled();
-  });
-
-  it("handles blockCallsAndMessagesBtn with channelIsMVA=true, enableBlocksMVA=true", () => {
-    mockGetActionKey.mockReturnValue("key123");
-    mockGetOnClickInfo.mockReturnValue({ actionHref: "/go/to/" });
+  it('redirects using getOnClickInfo when enableBlocksMVA is true and blockCallsAndMessagesBtn', () => {
+    const { getOnClickInfo } = require('../utils');
+    (getOnClickInfo as jest.Mock).mockReturnValueOnce({ actionHref: 'https://calls-msg/' });
 
     render(
       <SettingPreferences
-        {...baseProps}
-        channelIsMVA={true}
+        {...defaultProps}
         enableBlocksMVA={true}
-        pageItems={[{ id: "blockCallsAndMessagesBtn", label: "Block Calls" }]}
+        singletink={{ blockCallsAndMessagesBtn: true }}
+        preferences={{ blockCallsAndMessagesBtn: true }}
+        pageItems={[{ key: 'blockCallsAndMessagesBtn' }]}
       />
     );
-    fireEvent.click(screen.getByText("Settings & Preferences"));
-    fireEvent.click(screen.getByRole("button", { name: "Block Calls" }));
 
-    expect(mockGetActionKey).toHaveBeenCalledWith(
-      baseProps.pageItems,
-      "blockCallsAndMessagesBtn"
-    );
-    expect(mockGetOnClickInfo).toHaveBeenCalledWith(
-      baseProps.pageContent,
-      "nsa_key123_mva"
-    );
-    expect(window.location.href).toBe("/go/to/abc123");
+    fireEvent.click(screen.getByTestId('blockCallsAndMessagesBtn'));
+    expect(window.location.href).toBe('https://calls-msg/ABC123');
   });
 
-  it("handles blockSpecificServicesBtn with channelIsMVA=true, enableBlocksMVA=true", () => {
-    mockGetActionKey.mockReturnValue("specKey");
-    mockGetOnClickInfo.mockReturnValue({ actionHref: "/service/" });
-
+  it('does nothing if button is not in preferences', () => {
     render(
       <SettingPreferences
-        {...baseProps}
-        channelIsMVA={true}
-        enableBlocksMVA={true}
-        pageItems={[{ id: "blockSpecificServicesBtn", label: "Block Service" }]}
+        {...defaultProps}
+        preferences={{}} // button not enabled
       />
     );
-    fireEvent.click(screen.getByText("Settings & Preferences"));
-    fireEvent.click(screen.getByRole("button", { name: "Block Service" }));
 
-    expect(window.location.href).toBe("/service/abc123");
+    fireEvent.click(screen.getByTestId('blockSpecificServicesBtn'));
+    // should remain unchanged
+    expect(window.location.href).toBe('');
   });
 });

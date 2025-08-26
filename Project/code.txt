@@ -1,36 +1,149 @@
-import { render } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import configureStore from 'redux-mock-store';
-import { MemoryRouter } from 'react-router-dom';
-import BlockCallsEmpty from '../BlockCallsEmpty';
+'use client';
 
-const mockStore = configureStore([]);
+import {
+  Accordion,
+  AccordionDetail,
+  AccordionHeader,
+  AccordionItem,
+  AccordionTitle,
+  AccordionSubTitle, ListGroup, ListGroupItem, ListGroupItemTitle
+} from '@vds/core';
+import { getClientChannelId } from "@vz/next-util";
+import { useSearchParams } from 'next/navigation';
+import React, {useState} from 'react';
+import styled from 'styled-components';
 
-describe('BlockCallsEmpty', () => {
-  it('covers MDN truthy branch and stores MDN in localStorage', () => {
-    const store = mockStore({
-      Detail: {
-        callsMessages: {
-          blockedNumbers: [],
-          addBlockCallMsg: {},
-          isFetching: false,
-        },
-      },
+import { getItemValue, getActionKey, getOnClickInfo, getOnClickInfoMobile } from '@/helpers/utils';
+
+const ListGroupItemTitleContent = styled.span`
+  font-size: 18px;
+  line-height: 20px;
+`;
+
+const SettingPreferences = (props: any) => {
+
+  const searchParams = useSearchParams();
+  const deviceInfo = props?.deviceDetails?.body?.sections?.[0]?.sections?.[0]?.data; 
+  const selectedMdn = searchParams?.get('encryptedMdn');
+  const selectedDevice = deviceInfo?.find((encryptMdn: any) => encryptMdn?.encryptedMtnDES == selectedMdn)
+
+  const preferencesArray = selectedDevice?.preferences || {};
+
+  const pageContent = props?.deviceDetails?.body?.sections[0]?.sections[0];
+  const pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
+  const pageAttributes = props?.deviceDetails?.body?.pageAttributes || {};
+  console.log(pageContent,"pageContent");
+  console.log(pageItems,"pageItems");
+  console.log(pageAttributes,"pageAttributes");
+  const [accordionIsOpen, setAccordionIsOpen] = useState<boolean>(false);
+  const selectedDeviceDetailMdn = selectedDevice?.mtn;
+   const enableBlocksMVA=getItemValue(pageAttributes,"manageBlocksMVAFFlag")==='true';
+   console.log("enableBlocksMVA--",enableBlocksMVA);
+  // const encrypterMDN=selectedDevice?.encryptedMtnDES;
+  function handlePreferences(preferencesArray: any) {
+
+    const tempArray: string[] = [];
+    Object.keys(preferencesArray)?.forEach((singleLinkValue) => {
+      if (preferencesArray[singleLinkValue]) {
+        tempArray.push(singleLinkValue);
+      }
     });
+    return tempArray?.map(renderPreferenceLink);
+  }
 
-    // Spy on localStorage
-    const setItemSpy = jest.spyOn(Storage.prototype, 'setItem');
-
-    render(
-      <Provider store={store}>
-        <MemoryRouter
-          initialEntries={['/callsandMessages?MDN=5556667777']}
+  function listGroupCommonCode(pageItems: any, singleLink: any) {
+    const itemVal = `${getItemValue(pageItems, singleLink)}`
+    return (
+      <ListGroupItemTitle bold={false}>
+        <ListGroupItemTitleContent
+          data-track={itemVal}
+          aria-label={itemVal}
         >
-          <BlockCallsEmpty />
-        </MemoryRouter>
-      </Provider>
-    );
+          {getItemValue(pageItems, `${singleLink}`)}
 
-    expect(setItemSpy).toHaveBeenCalledWith('mdn', '5556667777');
-  });
-});
+        </ListGroupItemTitleContent>
+      </ListGroupItemTitle>
+    );
+  };
+
+  const callMdotAndDdotRedirectURLs = (pageContent: any ,actionKey: any) =>{
+    console.log("Inside else callMdotAndDdotRedirectURLs Settings");
+    const click_info = getOnClickInfo(pageContent, actionKey);
+    click_info?.onclick();
+  }
+
+  function renderPreferenceLink(singleLink: any, index: any) {
+
+    const { preferences } = selectedDevice || {};
+    return preferences && preferences[`${singleLink}`] ? (
+
+        <ListGroup topLine={index != 0} bottomLine={false} surface='light' viewport='desktop' id="SettingPreferencesAccordion">
+          <ListGroupItem
+            ariaLabel={`${getItemValue(pageItems, singleLink)}`}
+            actionElement='icon'
+            id={`${singleLink}`}
+            onClick={ () => {
+              const actionKey = pageContent && getActionKey(pageItems, singleLink);
+              console.log("actionKey TS--",actionKey);
+              if((singleLink === 'backupContentToVerizonCloudBtn' ||singleLink === 'blockCallsAndMessagesBtn' || singleLink === 'blockSpecificServicesBtn')){
+                const channelIdVal = getClientChannelId();
+                console.log("channelIdVal TS--",channelIdVal);
+                const channelIsMVA= (channelIdVal && (channelIdVal === 'VZW-MFA'));
+                console.log("channelId isit MVA TS--",channelIsMVA);
+                if(channelIsMVA){
+                  if(enableBlocksMVA && (singleLink === 'blockCallsAndMessagesBtn' || singleLink === 'blockSpecificServicesBtn')){
+                    const actionKey = pageContent && getActionKey(pageItems, `${singleLink}`);
+                    const click_info = getOnClickInfo(pageContent, `nsa_${actionKey}_mva`);
+                    window.location.href = `${click_info?.actionHref}${selectedDevice?.encryptedMtnDES}`;
+                  }
+                  else{
+                  console.log("Inside if MVA Settings");
+                  const click_info = getOnClickInfoMobile(pageContent, `${actionKey}_native`, selectedDeviceDetailMdn);
+                  click_info?.onclick();
+                  }
+                }
+                else{
+                  console.log("Inside if else Settings");
+                  callMdotAndDdotRedirectURLs(pageContent, actionKey);
+                } 
+              }
+              else { 
+                callMdotAndDdotRedirectURLs(pageContent, actionKey);
+              }
+            }}
+          >
+            {listGroupCommonCode(pageItems, singleLink)}
+          </ListGroupItem>
+        </ListGroup>
+    ) : null;
+  };
+
+  return (
+
+    <div className="py-2 px-6 h-min-[100px] bg-white rounded-xl flex flex-col gap-4" data-testid="settings-preferences-container">
+      <Accordion topLine={false} bottomLine={false}>
+        <AccordionItem opened={accordionIsOpen}>
+          <AccordionHeader trigger={{ type: 'icon',
+          ariaLabel: getItemValue(pageItems, 'settingPreferencesText'),
+          openLabel: 'Expanded',
+          closeLabel: 'Collapsed'
+
+           }} topLine={false}
+           onClick={() => setAccordionIsOpen(!accordionIsOpen)} 
+            data-track={`${accordionIsOpen ? 'collapsed' : 'expanded'}`}>
+            <AccordionTitle>
+              {getItemValue(pageItems, 'settingPreferencesText')}
+            </AccordionTitle>
+            <AccordionSubTitle>
+              {getItemValue(pageItems, 'settingsAndPreferencesSubHeaderText')}
+            </AccordionSubTitle>
+          </AccordionHeader>
+          <AccordionDetail data-testid="settings-preferences-accordion-detail">
+            {handlePreferences(preferencesArray)}
+          </AccordionDetail>
+        </AccordionItem>
+      </Accordion>
+    </div>
+  );
+}
+export default SettingPreferences;

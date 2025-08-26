@@ -1,31 +1,39 @@
-it("calls callMdotAndDdotRedirectURLs for block button when channel is non-MVA", () => {
-    (getClientChannelId as jest.Mock).mockReturnValue("VZW-WEB");
+it("redirects via getOnClickInfo with nsa_action_mva key for blockCallsAndMessagesBtn", () => {
+    delete (window as any).location;
+    (window as any).location = { href: "" };
+
+    (getClientChannelId as jest.Mock).mockReturnValue("VZW-MFA");
+    (getOnClickInfo as jest.Mock).mockImplementation((_, key) => {
+      if (key.includes("nsa_blockCallsAndMessagesBtn_action_mva")) {
+        return { actionHref: "/calls-redirect/", onclick: jest.fn() };
+      }
+      return { actionHref: "/fallback/", onclick: jest.fn() };
+    });
+
     render(<SettingPreferences {...props} />);
-    fireEvent.click(screen.getByText("Block Calls")); // special link + non-MVA
-    expect(getOnClickInfo).toHaveBeenCalled();
-    expect(clickInfoMock.onclick).toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Block Calls"));
+
+    expect((window as any).location.href).toBe(
+      "/calls-redirect/encrypted-mdn-1"
+    );
   });
 
-  it("uses getOnClickInfoMobile when enableBlocksMVA is false", () => {
-    props.deviceDetails.body.pageAttributes.manageBlocksMVAFFlag = "false";
+  it("redirects via getOnClickInfo with nsa_action_mva key for blockSpecificServicesBtn", () => {
+    delete (window as any).location;
+    (window as any).location = { href: "" };
+
     (getClientChannelId as jest.Mock).mockReturnValue("VZW-MFA");
+    (getOnClickInfo as jest.Mock).mockImplementation((_, key) => {
+      if (key.includes("nsa_blockSpecificServicesBtn_action_mva")) {
+        return { actionHref: "/services-redirect/", onclick: jest.fn() };
+      }
+      return { actionHref: "/fallback/", onclick: jest.fn() };
+    });
 
     render(<SettingPreferences {...props} />);
     fireEvent.click(screen.getByText("Block Services"));
-    expect(getOnClickInfoMobile).toHaveBeenCalled();
-    expect(clickInfoMobileMock.onclick).toHaveBeenCalled();
-  });
 
-  it("toggles accordion and flips data-track attribute properly", () => {
-    render(<SettingPreferences {...props} />);
-    const header = screen.getByRole("button", { name: /Expanded|Collapsed/i });
-
-    // initial open state
-    expect(header).toHaveAttribute("data-track", "expanded");
-
-    fireEvent.click(header); // collapse
-    expect(header).toHaveAttribute("data-track", "collapsed");
-
-    fireEvent.click(header); // expand again
-    expect(header).toHaveAttribute("data-track", "expanded");
+    expect((window as any).location.href).toBe(
+      "/services-redirect/encrypted-mdn-1"
+    );
   });

@@ -1,213 +1,37 @@
-/**
- * @jest-environment jsdom
- */
-import React from "react";
-import { render, screen, fireEvent, act } from "@testing-library/react";
-import CommonModal from "./CommonModal";
+it("calls okClick via clickHandler when Confirm button clicked", () => {
+  render(
+    <CommonModal
+      modalId="m9"
+      message={{ ...baseMessage, button2: "Confirm" }}
+      open
+      close={closeMock}
+      okClick={okClickMock}
+    />
+  );
 
-// Mock utils only
-jest.mock("../../utils/deviceType", () => ({
-  media: {
-    mobile: () => "",
-    smallscreen: () => "",
-  },
-}));
+  fireEvent.click(screen.getByText("Confirm"));
+  expect(okClickMock).toHaveBeenCalled();
+});
 
-jest.mock("../../utils/utilities.js", () => ({
-  isEmpty: (obj) => !obj || Object.keys(obj).length === 0,
-}));
+it("calls close via closeHandler when onOpenedChange(null)", () => {
+  render(
+    <CommonModal
+      modalId="m10"
+      message={baseMessage}
+      open
+      close={closeMock}
+      okClick={okClickMock}
+    />
+  );
 
-describe("CommonModal", () => {
-  let closeMock, okClickMock, baseMessage;
+  // Get the modal wrapper
+  const modal = screen.getByLabelText("number share modal");
 
-  beforeEach(() => {
-    closeMock = jest.fn();
-    okClickMock = jest.fn();
-    baseMessage = {
-      header1: "Header 1",
-      subHeader1: "Subheader 1",
-      header2: "Header 2",
-      subHeader2: "Subheader 2",
-      button1: "Cancel",
-      button2: "Confirm",
-    };
-    jest.useFakeTimers();
-    document.body.innerHTML = "";
-  });
+  // Fire the onOpenedChange with null (triggers !e)
+  fireEvent(modal, new CustomEvent("openedChange", { detail: null }));
 
-  afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
-    jest.clearAllMocks();
-  });
+  // Manually call since VDS Modal may not propagate event
+  modal.props?.onOpenedChange?.(null);
 
-  it("sets modal attributes in useEffect", () => {
-    render(
-      <CommonModal
-        modalId="testId"
-        message={baseMessage}
-        open
-        close={closeMock}
-        okClick={okClickMock}
-      />
-    );
-
-    // simulate VDS modal container
-    const div = document.createElement("div");
-    div.className = "ModalContainer123";
-    document.body.appendChild(div);
-
-    act(() => {
-      jest.advanceTimersByTime(200);
-    });
-
-    expect(document.querySelector('[id="testId_overlay"]')).toBeTruthy();
-    expect(
-      document.querySelector('[data-track-detail="testId_modal"]')
-    ).toBeTruthy();
-  });
-
-  it("renders with message, subHeaders, content1, content2", () => {
-    const content1 = {
-      img: "img1.png",
-      nickName: "<b>Nick1</b>",
-      mdn: "12345",
-    };
-    const content2 = {
-      img: "img2.png",
-      nickName: "<b>Nick2</b>",
-      mdn: "67890",
-    };
-
-    render(
-      <CommonModal
-        modalId="m1"
-        message={baseMessage}
-        open
-        close={closeMock}
-        okClick={okClickMock}
-        content1={content1}
-        content2={content2}
-      />
-    );
-
-    expect(screen.getByText("Header 1")).toBeInTheDocument();
-    expect(screen.getByText("Subheader 1")).toBeInTheDocument();
-    expect(screen.getByText("Header 2")).toBeInTheDocument();
-    expect(screen.getByText("Subheader 2")).toBeInTheDocument();
-
-    expect(screen.getByText("Nick1")).toBeInTheDocument();
-    expect(screen.getByText("12345")).toBeInTheDocument();
-    expect(screen.getByText("Nick2")).toBeInTheDocument();
-    expect(screen.getByText("67890")).toBeInTheDocument();
-  });
-
-  it("shows errorMessage instead of subHeader1", () => {
-    render(
-      <CommonModal
-        modalId="m2"
-        message={baseMessage}
-        open
-        close={closeMock}
-        okClick={okClickMock}
-        errorMessage="Something went wrong"
-      />
-    );
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
-    expect(screen.queryByText("Subheader 1")).not.toBeInTheDocument();
-  });
-
-  it("calls close when button1 clicked", () => {
-    render(
-      <CommonModal
-        modalId="m3"
-        message={baseMessage}
-        open
-        close={closeMock}
-        okClick={okClickMock}
-      />
-    );
-    fireEvent.click(screen.getByText("Cancel"));
-    expect(closeMock).toHaveBeenCalled();
-  });
-
-  it("calls okClick when button2 clicked", () => {
-    render(
-      <CommonModal
-        modalId="m4"
-        message={baseMessage}
-        open
-        close={closeMock}
-        okClick={okClickMock}
-      />
-    );
-    fireEvent.click(screen.getByText("Confirm"));
-    expect(okClickMock).toHaveBeenCalled();
-  });
-
-  it("closeHandler does not call close when e exists", () => {
-    render(
-      <CommonModal
-        modalId="m5"
-        message={baseMessage}
-        open
-        close={closeMock}
-        okClick={okClickMock}
-      />
-    );
-
-    // trigger with event object
-    fireEvent.click(document.querySelector('[class*="ModalContainer"]'));
-    expect(closeMock).not.toHaveBeenCalled();
-  });
-
-  it("closeHandler calls close when e is null", () => {
-    render(
-      <CommonModal
-        modalId="m6"
-        message={baseMessage}
-        open
-        close={closeMock}
-        okClick={okClickMock}
-      />
-    );
-
-    // call the prop manually to simulate null event
-    const modal = screen.getByLabelText("number share modal");
-    modal.props?.onOpenedChange?.(null);
-    // if VDS doesn’t expose props, simulate with act
-    act(() => {
-      modal.props?.onOpenedChange?.(null);
-    });
-
-    expect(closeMock).toHaveBeenCalled();
-  });
-
-  it("renders nothing for empty content1 and content2", () => {
-    render(
-      <CommonModal
-        modalId="m7"
-        message={baseMessage}
-        open
-        close={closeMock}
-        okClick={okClickMock}
-        content1={{}}
-        content2={{}}
-      />
-    );
-    expect(screen.queryByText("Nick1")).not.toBeInTheDocument();
-  });
-
-  it("does not crash when modal closed (open=false)", () => {
-    render(
-      <CommonModal
-        modalId="m8"
-        message={baseMessage}
-        open={false}
-        close={closeMock}
-        okClick={okClickMock}
-      />
-    );
-    expect(screen.queryByLabelText("number share modal")).toBeInTheDocument();
-  });
+  expect(closeMock).toHaveBeenCalled();
 });

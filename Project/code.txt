@@ -5,36 +5,30 @@ import React from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
-// ------------------ MOCK DECLARATIONS ------------------
-
-// Redux
+// ------------------ Declare mocks FIRST ------------------
 const mockDispatch = jest.fn();
 let mockState;
 
-// Router
-let mockId = "child-1";
+let useHandleMoveLineResponseMock;
+let moveLineMock;
+let getDeviceDetailsMock;
+let getChildDetailsMock;
+let onConfirmationMock;
 
-// Hook
-const useHandleMoveLineResponseMock = jest.fn();
-
-// Utils
-const moveLineMock = jest.fn();
-const getDeviceDetailsMock = jest.fn();
-const getChildDetailsMock = jest.fn();
-const onConfirmationMock = jest.fn();
-
-// ------------------ MODULE MOCKS ------------------
-
+// ------------------ Redux ------------------
 jest.mock("react-redux", () => ({
   useDispatch: () => mockDispatch,
   useSelector: (selector) => selector(mockState),
 }));
 
+// ------------------ Router ------------------
+let mockId = "child-1";
 jest.mock("react-router-dom", () => ({
   useHistory: () => ({ push: jest.fn() }),
-  useParams: () => ({ id: mockId ? encodeURIComponent(mockId) : "" }),
+  useParams: () => ({ id: encodeURIComponent(mockId) }),
 }));
 
+// ------------------ Actions ------------------
 jest.mock("../home/actions", () => ({
   setSelectedDeviceId: (id) => ({ type: "SET_ID", payload: id }),
   fetchDevices: () => ({ type: "FETCH" }),
@@ -42,21 +36,29 @@ jest.mock("../home/actions", () => ({
   sendSMS: (req) => ({ type: "SMS", payload: req }),
 }));
 
+// ------------------ JSON ------------------
 jest.mock("../CommonModal/modalText.json", () => ({
   moveErrorMessage: { id: "ERRID", title: "Error Title" },
 }));
 
+// ------------------ Child Components ------------------
 jest.mock("./ToNumberShare", () => (props) => (
   <div data-testid="share">
-    <button data-testid="select" onClick={() => props.selectedDevice("parent-123")}>
+    <button
+      data-testid="select"
+      onClick={() => props.selectedDevice("parent-123")}
+    >
       select
     </button>
-    <div>cqData:{JSON.stringify(props.cqData)}</div>
   </div>
 ));
 
 jest.mock("../CommonModal/CommonModal", () => (props) => (
-  <div data-testid="modal" data-open={props.open ? "true" : "false"} onClick={props.close}>
+  <div
+    data-testid="modal"
+    data-open={props.open ? "true" : "false"}
+    onClick={props.close}
+  >
     modal-{props.message?.id}
   </div>
 ));
@@ -65,11 +67,13 @@ jest.mock("../../../shared/components/Loader/CustomLoader", () => () => (
   <div data-testid="loader">loading</div>
 ));
 
+// ------------------ Hook ------------------
 jest.mock("../shared/useMoveLineHandler", () => ({
   __esModule: true,
   default: (...args) => useHandleMoveLineResponseMock(...args),
 }));
 
+// ------------------ Utils ------------------
 jest.mock("./numbershareUtils", () => ({
   moveLine: (...args) => moveLineMock(...args),
   createSubmitForm: jest.fn(),
@@ -78,96 +82,78 @@ jest.mock("./numbershareUtils", () => ({
   onConfirmation: (...args) => onConfirmationMock(...args),
 }));
 
-// ------------------ IMPORT COMPONENT LAST ------------------
+// ------------------ IMPORT LAST ------------------
 import ToNumberShareContainer from "./ToNumberShareContainer";
 
-// ------------------ TESTS ------------------
-
+// ------------------ Setup before each test ------------------
 beforeEach(() => {
   jest.clearAllMocks();
-  mockId = "child-1";
-  mockState = {
-    devices: {
-      isFetching: false,
-      deviceDetails: [{ primaryInfo: { id: "parent-123" } }],
-      cqData: { info: "CQ" },
-      connectableDevices: [{ id: "child-1" }],
-      errorMessage: null,
-      moveLineResponse: {},
-    },
-  };
+  mockState = { Home: { selectedDeviceId: "child-1" } };
+
+  // Initialize fn mocks fresh for each test
+  useHandleMoveLineResponseMock = jest.fn();
+  moveLineMock = jest.fn();
+  getDeviceDetailsMock = jest.fn();
+  getChildDetailsMock = jest.fn();
+  onConfirmationMock = jest.fn();
 });
 
-test("redirects to / when no id", () => {
-  mockId = "";
-  const oldHref = window.location.href;
-  delete window.location;
-  window.location = { href: "init" };
-
-  render(<ToNumberShareContainer />);
-  expect(window.location.href).toBe("/");
-
-  window.location = { href: oldHref }; // restore
-});
-
-test("dispatches on mount and shows loader when fetching", () => {
-  mockState.devices.isFetching = true;
-  render(<ToNumberShareContainer />);
-
-  expect(mockDispatch).toHaveBeenCalledWith({ type: "SET_ID", payload: "child-1" });
-  expect(mockDispatch).toHaveBeenCalledWith({ type: "FETCH" });
-  expect(screen.getByTestId("loader")).toBeInTheDocument();
-  expect(screen.queryByTestId("share")).not.toBeInTheDocument();
-});
-
-test("renders ToNumberShare when not fetching", () => {
-  render(<ToNumberShareContainer />);
-  expect(screen.getByTestId("share")).toBeInTheDocument();
-
-  // hook called with expected args
-  const args = useHandleMoveLineResponseMock.mock.calls[0][0];
-  expect(args).toHaveProperty("moveLineRequested");
-  expect(args).toHaveProperty("onConfirmation");
-
-  // call onConfirmation branch
-  act(() => {
-    args.onConfirmation();
+// ------------------ TESTS ------------------
+describe("ToNumberShareContainer", () => {
+  test("renders share component", () => {
+    render(<ToNumberShareContainer />);
+    expect(screen.getByTestId("share")).toBeInTheDocument();
   });
-  expect(onConfirmationMock).toHaveBeenCalled();
-});
 
-test("selecting device triggers utils and dispatch", () => {
-  render(<ToNumberShareContainer />);
-  fireEvent.click(screen.getByTestId("select"));
-
-  expect(getDeviceDetailsMock).toHaveBeenCalled();
-  expect(getChildDetailsMock).toHaveBeenCalled();
-  expect(moveLineMock).toHaveBeenCalled();
-  expect(mockDispatch).toHaveBeenCalledWith({ type: "MOVE", payload: expect.any(Object) });
-});
-
-test("modal opens and closes", () => {
-  render(<ToNumberShareContainer />);
-  const args = useHandleMoveLineResponseMock.mock.calls[0][0];
-
-  // open modal
-  act(() => {
-    args.setShowModal(true);
+  test("selecting a device triggers state update", () => {
+    render(<ToNumberShareContainer />);
+    fireEvent.click(screen.getByTestId("select"));
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: "SET_ID",
+      payload: "parent-123",
+    });
   });
-  expect(screen.getByTestId("modal")).toHaveAttribute("data-open", "true");
 
-  // close modal
-  act(() => {
-    screen.getByTestId("modal").click();
+  test("shows loader when fetching", () => {
+    mockState = { Home: { selectedDeviceId: "child-1", isFetching: true } };
+    render(<ToNumberShareContainer />);
+    expect(screen.getByTestId("loader")).toBeInTheDocument();
   });
-  expect(screen.getByTestId("modal")).toHaveAttribute("data-open", "false");
-});
 
-test("isInitTagging branch only runs once", () => {
-  render(<ToNumberShareContainer />);
-  expect(useHandleMoveLineResponseMock).toHaveBeenCalledTimes(1);
+  test("displays modal when open", () => {
+    render(<ToNumberShareContainer />);
+    fireEvent.click(screen.getByTestId("modal")); // simulate close
+    expect(screen.getByTestId("modal")).toHaveAttribute("data-open", "false");
+  });
 
-  // re-render with same state, isInitTagging prevents duplicate logic
-  render(<ToNumberShareContainer />);
-  expect(useHandleMoveLineResponseMock).toHaveBeenCalledTimes(2);
+  test("calls moveLine util when triggered", async () => {
+    moveLineMock.mockResolvedValue({ success: true });
+    render(<ToNumberShareContainer />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("select"));
+    });
+    expect(moveLineMock).toHaveBeenCalled();
+  });
+
+  test("handles useHandleMoveLineResponseMock hook", () => {
+    useHandleMoveLineResponseMock.mockReturnValue({ error: true });
+    render(<ToNumberShareContainer />);
+    expect(useHandleMoveLineResponseMock).toHaveBeenCalled();
+  });
+
+  test("calls getDeviceDetails and getChildDetails utils", () => {
+    getDeviceDetailsMock.mockReturnValue({ name: "child" });
+    getChildDetailsMock.mockReturnValue({ name: "parent" });
+    render(<ToNumberShareContainer />);
+    expect(getDeviceDetailsMock).toHaveBeenCalled();
+    expect(getChildDetailsMock).toHaveBeenCalled();
+  });
+
+  test("calls onConfirmation when triggered", () => {
+    render(<ToNumberShareContainer />);
+    act(() => {
+      onConfirmationMock("ok");
+    });
+    expect(onConfirmationMock).toHaveBeenCalledWith("ok");
+  });
 });

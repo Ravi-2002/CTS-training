@@ -1,158 +1,213 @@
-import React, { useEffect } from 'react';
-import { Modal, ModalTitle, ModalBody } from '@vds/modals';
-import styled from 'styled-components';
-import { Title, Body } from '@vds/typography';
-import { Button } from '@vds/buttons';
-import { media } from '../../utils/deviceType';
-import { isEmpty } from '../../utils/utilities.js';
+/**
+ * @jest-environment jsdom
+ */
+import React from "react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+import CommonModal from "./CommonModal";
 
-const CommonModal = ({
-  modalId, message, open, close, okClick, errorMessage, content1, content2,
-}) => {
-  useEffect(() => {
-    setTimeout(() => {
-      const modalDiv = document.querySelector('[class^="ModalContainer"]');
-      if (modalDiv) {
-        modalDiv.setAttribute('id', modalId + '_overlay');
-        modalDiv.setAttribute('data-track-detail', modalId + '_modal');
-      }
-    }, 100);
-  }, [modalId]);
+// Mock utils only
+jest.mock("../../utils/deviceType", () => ({
+  media: {
+    mobile: () => "",
+    smallscreen: () => "",
+  },
+}));
 
-  const clickHandler = () => {
-    okClick();
-  };
+jest.mock("../../utils/utilities.js", () => ({
+  isEmpty: (obj) => !obj || Object.keys(obj).length === 0,
+}));
 
-  const closeHandler = (e) => {
-   if (!e) {
-    close();
-  }
-    
-  };
+describe("CommonModal", () => {
+  let closeMock, okClickMock, baseMessage;
 
-  return (
-    <Modal
-      ariaLabel="number share modal"
-      opened={open}
-      onOpenedChange={(e) => closeHandler(e)}
-    >
-      {message.header1 && <ModalTitle><Title>{message.header1}</Title></ModalTitle>}
-      <ModalBody>
-        {errorMessage && errorMessage !== '' ? errorMessage : message.subHeader1}
-        {(message.header2 || message.subHeader2)
-             && (
-             <div style={{ marginTop: '3rem' }}>
-               {message.header2 && <ModalTitle><Title>{message.header2}</Title></ModalTitle>}
-               {message.subHeader2 && <div style={{ paddingTop: '1.5rem' }}>{message.subHeader2}</div>}
-             </div>
-             )
-           }
-        <Content>
-          {!isEmpty(content1)
-               && (
-               <Wrapper>
-                 <ImageContainer image={"url('" + content1.img + "')"} />
-                 <InfoContainer>
-                   <Body size="large" data-cs-mask dangerouslySetInnerHTML={{ __html: content1.nickName }} />
-                   <Body data-cs-mask>{content1.mdn}</Body>
-                 </InfoContainer>
-               </Wrapper>
-               )
-             }
-          {!isEmpty(content2)
-               && (
-               <Wrapper>
-                 <ImageContainer image={"url('" + content2.img + "')"} />
-                 <InfoContainer>
-                   <Body size="large" data-cs-mask dangerouslySetInnerHTML={{ __html: content2.nickName }} />
-                   <Body data-cs-mask>{content2.mdn}</Body>
-                 </InfoContainer>
-               </Wrapper>
-               )
-             }
-        </Content>
-      </ModalBody>
-      <Footer>
-        {message.button1
-            && (
-            <Button
-              tabIndex="0"
-              use="secondary"
-              onClick={close}
-              id={'mvo_num_share_btn_' + message.button1}
-              analyticstrack={'mvo_num_share_btn_' + message.button1}
-              data-track={message.button1}
-              data-testid="modal-close-button"
-            >
-              {message.button1}
-            </Button>
-            )}
-        {message.button2
-            && (
-            <Button
-              tabIndex="0"
-              onClick={() => clickHandler()}
-              id={'mvo_num_share_btn_' + message.button2}
-              analyticstrack={'mvo_num_share_btn_' + message.button2}
-              data-track={message.button2}
-            >
-              {message.button2}
-            </Button>
-            )}
-      </Footer>
-    </Modal>
-  );
-};
+  beforeEach(() => {
+    closeMock = jest.fn();
+    okClickMock = jest.fn();
+    baseMessage = {
+      header1: "Header 1",
+      subHeader1: "Subheader 1",
+      header2: "Header 2",
+      subHeader2: "Subheader 2",
+      button1: "Cancel",
+      button2: "Confirm",
+    };
+    jest.useFakeTimers();
+    document.body.innerHTML = "";
+  });
 
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+    jest.clearAllMocks();
+  });
 
+  it("sets modal attributes in useEffect", () => {
+    render(
+      <CommonModal
+        modalId="testId"
+        message={baseMessage}
+        open
+        close={closeMock}
+        okClick={okClickMock}
+      />
+    );
 
+    // simulate VDS modal container
+    const div = document.createElement("div");
+    div.className = "ModalContainer123";
+    document.body.appendChild(div);
 
-const ModalContainer = styled.div`
-  //height: 250px;
-  width: 425px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 1rem; 
-  ${media.mobile`
-      height: 100%;
-      width: 100%;
-    `}
-`;
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
 
-const Footer = styled.div`
-  display:flex;
-  justify-content: start;
-`;
+    expect(document.querySelector('[id="testId_overlay"]')).toBeTruthy();
+    expect(
+      document.querySelector('[data-track-detail="testId_modal"]')
+    ).toBeTruthy();
+  });
 
-const Content = styled.div`
-  margin-bottom: 3rem;
-  margin-top: 3rem;
-`;
+  it("renders with message, subHeaders, content1, content2", () => {
+    const content1 = {
+      img: "img1.png",
+      nickName: "<b>Nick1</b>",
+      mdn: "12345",
+    };
+    const content2 = {
+      img: "img2.png",
+      nickName: "<b>Nick2</b>",
+      mdn: "67890",
+    };
 
-const ImageContainer = styled.div`
-    width: 50px;
-    height: 50px;
-    background-image: ${(props) => props.image};
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: 50% 50%;
-    background-position-x: left;
-    margin-right: 1.5rem;
-    ${media.smallscreen`
-      width: 30px;
-      height: 30px;
-      background-position-x: left;
-    `}
-  `;
-const InfoContainer = styled.div`
+    render(
+      <CommonModal
+        modalId="m1"
+        message={baseMessage}
+        open
+        close={closeMock}
+        okClick={okClickMock}
+        content1={content1}
+        content2={content2}
+      />
+    );
 
-`;
+    expect(screen.getByText("Header 1")).toBeInTheDocument();
+    expect(screen.getByText("Subheader 1")).toBeInTheDocument();
+    expect(screen.getByText("Header 2")).toBeInTheDocument();
+    expect(screen.getByText("Subheader 2")).toBeInTheDocument();
 
-const Wrapper = styled.div`
-  display: flex;
-  flex-direction: row;
-  z-index: 100;
-  margin-bottom: 1rem;
-`;
-export default CommonModal;
+    expect(screen.getByText("Nick1")).toBeInTheDocument();
+    expect(screen.getByText("12345")).toBeInTheDocument();
+    expect(screen.getByText("Nick2")).toBeInTheDocument();
+    expect(screen.getByText("67890")).toBeInTheDocument();
+  });
+
+  it("shows errorMessage instead of subHeader1", () => {
+    render(
+      <CommonModal
+        modalId="m2"
+        message={baseMessage}
+        open
+        close={closeMock}
+        okClick={okClickMock}
+        errorMessage="Something went wrong"
+      />
+    );
+    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.queryByText("Subheader 1")).not.toBeInTheDocument();
+  });
+
+  it("calls close when button1 clicked", () => {
+    render(
+      <CommonModal
+        modalId="m3"
+        message={baseMessage}
+        open
+        close={closeMock}
+        okClick={okClickMock}
+      />
+    );
+    fireEvent.click(screen.getByText("Cancel"));
+    expect(closeMock).toHaveBeenCalled();
+  });
+
+  it("calls okClick when button2 clicked", () => {
+    render(
+      <CommonModal
+        modalId="m4"
+        message={baseMessage}
+        open
+        close={closeMock}
+        okClick={okClickMock}
+      />
+    );
+    fireEvent.click(screen.getByText("Confirm"));
+    expect(okClickMock).toHaveBeenCalled();
+  });
+
+  it("closeHandler does not call close when e exists", () => {
+    render(
+      <CommonModal
+        modalId="m5"
+        message={baseMessage}
+        open
+        close={closeMock}
+        okClick={okClickMock}
+      />
+    );
+
+    // trigger with event object
+    fireEvent.click(document.querySelector('[class*="ModalContainer"]'));
+    expect(closeMock).not.toHaveBeenCalled();
+  });
+
+  it("closeHandler calls close when e is null", () => {
+    render(
+      <CommonModal
+        modalId="m6"
+        message={baseMessage}
+        open
+        close={closeMock}
+        okClick={okClickMock}
+      />
+    );
+
+    // call the prop manually to simulate null event
+    const modal = screen.getByLabelText("number share modal");
+    modal.props?.onOpenedChange?.(null);
+    // if VDS doesn’t expose props, simulate with act
+    act(() => {
+      modal.props?.onOpenedChange?.(null);
+    });
+
+    expect(closeMock).toHaveBeenCalled();
+  });
+
+  it("renders nothing for empty content1 and content2", () => {
+    render(
+      <CommonModal
+        modalId="m7"
+        message={baseMessage}
+        open
+        close={closeMock}
+        okClick={okClickMock}
+        content1={{}}
+        content2={{}}
+      />
+    );
+    expect(screen.queryByText("Nick1")).not.toBeInTheDocument();
+  });
+
+  it("does not crash when modal closed (open=false)", () => {
+    render(
+      <CommonModal
+        modalId="m8"
+        message={baseMessage}
+        open={false}
+        close={closeMock}
+        okClick={okClickMock}
+      />
+    );
+    expect(screen.queryByLabelText("number share modal")).toBeInTheDocument();
+  });
+});

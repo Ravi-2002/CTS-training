@@ -1,222 +1,308 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import styled from "styled-components";
-import * as actions from '../home/actions';
-import ToNumberShare from "./ToNumberShare";
-import { isEmpty } from '../../utils/utilities'
-import CommonModal from "../CommonModal/CommonModal";
-import * as modalData from "../CommonModal/modalText.json";
-import { useHistory, useParams } from "react-router-dom";
-import CustomLoader from '../../../shared/components/Loader/CustomLoader';
-import useHandleMoveLineResponse from '../shared/useMoveLineHandler';
-import { moveLine, createSubmitForm, getDeviceDetails, getChildDetails, onConfirmation } from "./numbershareUtils";
+/**
+ * @jest-environment jsdom
+ */
 
-const ToNumberShareContainer = () => {
-  const dispatch = useDispatch();
-  const history = useHistory();
-  const { id } = useParams();
+import React from "react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import ToNumberShareContainer from "./ToNumberShareContainer";
 
-  const [showModal, setShowModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isInitTagging, setIsInitTagging] = useState(false);
+// === Mocks ===
 
-  const parentId = useRef("");
-  const childId = useRef("");
-  const newParent = useRef({});
-  const child = useRef({});
-
-  const isFetching = useSelector(state => state.devices.isFetching);
-  const deviceDetails = useSelector(state => state.devices.deviceDetails);
-  const cqData = useSelector(state => state.devices.cqData);
-  const connectableDevices = useSelector(state => state.devices.connectableDevices);
-  const errorMessage = useSelector(state => state.devices.errorMessage);
-  const moveLineResponse = useSelector(state => state.devices.moveLineResponse);
-  const [moveLineRequested, setMoveLineRequested] = React.useState(false);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-
-    if (id && id !== "") {
-      childId.current = decodeURIComponent(id);
-      dispatch(actions.setSelectedDeviceId(childId.current));
-      dispatch(actions.fetchDevices());
-    } else {
-      window.location.href = '/';
-    }
-    // eslint-disable-next-line
-  }, [id, dispatch]);
-
-  useEffect(() => {
-    if (!isFetching && deviceDetails && !isInitTagging) {
-      setIsInitTagging(true);
-    }
-  }, [isFetching, deviceDetails, isInitTagging]);
-
-  // useEffect(() => {
-  //   if (!isEmpty(moveLineResponse) && moveLineResponse?.body?.statusCode === '1') {
-  //     setShowModal(true);
-  //   }
-  // }, [moveLineResponse]);
-
-  const closeModal = () => {
-    setShowModal(false);
-  };
-
-  const setSelectedDevice = (id) => {
-    parentId.current = id;
-    getDeviceDetailsHandler();
-    getChildDetailsHandler();
-    moveLineHandler();
-  };
-
-  // const moveLine = () => {
-  //   setIsLoading(true);
-  //   if (child.current.lineLevelPlan) {
-  //     const url = reactGlobals.cpcLandingPage;
-  //     let req = {
-  //       "flow": "switchnumbershare",
-  //       "numberShareMtn": child.current.mdn.split(".").join(""),
-  //       "trunkMtn": newParent.current.mdn.split(".").join(""),
-  //       "numberShareIndicator": "G"
-  //     };
-  //     const myForm = createSubmitForm(url, req);
-  //     if (myForm) myForm.submit();
-  //   } else {
-  //     let req = {
-  //       "moveFrom": "T",
-  //       "moveTo": parentId.current,
-  //       "secondaryDevice": child.current.id,
-  //       "branchType": child.current.deviceType
-  //     };
-  //     setMoveLineRequested(true);
-  //     dispatch(actions.saveMoveLine(req));
-  //     setIsLoading(false);
-  //   }
-  // };
-
-  const moveLineHandler = () => {
-    moveLine(
-      child,
-      newParent,
-      parentId,
-      setIsLoading,
-      setMoveLineRequested,
-      dispatch,
-      actions,
-      createSubmitForm
-    );
-  };
-
-  // const createSubmitForm = (url, req) => {
-  //   let myForm = document.createElement("form");
-  //   let element;
-  //   myForm.setAttribute("action", url);
-  //   myForm.setAttribute("method", "post");
-  //   element = document.createElement("input");
-  //   element.setAttribute('type', 'hidden');
-  //   element.setAttribute('name', 'nbrshareinfo');
-  //   element.setAttribute('value', JSON.stringify(req));
-  //   myForm.appendChild(element);
-  //   document.body.appendChild(myForm);
-  //   return myForm;
-  // };
-
-  // const onConfirmation = () => {
-  //   if(!isEmpty(moveLineResponse) && moveLineResponse?.body?.statusCode === '0'){
-  //     history.push({
-  //       pathname: '/confirm',
-  //       state: {
-  //         email: "",
-  //         mdn: newParent.current.mdn,
-  //         page: "standalone to numshare"
-  //       }
-  //     });
-  //     let smsReq = {
-  //       mtn: newParent.current.id,
-  //       custFirstName: newParent.current.firstName,
-  //       custLastName: newParent.current.lastName
-  //     };
-  //     dispatch(actions.sendSMS(smsReq));
-  //   }
-  //   return null;
-  // };
-
-  // const getDeviceDetails = () => {
-  //   deviceDetails.forEach(item => {
-  //     if (item.primaryInfo.id === parentId.current) {
-  //       newParent.current = {
-  //         mdn: item.primaryInfo.formattedMdn,
-  //         img: item.primaryInfo.img,
-  //         id: item.primaryInfo.id,
-  //         firstName: item.primaryInfo.firstName,
-  //         lastName: item.primaryInfo.lastName,
-  //         nickName: item.primaryInfo.deviceNickName
-  //       };
-  //     }
-  //   });
-  // };
-
-  // const getChildDetails = () => {
-  //   connectableDevices.forEach(item => {
-  //     if (item.id === childId.current) {
-  //       child.current = {
-  //         mdn: item.formattedMdn,
-  //         id: item.id,
-  //         img: item.img,
-  //         nickName: item.deviceNickName,
-  //         deviceType: item.deviceType,
-  //         lineLevelPlan: item.lineLevelPlan ? item.lineLevelPlan : false
-  //       };
-  //     }
-  //   });
-  // };
-
-  const getDeviceDetailsHandler = () => {
-    getDeviceDetails(deviceDetails, parentId, newParent);
-  };
-
-  const getChildDetailsHandler = () => {
-    getChildDetails(connectableDevices, childId, child);
-  };
-    //  useHandleMoveLineResponse({moveLineRequested, moveLineResponse, setMoveLineRequested, setShowModal, onConfirmation, modalData});
-    useHandleMoveLineResponse({
-      moveLineRequested,
-      moveLineResponse,
-      setMoveLineRequested,
-      setShowModal,
-      onConfirmation: () =>
-        onConfirmation({
-          moveLineResponse,
-          history,
-          newParent,
-          dispatch,
-          actions,
-        }),
-      modalData,
-    });
-
-  return (
-    <Container>
-      {(isFetching || isLoading) ? (
-       <CustomLoader />
-      ) : (
-        <ToNumberShare cqData={cqData} selectedDevice={setSelectedDevice} deviceDetails={deviceDetails} />
-      )}
-      
-      <CommonModal
-        modalId={modalData.moveErrorMessage.id}
-        close={closeModal}
-        open={showModal}
-        onHide={closeModal}
-        message={modalData.moveErrorMessage}
-        content1={child.current ? child.current : null}
-      />
-    </Container>
-  );
+// Mock react-redux
+const mockDispatch = jest.fn();
+let appState = {
+  devices: {
+    isFetching: false,
+    deviceDetails: [],
+    cqData: { some: "cq" },
+    connectableDevices: [],
+    errorMessage: null,
+    moveLineResponse: {},
+  },
 };
 
-export default ToNumberShareContainer;
+jest.mock("react-redux", () => ({
+  useDispatch: () => mockDispatch,
+  useSelector: (selector) => selector(appState),
+}));
 
-const Container = styled.div`
-  margin-top: 3rem;
-`;
+// Mock react-router hooks
+const pushMock = jest.fn();
+jest.mock("react-router-dom", () => {
+  const original = jest.requireActual("react-router-dom");
+  return {
+    ...original,
+    useHistory: () => ({ push: pushMock }),
+    useParams: () => ({ id: encodeURIComponent("child-123") }),
+  };
+});
+
+// Mock actions used from '../home/actions'
+jest.mock("../home/actions", () => ({
+  setSelectedDeviceId: jest.fn((id) => ({ type: "SET_SELECTED_DEVICE_ID", payload: id })),
+  fetchDevices: jest.fn(() => ({ type: "FETCH_DEVICES" })),
+  saveMoveLine: jest.fn((req) => ({ type: "SAVE_MOVE_LINE", payload: req })),
+  sendSMS: jest.fn((req) => ({ type: "SEND_SMS", payload: req })),
+}));
+
+// Mock dependent components to make their render simple and expose props
+jest.mock("./ToNumberShare", () => {
+  return function DummyToNumberShare(props) {
+    // expose props in DOM so tests can interact with them
+    return (
+      <div data-testid="to-number-share">
+        <button data-testid="select-device-btn" onClick={() => props.selectedDevice("parent-xyz")}>
+          select
+        </button>
+        <pre data-testid="cqdata">{JSON.stringify(props.cqData)}</pre>
+        <pre data-testid="device-details">{JSON.stringify(props.deviceDetails)}</pre>
+      </div>
+    );
+  };
+});
+
+jest.mock("../CommonModal/CommonModal", () => {
+  return function DummyModal({ open, message, content1 }) {
+    return (
+      <div data-testid="common-modal" data-open={open ? "true" : "false"}>
+        <div data-testid="modal-msg">{message ? message.id || JSON.stringify(message) : "nomsg"}</div>
+        <pre data-testid="modal-content">{JSON.stringify(content1)}</pre>
+      </div>
+    );
+  };
+});
+
+jest.mock("../../../shared/components/Loader/CustomLoader", () => {
+  return function DummyLoader() {
+    return <div data-testid="custom-loader">loading...</div>;
+  };
+});
+
+// Mock the hook useHandleMoveLineResponse so we can capture arguments passed to it
+const useHandleMoveLineResponseMock = jest.fn();
+jest.mock("../shared/useMoveLineHandler", () => {
+  return (...args) => useHandleMoveLineResponseMock(...args);
+});
+
+// Mock numbershareUtils functions
+const getDeviceDetailsMock = jest.fn((deviceDetails, parentIdRef, newParentRef) => {
+  // set newParentRef.current to something so code that reads child.current is safe
+  newParentRef.current = {
+    mdn: "999.999.999",
+    img: "img.png",
+    id: parentIdRef.current,
+    firstName: "Parent",
+    lastName: "One",
+    nickName: "P1",
+  };
+});
+const getChildDetailsMock = jest.fn((connectableDevices, childIdRef, childRef) => {
+  childRef.current = {
+    mdn: "888.888.888",
+    id: childIdRef.current,
+    img: "child.png",
+    nickName: "C1",
+    deviceType: "PHONE",
+    lineLevelPlan: false,
+  };
+});
+const moveLineMock = jest.fn(
+  (childRef, newParentRef, parentIdRef, setIsLoading, setMoveLineRequested, dispatch, actions, createSubmitForm) => {
+    // simulate side-effects that the original would perform
+    setIsLoading(true);
+    setMoveLineRequested(true);
+    // call dispatch with a dummy action to ensure the container's code path is hit
+    dispatch(actions.saveMoveLine({ foo: "bar" }));
+    setIsLoading(false);
+  }
+);
+const createSubmitFormMock = jest.fn();
+const onConfirmationMock = jest.fn();
+
+jest.mock("./numbershareUtils", () => ({
+  moveLine: (...args) => moveLineMock(...args),
+  createSubmitForm: (...args) => createSubmitFormMock(...args),
+  getDeviceDetails: (...args) => getDeviceDetailsMock(...args),
+  getChildDetails: (...args) => getChildDetailsMock(...args),
+  onConfirmation: (...args) => onConfirmationMock(...args),
+}));
+
+// Provide modal text used by the component (modalData)
+jest.mock("../CommonModal/modalText.json", () => ({
+  moveErrorMessage: { id: "moveErrorMessage", title: "Move error" },
+}));
+
+// Clear mocks before each test
+beforeEach(() => {
+  jest.clearAllMocks();
+  // default appState
+  appState = {
+    devices: {
+      isFetching: false,
+      deviceDetails: [
+        {
+          primaryInfo: {
+            id: "parent-xyz",
+            formattedMdn: "111.222.333",
+            img: "pimg",
+            firstName: "P",
+            lastName: "L",
+            deviceNickName: "PN",
+          },
+        },
+      ],
+      cqData: { some: "cq" },
+      connectableDevices: [
+        {
+          id: "child-123",
+          formattedMdn: "888.888.888",
+          img: "cimg",
+          deviceNickName: "CN",
+          deviceType: "PHONE",
+          lineLevelPlan: false,
+        },
+      ],
+      errorMessage: null,
+      moveLineResponse: {},
+    },
+  };
+});
+
+// === Tests ===
+
+test("redirects to '/' when no id param present", () => {
+  // mock useParams to return empty id for this test
+  jest.resetModules();
+  jest.doMock("react-router-dom", () => {
+    const original = jest.requireActual("react-router-dom");
+    return {
+      ...original,
+      useHistory: () => ({ push: pushMock }),
+      useParams: () => ({}), // no id
+    };
+  });
+
+  // re-import component after overriding useParams mock
+  const Component = require("./ToNumberShareContainer").default;
+
+  const originalHref = window.location.href;
+  delete window.location;
+  // create writable href
+  window.location = { href: "http://localhost/old" };
+
+  render(<Component />);
+
+  // component should set window.location.href to '/'
+  expect(window.location.href).toBe("/");
+
+  // restore
+  window.location.href = originalHref;
+});
+
+test("when id exists, dispatches setSelectedDeviceId and fetchDevices on mount and shows loader when isFetching true", () => {
+  // ensure params mock returns id (default mock above does)
+  appState.devices.isFetching = true;
+
+  render(<ToNumberShareContainer />);
+
+  // expect dispatch to have been called for setSelectedDeviceId and fetchDevices
+  const actions = require("../home/actions");
+  expect(mockDispatch).toHaveBeenCalled();
+  // we can't directly assert the exact calls because container dispatches two actions one after another;
+  // instead ensure that our mocked action creators exist and were used to create actions passed to dispatch.
+  // check that mockDispatch was called with one of the actions created by our mocked action creators
+  const dispatchedPayloads = mockDispatch.mock.calls.map((c) => c[0]);
+  const actionTypes = dispatchedPayloads.map((a) => a && a.type).filter(Boolean);
+
+  expect(actionTypes).toEqual(expect.arrayContaining(["SET_SELECTED_DEVICE_ID", "FETCH_DEVICES"]));
+
+  // loader should show when isFetching true
+  expect(screen.queryByTestId("custom-loader")).toBeInTheDocument();
+
+  // ToNumberShare should NOT be in the DOM when fetching
+  expect(screen.queryByTestId("to-number-share")).not.toBeInTheDocument();
+});
+
+test("when not fetching shows ToNumberShare and sets up useHandleMoveLineResponse with correct args", () => {
+  // not fetching
+  appState.devices.isFetching = false;
+
+  render(<ToNumberShareContainer />);
+
+  // should render ToNumberShare component
+  expect(screen.getByTestId("to-number-share")).toBeInTheDocument();
+  // should show cqData and deviceDetails passed down
+  expect(screen.getByTestId("cqdata")).toHaveTextContent(JSON.stringify(appState.devices.cqData));
+  expect(screen.getByTestId("device-details")).toHaveTextContent(JSON.stringify(appState.devices.deviceDetails));
+
+  // useHandleMoveLineResponse should be called once with an object
+  expect(useHandleMoveLineResponseMock).toHaveBeenCalledTimes(1);
+  const hookArg = useHandleMoveLineResponseMock.mock.calls[0][0];
+
+  // it should have the expected keys
+  expect(hookArg).toMatchObject({
+    moveLineRequested: expect.any(Boolean),
+    moveLineResponse: appState.devices.moveLineResponse,
+    setMoveLineRequested: expect.any(Function),
+    setShowModal: expect.any(Function),
+    onConfirmation: expect.any(Function),
+    modalData: expect.any(Object),
+  });
+
+  // Calling the onConfirmation wrapper should call numbershareUtils.onConfirmation with appropriate args
+  // (the wrapper calls onConfirmation({ moveLineResponse, history, newParent, dispatch, actions }))
+  // call it:
+  hookArg.onConfirmation();
+
+  // The underlying onConfirmation mock should have been called
+  expect(onConfirmationMock).toHaveBeenCalled();
+  const calledWith = onConfirmationMock.mock.calls[0][0];
+  // check that the object includes expected keys
+  expect(calledWith).toMatchObject({
+    moveLineResponse: appState.devices.moveLineResponse,
+    history: expect.objectContaining({ push: expect.any(Function) }),
+    newParent: expect.objectContaining({ current: expect.any(Object) }),
+    dispatch: mockDispatch,
+    actions: expect.any(Object),
+  });
+});
+
+test("setSelectedDevice (selectedDevice prop) triggers getDeviceDetails, getChildDetails and moveLine", async () => {
+  appState.devices.isFetching = false;
+
+  render(<ToNumberShareContainer />);
+
+  // ToNumberShare exposes a button to simulate selecting a device
+  const btn = screen.getByTestId("select-device-btn");
+  expect(btn).toBeInTheDocument();
+
+  await act(async () => {
+    fireEvent.click(btn);
+  });
+
+  // After click, parentId ref should have been set inside the container
+  // We assert our mocked helpers were called (getDeviceDetails, getChildDetails, moveLine)
+  expect(getDeviceDetailsMock).toHaveBeenCalledTimes(1);
+  expect(getChildDetailsMock).toHaveBeenCalledTimes(1);
+  expect(moveLineMock).toHaveBeenCalledTimes(1);
+
+  // moveLineMock should have been called with: childRef, newParentRef, parentIdRef, setIsLoading, setMoveLineRequested, dispatch, actions, createSubmitForm
+  const moveLineArgs = moveLineMock.mock.calls[0];
+
+  // validate argument shapes
+  expect(moveLineArgs.length).toBeGreaterThanOrEqual(8);
+  const [childRef, newParentRef, parentIdRef, setIsLoading, setMoveLineRequested, dispatchArg, actionsArg, createSubmitFormArg] = moveLineArgs;
+
+  expect(childRef).toHaveProperty("current");
+  expect(newParentRef).toHaveProperty("current");
+  expect(parentIdRef).toHaveProperty("current");
+  expect(typeof setIsLoading).toBe("function");
+  expect(typeof setMoveLineRequested).toBe("function");
+  expect(dispatchArg).toBe(mockDispatch);
+  expect(actionsArg).toBe(require("../home/actions"));
+  expect(createSubmitFormArg).toBe(createSubmitFormMock);
+
+  // also ensure that during moveLineMock we dispatched saveMoveLine and thus mockDispatch was called with that action
+  expect(mockDispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "SAVE_MOVE_LINE" }));
+});

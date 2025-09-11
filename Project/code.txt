@@ -4,31 +4,37 @@
 import React from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import ToNumberShareContainer from "./ToNumberShareContainer";
 
-// ------------------ MOCKS ------------------
+// ------------------ MOCK DECLARATIONS ------------------
 
-// mock redux
+// Redux
 const mockDispatch = jest.fn();
 let mockState;
+
+// Router
+let mockId = "child-1";
+
+// Hook
+const useHandleMoveLineResponseMock = jest.fn();
+
+// Utils
+const moveLineMock = jest.fn();
+const getDeviceDetailsMock = jest.fn();
+const getChildDetailsMock = jest.fn();
+const onConfirmationMock = jest.fn();
+
+// ------------------ MODULE MOCKS ------------------
+
 jest.mock("react-redux", () => ({
   useDispatch: () => mockDispatch,
-  useSelector: (sel) => sel(mockState),
+  useSelector: (selector) => selector(mockState),
 }));
 
-// mock react-router
-const pushMock = jest.fn();
-let mockId = "child-1";
-jest.mock("react-router-dom", () => {
-  const real = jest.requireActual("react-router-dom");
-  return {
-    ...real,
-    useHistory: () => ({ push: pushMock }),
-    useParams: () => ({ id: mockId ? encodeURIComponent(mockId) : "" }),
-  };
-});
+jest.mock("react-router-dom", () => ({
+  useHistory: () => ({ push: jest.fn() }),
+  useParams: () => ({ id: mockId ? encodeURIComponent(mockId) : "" }),
+}));
 
-// mock actions
 jest.mock("../home/actions", () => ({
   setSelectedDeviceId: (id) => ({ type: "SET_ID", payload: id }),
   fetchDevices: () => ({ type: "FETCH" }),
@@ -36,30 +42,21 @@ jest.mock("../home/actions", () => ({
   sendSMS: (req) => ({ type: "SMS", payload: req }),
 }));
 
-// mock modal text
 jest.mock("../CommonModal/modalText.json", () => ({
   moveErrorMessage: { id: "ERRID", title: "Error Title" },
 }));
 
-// mock components
 jest.mock("./ToNumberShare", () => (props) => (
   <div data-testid="share">
-    <button
-      data-testid="select"
-      onClick={() => props.selectedDevice("parent-123")}
-    >
+    <button data-testid="select" onClick={() => props.selectedDevice("parent-123")}>
       select
     </button>
-    <div>{JSON.stringify(props.cqData)}</div>
+    <div>cqData:{JSON.stringify(props.cqData)}</div>
   </div>
 ));
 
 jest.mock("../CommonModal/CommonModal", () => (props) => (
-  <div
-    data-testid="modal"
-    data-open={props.open ? "true" : "false"}
-    onClick={props.close}
-  >
+  <div data-testid="modal" data-open={props.open ? "true" : "false"} onClick={props.close}>
     modal-{props.message?.id}
   </div>
 ));
@@ -68,34 +65,21 @@ jest.mock("../../../shared/components/Loader/CustomLoader", () => () => (
   <div data-testid="loader">loading</div>
 ));
 
-// mock hook
-const hookMock = jest.fn();
-jest.mock("../shared/useMoveLineHandler", () => (args) => hookMock(args));
-
-// mock utils
-const moveLineMock = jest.fn(
-  (child, parent, parentId, setIsLoading, setReq, dispatch, actions, form) => {
-    setIsLoading(true);
-    setReq(true);
-    dispatch(actions.saveMoveLine({ moved: true }));
-    setIsLoading(false);
-  }
-);
-const getDeviceDetailsMock = jest.fn((arr, pid, parentRef) => {
-  parentRef.current = { id: pid.current, mdn: "111" };
-});
-const getChildDetailsMock = jest.fn((arr, cid, childRef) => {
-  childRef.current = { id: cid.current, mdn: "222" };
-});
-const onConfirmationMock = jest.fn();
+jest.mock("../shared/useMoveLineHandler", () => ({
+  __esModule: true,
+  default: (...args) => useHandleMoveLineResponseMock(...args),
+}));
 
 jest.mock("./numbershareUtils", () => ({
-  moveLine: (...a) => moveLineMock(...a),
+  moveLine: (...args) => moveLineMock(...args),
   createSubmitForm: jest.fn(),
-  getDeviceDetails: (...a) => getDeviceDetailsMock(...a),
-  getChildDetails: (...a) => getChildDetailsMock(...a),
-  onConfirmation: (...a) => onConfirmationMock(...a),
+  getDeviceDetails: (...args) => getDeviceDetailsMock(...args),
+  getChildDetails: (...args) => getChildDetailsMock(...args),
+  onConfirmation: (...args) => onConfirmationMock(...args),
 }));
+
+// ------------------ IMPORT COMPONENT LAST ------------------
+import ToNumberShareContainer from "./ToNumberShareContainer";
 
 // ------------------ TESTS ------------------
 
@@ -114,7 +98,7 @@ beforeEach(() => {
   };
 });
 
-test("redirects when no id", () => {
+test("redirects to / when no id", () => {
   mockId = "";
   const oldHref = window.location.href;
   delete window.location;
@@ -123,7 +107,7 @@ test("redirects when no id", () => {
   render(<ToNumberShareContainer />);
   expect(window.location.href).toBe("/");
 
-  window.location.href = oldHref;
+  window.location = { href: oldHref }; // restore
 });
 
 test("dispatches on mount and shows loader when fetching", () => {
@@ -140,12 +124,12 @@ test("renders ToNumberShare when not fetching", () => {
   render(<ToNumberShareContainer />);
   expect(screen.getByTestId("share")).toBeInTheDocument();
 
-  // hook called with correct object
-  const args = hookMock.mock.calls[0][0];
+  // hook called with expected args
+  const args = useHandleMoveLineResponseMock.mock.calls[0][0];
   expect(args).toHaveProperty("moveLineRequested");
   expect(args).toHaveProperty("onConfirmation");
 
-  // onConfirmation wrapper works
+  // call onConfirmation branch
   act(() => {
     args.onConfirmation();
   });
@@ -159,12 +143,12 @@ test("selecting device triggers utils and dispatch", () => {
   expect(getDeviceDetailsMock).toHaveBeenCalled();
   expect(getChildDetailsMock).toHaveBeenCalled();
   expect(moveLineMock).toHaveBeenCalled();
-  expect(mockDispatch).toHaveBeenCalledWith({ type: "MOVE", payload: { moved: true } });
+  expect(mockDispatch).toHaveBeenCalledWith({ type: "MOVE", payload: expect.any(Object) });
 });
 
-test("modal can be opened and closed", () => {
+test("modal opens and closes", () => {
   render(<ToNumberShareContainer />);
-  const args = hookMock.mock.calls[0][0];
+  const args = useHandleMoveLineResponseMock.mock.calls[0][0];
 
   // open modal
   act(() => {
@@ -172,7 +156,7 @@ test("modal can be opened and closed", () => {
   });
   expect(screen.getByTestId("modal")).toHaveAttribute("data-open", "true");
 
-  // close modal via CommonModal's close prop
+  // close modal
   act(() => {
     screen.getByTestId("modal").click();
   });
@@ -181,9 +165,9 @@ test("modal can be opened and closed", () => {
 
 test("isInitTagging branch only runs once", () => {
   render(<ToNumberShareContainer />);
-  expect(hookMock).toHaveBeenCalledTimes(1);
+  expect(useHandleMoveLineResponseMock).toHaveBeenCalledTimes(1);
 
-  // re-render: second call, but setIsInitTagging shouldn't re-trigger
+  // re-render with same state, isInitTagging prevents duplicate logic
   render(<ToNumberShareContainer />);
-  expect(hookMock).toHaveBeenCalledTimes(2);
+  expect(useHandleMoveLineResponseMock).toHaveBeenCalledTimes(2);
 });

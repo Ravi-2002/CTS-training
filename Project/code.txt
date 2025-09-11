@@ -1,37 +1,158 @@
-it("redirects when enableBlocksMVA=true and singleLink=blockCallsAndMessagesBtn", () => {
-  // Arrange
-  props.deviceDetails.body.pageAttributes.manageBlocksMVAFFlag = "true"; // enableBlocksMVA = true
-  (getClientChannelId as jest.Mock).mockReturnValue("VZW-MFA");          // channel is MVA
-  (getActionKey as jest.Mock).mockReturnValue("blockCallsAndMessagesBtn");
-  (getOnClickInfo as jest.Mock).mockReturnValue({ actionHref: "/calls" });
+import React, { useEffect } from 'react';
+import { Modal, ModalTitle, ModalBody } from '@vds/modals';
+import styled from 'styled-components';
+import { Title, Body } from '@vds/typography';
+import { Button } from '@vds/buttons';
+import { media } from '../../utils/deviceType';
+import { isEmpty } from '../../utils/utilities.js';
 
-  // Act
-  render(<SettingPreferences {...props} />);
-  fireEvent.click(screen.getByText("Block Calls"));
+const CommonModal = ({
+  modalId, message, open, close, okClick, errorMessage, content1, content2,
+}) => {
+  useEffect(() => {
+    setTimeout(() => {
+      const modalDiv = document.querySelector('[class^="ModalContainer"]');
+      if (modalDiv) {
+        modalDiv.setAttribute('id', modalId + '_overlay');
+        modalDiv.setAttribute('data-track-detail', modalId + '_modal');
+      }
+    }, 100);
+  }, [modalId]);
 
-  // Assert
-  expect(window.location.href).toBe("/callsENCRYPTED"); // adjust suffix
-  expect(getOnClickInfo).toHaveBeenCalledWith(
-    expect.anything(),
-    "nsa_blockCallsAndMessagesBtn_mva"
+  const clickHandler = () => {
+    okClick();
+  };
+
+  const closeHandler = (e) => {
+   if (!e) {
+    close();
+  }
+    
+  };
+
+  return (
+    <Modal
+      ariaLabel="number share modal"
+      opened={open}
+      onOpenedChange={(e) => closeHandler(e)}
+    >
+      {message.header1 && <ModalTitle><Title>{message.header1}</Title></ModalTitle>}
+      <ModalBody>
+        {errorMessage && errorMessage !== '' ? errorMessage : message.subHeader1}
+        {(message.header2 || message.subHeader2)
+             && (
+             <div style={{ marginTop: '3rem' }}>
+               {message.header2 && <ModalTitle><Title>{message.header2}</Title></ModalTitle>}
+               {message.subHeader2 && <div style={{ paddingTop: '1.5rem' }}>{message.subHeader2}</div>}
+             </div>
+             )
+           }
+        <Content>
+          {!isEmpty(content1)
+               && (
+               <Wrapper>
+                 <ImageContainer image={"url('" + content1.img + "')"} />
+                 <InfoContainer>
+                   <Body size="large" data-cs-mask dangerouslySetInnerHTML={{ __html: content1.nickName }} />
+                   <Body data-cs-mask>{content1.mdn}</Body>
+                 </InfoContainer>
+               </Wrapper>
+               )
+             }
+          {!isEmpty(content2)
+               && (
+               <Wrapper>
+                 <ImageContainer image={"url('" + content2.img + "')"} />
+                 <InfoContainer>
+                   <Body size="large" data-cs-mask dangerouslySetInnerHTML={{ __html: content2.nickName }} />
+                   <Body data-cs-mask>{content2.mdn}</Body>
+                 </InfoContainer>
+               </Wrapper>
+               )
+             }
+        </Content>
+      </ModalBody>
+      <Footer>
+        {message.button1
+            && (
+            <Button
+              tabIndex="0"
+              use="secondary"
+              onClick={close}
+              id={'mvo_num_share_btn_' + message.button1}
+              analyticstrack={'mvo_num_share_btn_' + message.button1}
+              data-track={message.button1}
+              data-testid="modal-close-button"
+            >
+              {message.button1}
+            </Button>
+            )}
+        {message.button2
+            && (
+            <Button
+              tabIndex="0"
+              onClick={() => clickHandler()}
+              id={'mvo_num_share_btn_' + message.button2}
+              analyticstrack={'mvo_num_share_btn_' + message.button2}
+              data-track={message.button2}
+            >
+              {message.button2}
+            </Button>
+            )}
+      </Footer>
+    </Modal>
   );
-});
+};
 
-it("redirects when enableBlocksMVA=true and singleLink=blockSpecificServicesBtn", () => {
-  // Arrange
-  props.deviceDetails.body.pageAttributes.manageBlocksMVAFFlag = "true"; // enableBlocksMVA = true
-  (getClientChannelId as jest.Mock).mockReturnValue("VZW-MFA");          // channel is MVA
-  (getActionKey as jest.Mock).mockReturnValue("blockSpecificServicesBtn");
-  (getOnClickInfo as jest.Mock).mockReturnValue({ actionHref: "/services" });
 
-  // Act
-  render(<SettingPreferences {...props} />);
-  fireEvent.click(screen.getByText("Block Services"));
 
-  // Assert
-  expect(window.location.href).toBe("/servicesENCRYPTED"); // adjust suffix
-  expect(getOnClickInfo).toHaveBeenCalledWith(
-    expect.anything(),
-    "nsa_blockSpecificServicesBtn_mva"
-  );
-});
+
+const ModalContainer = styled.div`
+  //height: 250px;
+  width: 425px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem; 
+  ${media.mobile`
+      height: 100%;
+      width: 100%;
+    `}
+`;
+
+const Footer = styled.div`
+  display:flex;
+  justify-content: start;
+`;
+
+const Content = styled.div`
+  margin-bottom: 3rem;
+  margin-top: 3rem;
+`;
+
+const ImageContainer = styled.div`
+    width: 50px;
+    height: 50px;
+    background-image: ${(props) => props.image};
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    background-position-x: left;
+    margin-right: 1.5rem;
+    ${media.smallscreen`
+      width: 30px;
+      height: 30px;
+      background-position-x: left;
+    `}
+  `;
+const InfoContainer = styled.div`
+
+`;
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: row;
+  z-index: 100;
+  margin-bottom: 1rem;
+`;
+export default CommonModal;

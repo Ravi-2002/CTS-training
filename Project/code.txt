@@ -1,262 +1,222 @@
-/**
- * @jest-environment jsdom
- */
-import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import CommonModal from './CommonModal';
+import React, { useState, useEffect, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import styled from "styled-components";
+import * as actions from '../home/actions';
+import ToNumberShare from "./ToNumberShare";
+import { isEmpty } from '../../utils/utilities'
+import CommonModal from "../CommonModal/CommonModal";
+import * as modalData from "../CommonModal/modalText.json";
+import { useHistory, useParams } from "react-router-dom";
+import CustomLoader from '../../../shared/components/Loader/CustomLoader';
+import useHandleMoveLineResponse from '../shared/useMoveLineHandler';
+import { moveLine, createSubmitForm, getDeviceDetails, getChildDetails, onConfirmation } from "./numbershareUtils";
 
-// --- Minimal mocks for deterministic behavior in tests ---
-// We mock only what's necessary so onOpenedChange and onClick can be invoked.
+const ToNumberShareContainer = () => {
+  const dispatch = useDispatch();
+  const history = useHistory();
+  const { id } = useParams();
 
-jest.mock('@vds/modals', () => {
-  const React = require('react');
-  return {
-    Modal: ({ ariaLabel, opened, onOpenedChange, children }) =>
-      React.createElement(
-        'div',
-        { 'aria-label': ariaLabel },
-        // render the modal container only if opened (the real component may portal)
-        opened
-          ? React.createElement(
-              'div',
-              { className: 'ModalContainer123', key: 'container' },
-              children
-            )
-          : null,
-        // helper buttons used by tests to simulate onOpenedChange with null / non-null
-        React.createElement(
-          'button',
-          {
-            'data-testid': 'vds-onchange-null',
-            key: 'on-null',
-            onClick: () => onOpenedChange && onOpenedChange(null),
-          },
-          'vds-onchange-null'
-        ),
-        React.createElement(
-          'button',
-          {
-            'data-testid': 'vds-onchange-nonnull',
-            key: 'on-nonnull',
-            onClick: () => onOpenedChange && onOpenedChange({}),
-          },
-          'vds-onchange-nonnull'
-        )
-      ),
-    ModalTitle: ({ children }) => React.createElement('div', { 'data-testid': 'vds-modal-title' }, children),
-    ModalBody: ({ children }) => React.createElement('div', { 'data-testid': 'vds-modal-body' }, children),
+  const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitTagging, setIsInitTagging] = useState(false);
+
+  const parentId = useRef("");
+  const childId = useRef("");
+  const newParent = useRef({});
+  const child = useRef({});
+
+  const isFetching = useSelector(state => state.devices.isFetching);
+  const deviceDetails = useSelector(state => state.devices.deviceDetails);
+  const cqData = useSelector(state => state.devices.cqData);
+  const connectableDevices = useSelector(state => state.devices.connectableDevices);
+  const errorMessage = useSelector(state => state.devices.errorMessage);
+  const moveLineResponse = useSelector(state => state.devices.moveLineResponse);
+  const [moveLineRequested, setMoveLineRequested] = React.useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+
+    if (id && id !== "") {
+      childId.current = decodeURIComponent(id);
+      dispatch(actions.setSelectedDeviceId(childId.current));
+      dispatch(actions.fetchDevices());
+    } else {
+      window.location.href = '/';
+    }
+    // eslint-disable-next-line
+  }, [id, dispatch]);
+
+  useEffect(() => {
+    if (!isFetching && deviceDetails && !isInitTagging) {
+      setIsInitTagging(true);
+    }
+  }, [isFetching, deviceDetails, isInitTagging]);
+
+  // useEffect(() => {
+  //   if (!isEmpty(moveLineResponse) && moveLineResponse?.body?.statusCode === '1') {
+  //     setShowModal(true);
+  //   }
+  // }, [moveLineResponse]);
+
+  const closeModal = () => {
+    setShowModal(false);
   };
-});
 
-jest.mock('@vds/buttons', () => {
-  const React = require('react');
-  return {
-    Button: ({ children, onClick, ...props }) =>
-      React.createElement('button', { onClick, ...props }, children),
+  const setSelectedDevice = (id) => {
+    parentId.current = id;
+    getDeviceDetailsHandler();
+    getChildDetailsHandler();
+    moveLineHandler();
   };
-});
 
-jest.mock('@vds/typography', () => {
-  const React = require('react');
-  return {
-    Title: ({ children }) => React.createElement('h1', null, children),
-    Body: ({ children, dangerouslySetInnerHTML }) =>
-      dangerouslySetInnerHTML ? React.createElement('p', { dangerouslySetInnerHTML }) : React.createElement('p', null, children),
-  };
-});
+  // const moveLine = () => {
+  //   setIsLoading(true);
+  //   if (child.current.lineLevelPlan) {
+  //     const url = reactGlobals.cpcLandingPage;
+  //     let req = {
+  //       "flow": "switchnumbershare",
+  //       "numberShareMtn": child.current.mdn.split(".").join(""),
+  //       "trunkMtn": newParent.current.mdn.split(".").join(""),
+  //       "numberShareIndicator": "G"
+  //     };
+  //     const myForm = createSubmitForm(url, req);
+  //     if (myForm) myForm.submit();
+  //   } else {
+  //     let req = {
+  //       "moveFrom": "T",
+  //       "moveTo": parentId.current,
+  //       "secondaryDevice": child.current.id,
+  //       "branchType": child.current.deviceType
+  //     };
+  //     setMoveLineRequested(true);
+  //     dispatch(actions.saveMoveLine(req));
+  //     setIsLoading(false);
+  //   }
+  // };
 
-// mock deviceType/media minimal implementations (not important for logic)
-jest.mock('../../utils/deviceType', () => ({
-  media: {
-    mobile: () => '',
-    smallscreen: () => '',
-  },
-}));
-
-// isEmpty used by component — deterministic here
-jest.mock('../../utils/utilities.js', () => ({
-  isEmpty: (obj) => !obj || (typeof obj === 'object' && Object.keys(obj).length === 0),
-}));
-
-describe('CommonModal - full coverage', () => {
-  let closeMock;
-  let okClickMock;
-  let baseMessage;
-
-  beforeEach(() => {
-    closeMock = jest.fn();
-    okClickMock = jest.fn();
-    baseMessage = {
-      header1: 'Header 1',
-      subHeader1: 'Subheader 1',
-      header2: 'Header 2',
-      subHeader2: 'Subheader 2',
-      button1: 'Cancel',
-      button2: 'Confirm',
-    };
-    jest.useFakeTimers();
-    document.body.innerHTML = ''; // clean DOM
-  });
-
-  afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
-    jest.clearAllMocks();
-  });
-
-  it('useEffect finds modal container and sets id/data-track-detail', () => {
-    render(
-      <CommonModal
-        modalId="testId"
-        message={baseMessage}
-        open={true}
-        close={closeMock}
-        okClick={okClickMock}
-      />
+  const moveLineHandler = () => {
+    moveLine(
+      child,
+      newParent,
+      parentId,
+      setIsLoading,
+      setMoveLineRequested,
+      dispatch,
+      actions,
+      createSubmitForm
     );
+  };
 
-    // advance timers so the setTimeout in useEffect fires
-    act(() => {
-      jest.advanceTimersByTime(200);
+  // const createSubmitForm = (url, req) => {
+  //   let myForm = document.createElement("form");
+  //   let element;
+  //   myForm.setAttribute("action", url);
+  //   myForm.setAttribute("method", "post");
+  //   element = document.createElement("input");
+  //   element.setAttribute('type', 'hidden');
+  //   element.setAttribute('name', 'nbrshareinfo');
+  //   element.setAttribute('value', JSON.stringify(req));
+  //   myForm.appendChild(element);
+  //   document.body.appendChild(myForm);
+  //   return myForm;
+  // };
+
+  // const onConfirmation = () => {
+  //   if(!isEmpty(moveLineResponse) && moveLineResponse?.body?.statusCode === '0'){
+  //     history.push({
+  //       pathname: '/confirm',
+  //       state: {
+  //         email: "",
+  //         mdn: newParent.current.mdn,
+  //         page: "standalone to numshare"
+  //       }
+  //     });
+  //     let smsReq = {
+  //       mtn: newParent.current.id,
+  //       custFirstName: newParent.current.firstName,
+  //       custLastName: newParent.current.lastName
+  //     };
+  //     dispatch(actions.sendSMS(smsReq));
+  //   }
+  //   return null;
+  // };
+
+  // const getDeviceDetails = () => {
+  //   deviceDetails.forEach(item => {
+  //     if (item.primaryInfo.id === parentId.current) {
+  //       newParent.current = {
+  //         mdn: item.primaryInfo.formattedMdn,
+  //         img: item.primaryInfo.img,
+  //         id: item.primaryInfo.id,
+  //         firstName: item.primaryInfo.firstName,
+  //         lastName: item.primaryInfo.lastName,
+  //         nickName: item.primaryInfo.deviceNickName
+  //       };
+  //     }
+  //   });
+  // };
+
+  // const getChildDetails = () => {
+  //   connectableDevices.forEach(item => {
+  //     if (item.id === childId.current) {
+  //       child.current = {
+  //         mdn: item.formattedMdn,
+  //         id: item.id,
+  //         img: item.img,
+  //         nickName: item.deviceNickName,
+  //         deviceType: item.deviceType,
+  //         lineLevelPlan: item.lineLevelPlan ? item.lineLevelPlan : false
+  //       };
+  //     }
+  //   });
+  // };
+
+  const getDeviceDetailsHandler = () => {
+    getDeviceDetails(deviceDetails, parentId, newParent);
+  };
+
+  const getChildDetailsHandler = () => {
+    getChildDetails(connectableDevices, childId, child);
+  };
+    //  useHandleMoveLineResponse({moveLineRequested, moveLineResponse, setMoveLineRequested, setShowModal, onConfirmation, modalData});
+    useHandleMoveLineResponse({
+      moveLineRequested,
+      moveLineResponse,
+      setMoveLineRequested,
+      setShowModal,
+      onConfirmation: () =>
+        onConfirmation({
+          moveLineResponse,
+          history,
+          newParent,
+          dispatch,
+          actions,
+        }),
+      modalData,
     });
 
-    // The mocked Modal renders an element with class 'ModalContainer123' so useEffect should attach attributes
-    const overlay = document.getElementById('testId_overlay');
-    const tracked = document.querySelector('[data-track-detail="testId_modal"]');
-    expect(overlay).toBeTruthy();
-    expect(tracked).toBeTruthy();
-  });
-
-  it('renders headers / subheaders and both content blocks', () => {
-    const content1 = { img: 'img1.png', nickName: '<b>Nick1</b>', mdn: '12345' };
-    const content2 = { img: 'img2.png', nickName: '<b>Nick2</b>', mdn: '67890' };
-
-    render(
+  return (
+    <Container>
+      {(isFetching || isLoading) ? (
+       <CustomLoader />
+      ) : (
+        <ToNumberShare cqData={cqData} selectedDevice={setSelectedDevice} deviceDetails={deviceDetails} />
+      )}
+      
       <CommonModal
-        modalId="m1"
-        message={baseMessage}
-        open={true}
-        close={closeMock}
-        okClick={okClickMock}
-        content1={content1}
-        content2={content2}
+        modalId={modalData.moveErrorMessage.id}
+        close={closeModal}
+        open={showModal}
+        onHide={closeModal}
+        message={modalData.moveErrorMessage}
+        content1={child.current ? child.current : null}
       />
-    );
+    </Container>
+  );
+};
 
-    expect(screen.getByText('Header 1')).toBeInTheDocument();
-    expect(screen.getByText('Subheader 1')).toBeInTheDocument();
-    expect(screen.getByText('Header 2')).toBeInTheDocument();
-    expect(screen.getByText('Subheader 2')).toBeInTheDocument();
+export default ToNumberShareContainer;
 
-    // nickname rendered via dangerouslySetInnerHTML -> text content should appear
-    expect(screen.getByText('Nick1')).toBeInTheDocument();
-    expect(screen.getByText('12345')).toBeInTheDocument();
-    expect(screen.getByText('Nick2')).toBeInTheDocument();
-    expect(screen.getByText('67890')).toBeInTheDocument();
-  });
-
-  it('shows errorMessage instead of subHeader1', () => {
-    render(
-      <CommonModal
-        modalId="m2"
-        message={baseMessage}
-        open={true}
-        close={closeMock}
-        okClick={okClickMock}
-        errorMessage="Something went wrong"
-      />
-    );
-
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-    expect(screen.queryByText('Subheader 1')).not.toBeInTheDocument();
-  });
-
-  it('button1 calls close (modal-close-button) and button2 calls okClick (Confirm)', () => {
-    render(
-      <CommonModal
-        modalId="m3"
-        message={baseMessage}
-        open={true}
-        close={closeMock}
-        okClick={okClickMock}
-      />
-    );
-
-    // button1 has data-testid="modal-close-button" in the component
-    const cancelBtn = screen.getByTestId('modal-close-button');
-    fireEvent.click(cancelBtn);
-    expect(closeMock).toHaveBeenCalledTimes(1);
-
-    // button2 -> label "Confirm"
-    const confirmBtn = screen.getByText('Confirm');
-    fireEvent.click(confirmBtn);
-    expect(okClickMock).toHaveBeenCalledTimes(1);
-  });
-
-  it('closeHandler DOES NOT call close when onOpenedChange receives a non-null value', () => {
-    render(
-      <CommonModal
-        modalId="m4"
-        message={baseMessage}
-        open={true}
-        close={closeMock}
-        okClick={okClickMock}
-      />
-    );
-
-    // click the mocked VDS helper button that sends a non-null event to onOpenedChange
-    fireEvent.click(screen.getByTestId('vds-onchange-nonnull'));
-    expect(closeMock).not.toHaveBeenCalled();
-  });
-
-  it('closeHandler calls close when onOpenedChange(null) (covers !e branch)', () => {
-    render(
-      <CommonModal
-        modalId="m5"
-        message={baseMessage}
-        open={true}
-        close={closeMock}
-        okClick={okClickMock}
-      />
-    );
-
-    // click the mocked VDS helper button that sends null to onOpenedChange
-    fireEvent.click(screen.getByTestId('vds-onchange-null'));
-    expect(closeMock).toHaveBeenCalledTimes(1);
-  });
-
-  it('renders nothing for empty content1 / content2', () => {
-    render(
-      <CommonModal
-        modalId="m6"
-        message={baseMessage}
-        open={true}
-        close={closeMock}
-        okClick={okClickMock}
-        content1={{}}
-        content2={{}}
-      />
-    );
-
-    expect(screen.queryByText('12345')).not.toBeInTheDocument();
-  });
-
-  it('when open=false there is no ModalContainer present (but wrapper exists)', () => {
-    render(
-      <CommonModal
-        modalId="m7"
-        message={baseMessage}
-        open={false}
-        close={closeMock}
-        okClick={okClickMock}
-      />
-    );
-
-    // our mocked Modal always renders wrapper with aria-label
-    expect(screen.getByLabelText('number share modal')).toBeInTheDocument();
-
-    // but container (only present when opened in mock) should not be present
-    const container = document.querySelector('[class^="ModalContainer"]');
-    expect(container).toBeNull();
-  });
-});
+const Container = styled.div`
+  margin-top: 3rem;
+`;

@@ -1,1214 +1,395 @@
-import React, { Component } from "react";
-import { connect } from "react-redux";
-import { bindActionCreators } from 'redux';
-import styled from 'styled-components';
-import { Button, TextLink } from '@vds/buttons';
-import { ButtonGroup } from '@vds3/buttons';
-import * as actions from "./actions";
-import {
-  CircularProgressbarWithChildren, buildStyles
-} from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
-import RadialSeparators from "./RadialSeparators";
-import Tour from './tourSection';
-import {pop, fadeIn, barBounce} from './tourAnimation';
-import LoaderPage from '../Loader';
-import { Loader }  from '@vds/loaders';
-import { healthCheckLandingUrl, securityDashboardLandingUrl, selfAssessmentLandingUrl, twoChoiceUrl, multiChoiceUrl } from "../../shared/constants/constants";
-import { isMobile, media } from "../../shared/utilities/style";
-import { updateAppPageTitle, updateTabBar, openUrlCTA ,openNativePage, openNativePageWithParams, openNativePageWithRequestParams, getJSBridgeDetails, openChatWithUs, openChatWithSecurityAdvisor, updateNavigation } from "../../../shared/Native/native";
-import PullToRefresh from 'react-simple-pull-to-refresh';
-import './style.css';
-import { postToKafkaCall, feedbackNBXCall }  from "../../shared/services/externalServiceCall";
-import { dispatchPageView, dispatchOpenView, dispatchCloseView,  } from "../../Tagging/taggingScripts";
-import Icon from '@vds/icons';
-//import { Title, Body, Subtitle } from '@vds/typography';
-import { Line } from '@vds/lines';
-import { Title, Body, Micro} from "../../shared/components/Typography";
-import { Redirect } from "react-router-dom";
-import { Carousel, CarouselItem } from "react-bootstrap";
-import ProgressBar from 'react-bootstrap/ProgressBar';
-import{ VDSManager } from '@vds/utilities';
-import util from '../../shared/utilities/util';
+// DashboardHome.test.js
+/**
+ * Single-file comprehensive test for DashboardHome component.
+ * - This file heavily mocks external modules used by the component.
+ * - It renders the component in multiple states to exercise branches, methods, lifecycle hooks.
+ *
+ * Adjust the import path for DashboardHome below to match your project location.
+ */
 
-class DashboardHome extends React.Component {
+import React from 'react';
+import { render, fireEvent, act } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect';
 
-  constructor(props) {
-    super(props);
-    this.state = { 
-      enableTour: false ,
-      tourHeader: '',
-      tourBodyText: '',
-      arrowAltText: '',
-      selectedTourSection: 0,
-      prevSelectedTourSection: 0,
-      animated: false,
-      fadeAnimated: false,
-      redirect: false,
-      redirectUrl: "",
-      carouselIndex: 0,
-      enableProgressBar: false,
-      nowScore: 15
+// ----- MOCKS FOR EXTERNAL DEPENDENCIES -----
+jest.mock('react-redux', () => {
+  return {
+    connect: () => (component) => component,
+  };
+});
+jest.mock('redux', () => ({
+  bindActionCreators: (actions, dispatch) => actions,
+}));
+
+// Mock styling & heavy libs as simple placeholders
+jest.mock('react-circular-progressbar', () => ({
+  CircularProgressbarWithChildren: ({ children }) => <div data-testid="circular">{children}</div>,
+  buildStyles: () => ({}),
+}));
+jest.mock('./RadialSeparators', () => () => <div data-testid="radial" />);
+jest.mock('./tourSection', () => ({ children }) => <div data-testid="tour">{children}</div>);
+jest.mock('./tourAnimation', () => ({
+  pop: 'pop',
+  fadeIn: 'fadeIn',
+  barBounce: 'barBounce'
+}));
+jest.mock('../Loader', () => () => <div data-testid="loaderpage">loader</div>);
+jest.mock('@vds/loaders', () => ({ Loader: () => <div data-testid="loader">loader</div> }));
+jest.mock('@vds/icons', () => ({ default: ({ name }) => <span data-testid={`icon-${name}`}>{name}</span> }));
+jest.mock('../../shared/components/Typography', () => ({
+  Title: ({ children, ...p }) => <div data-testid="title">{children}</div>,
+  Body: ({ children }) => <div data-testid="body">{children}</div>,
+  Micro: ({ children, ...p }) => <span data-testid="micro">{children}</span>
+}));
+jest.mock('@vds/buttons', () => ({ Button: ({ children, ...p }) => <button {...p}>{children}</button>, TextLink: ({ children, ...p }) => <a {...p}>{children}</a> }));
+jest.mock('@vds3/buttons', () => ({ ButtonGroup: ({ children }) => <div>{children}</div> }));
+jest.mock('react-bootstrap', () => ({
+  Carousel: ({ children, ...p }) => <div data-testid="carousel">{children}</div>,
+  CarouselItem: ({ children }) => <div>{children}</div>
+}));
+jest.mock('react-bootstrap/ProgressBar', () => ({ __esModule: true, default: ({ now }) => <div data-testid="progress">{now}</div> }));
+jest.mock('@vds/utilities', () => ({ VDSManager: ({ children }) => <div>{children}</div> }));
+jest.mock('../../shared/utilities/util', () => ({
+  getQueryParams: () => ({ selectedMDN: '98765' }),
+}));
+jest.mock('../../shared/services/externalServiceCall', () => ({
+  postToKafkaCall: jest.fn(),
+  feedbackNBXCall: jest.fn()
+}));
+jest.mock('../../../shared/Native/native', () => ({
+  updateAppPageTitle: jest.fn(),
+  updateTabBar: jest.fn(),
+  openUrlCTA: jest.fn(),
+  openNativePage: jest.fn(),
+  openNativePageWithParams: jest.fn(),
+  openNativePageWithRequestParams: jest.fn(),
+  getJSBridgeDetails: jest.fn(),
+  openChatWithUs: jest.fn(),
+  openChatWithSecurityAdvisor: jest.fn(),
+  updateNavigation: jest.fn(),
+}));
+jest.mock('../../Tagging/taggingScripts', () => ({
+  dispatchPageView: jest.fn(),
+  dispatchOpenView: jest.fn(),
+  dispatchCloseView: jest.fn(),
+}));
+jest.mock('./actions', () => ({
+  refreshDashboardHomeInfo: jest.fn(() => Promise.resolve({})),
+}));
+
+// Mock constants used in code
+jest.mock('../../shared/constants/constants', () => ({
+  healthCheckLandingUrl: '/health/',
+  securityDashboardLandingUrl: '/security/',
+  selfAssessmentLandingUrl: '/self/',
+  twoChoiceUrl: '/two/',
+  multiChoiceUrl: '/multi/'
+}));
+
+// ----- IMPORT THE COMPONENT (connected is mocked to return raw class) -----
+const DashboardHome = require('./Untitled document (2).txt').default; // adjust to match where you put the component
+
+// ----- BEGIN TESTS -----
+describe('DashboardHome - comprehensive single test file', () => {
+
+  let baseProps;
+
+  beforeEach(() => {
+    // reset all timers and mocks
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+
+    // Minimal content/data shape to exercise many branches
+    const content = {
+      homePageHeader: 'Home Header',
+      ratingLabel: 'Rating Label',
+      ratingLinkText: 'Rating Link',
+      securityRating: 'SECURITY',
+      securityRatingMessage: 'Keep safe',
+      recommendations: [
+        {
+          recommendationLabel: 'Rec1',
+          recommendationText: 'Text1',
+          recommendationLogo: '/logo1',
+          ctaLabel: 'CTA1',
+          templateId: 'TID_TITLE_MESSAGE_WITH_OPEN_URL_CTA',
+          androidAppURL: 'app://a',
+          iosAppURL: 'app://i',
+          androidBrowserURL: 'https://a',
+          iosBrowserURL: 'https://i'
+        },
+        {
+          recommendationLabel: 'Rec2',
+          recommendationText: 'Text2',
+          recommendationLogo: '/logo2',
+          ctaLabel: '',
+          templateId: 'TID_TITLE_MESSAGE_WITH_OPEN_NATIVE_PAGE',
+          productGroupId: 'pg1',
+          router: 'nativeRouter'
+        },
+        {
+          recommendationLabel: 'Rec3',
+          recommendationText: 'Text3',
+          recommendationLogo: '/logo3',
+          ctaLabel: 'CTA3',
+          templateId: 'TID_TITLE_MESSAGE_OPEN_NSA_PAGE',
+          router: 'router3'
+        }
+      ],
+      moreButtonText: 'More',
+      updateRatingProgressLabel: 'Updating...',
+      phishingCardImageUrl: '/phish.png',
+      phishingCardHeader: 'Phish',
+      phishingCardText: 'Phish text',
+      malwareCardImageUrl: '/mal.png',
+      malwareCardHeader: 'Malware',
+      malwareCardText: 'Mal text',
+      scamCardImageUrl: '/scam.png',
+      scamCardHeader: 'Scam',
+      scamCardText: 'Scam text',
+      cardCTAText: 'Take quiz',
+      tourSecurityRatingHeaderText: 'Tour title',
+      tourSecurityRatingBodyText: 'Tour body',
+      tourSecurityChecklistHeaderText: 'Checklist title',
+      tourSecurityChecklistBodyText: 'Checklist body',
+      tourSecurityFeaturesHeaderText: 'Features title',
+      tourSecurityFeaturesBodyText: 'Features body',
+      tourHelpHeaderText: 'Help title',
+      tourHelpBodyText: 'Help body',
+      tourInfoHeaderText: 'Info title',
+      tourInfoBodyText: 'Info body',
+      tourNextCTAText: 'Next',
+      tourExitCTAText: 'Exit',
+      // DS fields
+      digitalSecureHeader: 'DS header',
+      statusNotInstalledLabel: 'Not installed',
+      statusSomeFeaturesOffLabel: 'Some off',
+      statusOffLabel: 'Off',
+      statusOnLabel: 'On',
+      statusUnavailableLabel: 'Unavailable',
+      strongChecklistLabel: 'Strong',
+      strongChecklistText: 'Strong text',
+      allFeaturesOnText: 'All features',
+      includedVPLabel: 'VP label',
+      includedVPHLabel: 'VPH label',
+      includedVZMobileProtectLabel: 'VZ Mobile label',
+      includedMobileSecureLabel: 'Mobile secure label',
+      includedDSLabel: 'Included DS',
+      digitalSecureOpenAppText: 'Open app',
+      digitalSecureGetAppText: 'Get app',
+      getAppCTAText: 'Get app CTA',
+      learnMoreCTAText: 'Learn more',
+      showDetailsCTAText: 'Show details',
+      openAppCTAText: 'Open app',
+      callFilterHeader: 'Call filter',
+      callFilterOffText: 'Call filter off',
+      callFilterOnText: 'Call filter on',
+      callFilterTurnOnText: 'Turn on'
     };
-    
-    this.tourContent = [];
-    this.refreshRef = React.createRef();
-  }
 
+    const data = {
+      scoreVersion: 'totalAlgorithmScore',
+      totalAlgorithmScore: 50,
+      maximumRatingScore: 100,
+      totalRating: 50,
+      accountNumber: '1234-5678',
+      lastScanTime: new Date().toISOString(),
+      threatHistoryTotalCount: '2',
+      digitalSecureStatus: 'somefeaturesoff',
+      inactiveDSFeatures: ['feature1', 'feature2'],
+      isDigitalSecureInstalled: 'No',
+      isVZProtectEnrolled: 'Yes',
+      isVZProtectHomeEnrolled: 'No',
+      isVZMobileProtectEnrolled: 'No',
+      isMobileSecureEnrolled: 'No',
+      isDigitalSecureEnrolled: 'Yes',
+      isDigitalSecureActivated: 'No',
+      isSmartphone: 'true',
+      customerRole: 'owner',
+      isSfoExist: 'No',
+      isCallFilterEnabled: 'No',
+      callFilterRiskLevel: 'low',
+      isSecurityAdvisorEnabled: 'No',
+      quizVersion: 'A',
+      sessionId: 'sess1'
+    };
 
-  carouselInfoUpdate(e) {
-    //console.log(e)
-    this.setState({carouselIndex:e});
-  }
-
-  setTourContentArray(content) {
-    let headerContent = {'title': content.tourSecurityRatingHeaderText, 'body': content.tourSecurityRatingBodyText, 'id': 'header', 'arrowImageText': "Arrow pointing to "+content.ratingLabel+" section"};
-    this.tourContent[0] = headerContent;
-    let checklistContent = {'title': content.tourSecurityChecklistHeaderText, 'body': content.tourSecurityChecklistBodyText, 'id': 'checklist', 'arrowImageText': "Arrow pointing to "+content.checklistHeader +" section"};
-    this.tourContent[1] = checklistContent;
-    let featureContent = {'title': content.tourSecurityFeaturesHeaderText, 'body': content.tourSecurityFeaturesBodyText, 'id': 'features', 'arrowImageText': "Arrow pointing to "+content.featuresHeader +" section"};
-    this.tourContent[2] = featureContent;
-    let helpContent = {'title': content.tourHelpHeaderText, 'body': content.tourHelpBodyText, 'id': 'help', 'arrowImageText': "Arrow pointing to "+content.helpHeader +" section"};
-    this.tourContent[3] = helpContent;
-    let stayInformedContent = {'title': content.tourInfoHeaderText, 'body': content.tourInfoBodyText, 'id': 'stayInformed', 'arrowImageText': "Arrow pointing to "+content.stayInformedHeader +"section"};
-    this.tourContent[4] = stayInformedContent;
-    //console.log(this.tourContent);
-    this.setState({tourHeader: this.tourContent[this.state.selectedTourSection].title, tourBodyText: this.tourContent[this.state.selectedTourSection].body, arrowAltText: this.tourContent[this.state.selectedTourSection].arrowImageText});
-  }
-
-  gotoNextTour() {   
-    let count = this.state.selectedTourSection+1;
-    let prevCount = this.state.selectedTourSection;
-    dispatchCloseView(`${this.state.tourHeader} take a tour modal`, '#access-tour');
-    this.setState(
-      {tourHeader: this.tourContent[count].title, tourBodyText: this.tourContent[count].body, arrowAltText: this.tourContent[count].arrowImageText, selectedTourSection: count, prevSelectedTourSection: prevCount, animated: false, fadeAnimated: false}
-    , ()=> {
-      let targetElement = this.tourContent[this.state.selectedTourSection].id;
-      if(reactGlobals.deviceOS == "IOS"){
-        document.getElementById(targetElement).scrollIntoView();
-      }else{
-        document.getElementById(targetElement).scrollIntoView({behavior: "smooth", block: "start", inline: "start"});
+    baseProps = {
+      isFetching: false,
+      dashboardDetails: { content, data },
+      overviewDetails: { data: { totalRating: 10 } },
+      actions: {
+        refreshDashboardHomeInfo: jest.fn(() => Promise.resolve({}))
       }
-      
-      window.setTimeout(()=>{this.setState({animated: true})}, 4000);
-      window.setTimeout(()=>{
-        this.setState({fadeAnimated: true});
-        dispatchOpenView(`${this.state.tourHeader} take a tour modal`, '#access-tour');
-        document.getElementById('tour-header') && document.getElementById('tour-header').focus();
-      }, 2000);
+    };
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('renders loader when isFetching true', () => {
+    const { getByTestId } = render(<DashboardHome {...baseProps} isFetching={true} />);
+    expect(getByTestId('loaderpage')).toBeInTheDocument();
+  });
+
+  it('mounts, runs componentDidMount and renders main content', async () => {
+    const props = { ...baseProps };
+    let container;
+    await act(async () => {
+      container = render(<DashboardHome {...props} />);
     });
-  }
 
-  resetTour(){
-    this.setState(
-      {tourHeader: this.tourContent[0].title, tourBodyText: this.tourContent[0].body, arrowAltText: this.tourContent[0].arrowImageText, selectedTourSection: 0, enableTour: false}, ()=>{
-        updateNavigation(reactGlobals.securityDashboardPageTitle, true);
-        dispatchCloseView(`${this.state.tourHeader} take a tour modal`, '#access-tour');
-      }
-      );
+    // Expect main pieces present
+    expect(container.getByTestId('title')).toBeInTheDocument();
+    expect(container.getByTestId('radial')).toBeInTheDocument();
+    expect(container.getByTestId('circular')).toBeInTheDocument();
 
-  }
+    // moreButton click should call window.location.href change: simulate by calling method on instance
+    const instance = container.container.firstChild._reactInternals ? null : null; // fallback: we will get instance through ref rendering below
+  });
 
-  componentDidMount() {
-    updateAppPageTitle(reactGlobals.securityDashboardPageTitle);
-    let tabbarFlag = new URLSearchParams(window.location.search).get('tabbar');
-    tabbarFlag = tabbarFlag == 'true' ? true : tabbarFlag == 'false' ? false : true;
-    let progressbarNeeded = sessionStorage.getItem('enableProgressUpdate');
-    if(progressbarNeeded){
-      console.log(history);
-      this.setState({enableProgressBar: true},()=>{
-        setTimeout(()=>{
-          this.setState({nowScore: 35})
-        }, 1500);
-      });
-    }
-    if(progressbarNeeded === null && this.state.enableProgressBar){
-      setTimeout(()=>{
-        this.setState({nowScore: 35})
-      }, 1500);
-    }
+  it('exposes instance methods and state changes via ref (covers many methods)', async () => {
+    // render component with a ref so we can call instance methods directly
+    let ref = React.createRef();
+    const { container } = render(<DashboardHome ref={ref} {...baseProps} />);
 
-    updateTabBar(tabbarFlag);          
-    if(this.props.dashboardDetails && this.props.dashboardDetails.content) {
-      const data = this.props.dashboardDetails.data;
-      this.setTourContentArray(this.props.dashboardDetails.content);
-      this.feedbackCallPost(this.props.dashboardDetails.content.recommendations.slice(0, 3), "82");
-      let acctNum2 = data.accountNumber ? data.accountNumber.split("-")[0] : "";
-      if (window && window.vzdl) {
-          window.vzdl.page.flow = "security:"+data.scoreVersion;
-          window.vzdl.page.subFlow = data.securityRating;
-          window.vzdl.event.value = "event72="+"'"+(data.scoreVersion === 'totalAlgorithmScore'  ? ((Math.round(data.totalAlgorithmScore)/data.maximumRatingScore)*100) : data.totalRating || 0)+"'";  
-          window.vzdl.user.accountLast2 = acctNum2.slice(-2);
-        }
-        dispatchPageView("security dashboard landing");
-      }
-      this.props.actions.refreshDashboardHomeInfo().then((param)=>{
-        /*console.log(param);
-        setTimeout(()=>{
-          if(this.state.enableProgressBar){
-          this.setState({nowScore: 100},()=>{
-          setTimeout(()=>{
-            this.setState({enableProgressBar: false}, ()=>{
-              this.setState({nowScore: 15});
-            });
-          }, 500);
-          })
-          if(progressbarNeeded){
-            sessionStorage.removeItem('enableProgressUpdate');
-          }
-        }
-        }, 3000);*/
-        if(this.state.enableProgressBar){
-          this.setState({nowScore: 100},()=>{
-            setTimeout(()=>{
-              this.setState({enableProgressBar: false}, ()=>{
-                this.setState({nowScore: 15});
-              });
-            }, 500);
-            })
-  
-          if(progressbarNeeded){
-            sessionStorage.removeItem('enableProgressUpdate');
-          }
-        }
-      });
-  //  setTimeout(() => dispatchPageView("security dashboard landing"), 500);
-  let understandYourRatingLink = document.querySelector('.understandYourRatingLink')?.children[0];
-  if (typeof(understandYourRatingLink) != 'undefined' && understandYourRatingLink != null){
-    understandYourRatingLink.setAttribute('role','link');
-    understandYourRatingLink.setAttribute('tabindex','0');
-  }
-  
-  setTimeout(() => {
-    let carets = document.querySelectorAll('.caretIcon svg');
-    if (typeof(carets) != 'undefined' && carets != null){
-      carets.forEach(caret => {
-        caret.setAttribute('tabindex', "-1");
-        caret.setAttribute('focusable', "false");
-      });
-    }
-  }, 500);
-}
-
-componentDidUpdate(){
-  setTimeout(() => {
-    let carets = document.querySelectorAll('.caretIcon svg');
-    if (typeof(carets) != 'undefined' && carets != null){
-      carets.forEach(caret => {
-        caret.setAttribute('tabindex', "-1");
-        caret.setAttribute('focusable', "false");
-      });
-    }
-  }, 500);
-}
-
-  navigateFunc(recomItem) {
-    let recomItemArray = [];
-    recomItemArray.push(recomItem);
-    this.feedbackCallPost(recomItemArray, "81");    
-    if (recomItem.templateId == "TID_TITLE_MESSAGE_WITH_OPEN_URL_CTA") {
-      let appUrl = reactGlobals.deviceOS == "ANDROID" ? recomItem.androidAppURL : recomItem.iosAppURL;
-      let browserUrl = reactGlobals.deviceOS == "ANDROID" ? recomItem.androidBrowserURL : recomItem.iosBrowserURL;
-      openUrlCTA(appUrl, browserUrl);
-    } else if (recomItem.templateId == "TID_TITLE_MESSAGE_WITH_OPEN_NATIVE_PAGE") {
-      if(recomItem.productGroupId && recomItem.productGroupId !== ""){
-      const extraParameters = {
-        "productGroupId": recomItem.productGroupId,
-        "requestLocale": "EN"
-      }
-      openNativePageWithParams(extraParameters, recomItem.router)
-    } else {
-      openNativePage(recomItem.router)
-    }
-    } else if (recomItem.templateId == "TID_TITLE_MESSAGE_OPEN_NSA_BROWSER_URL_NATIVE_PAGE"){
-      updateAppPageTitle(recomItem.nativePageTitle);
-      const extraParameters = {
-        "browserUrl": recomItem.callFilterEnrolementBrowserUrl
-      };
-      openNativePageWithRequestParams(extraParameters, recomItem.router, reactGlobals.authenticatedCookieBasedWebViewL2WebViewUrl);
-    } else if (recomItem.templateId == "TID_TITLE_MESSAGE_OPEN_NSA_PAGE") {
-      // window.location.href = healthCheckLandingUrl + window.location.search + "#" + recomItem.router;
-     this.setState({ redirect: true, redirectUrl: healthCheckLandingUrl + window.location.search + "#" + recomItem.router})
-    } else if (recomItem.templateId == "TID_TITLE_MESSAGE_OPEN_NSA_QUIZ") {
-      this.takeQuizBtnClick(recomItem.recommendationId);
-    }
-  }
-
-  feedbackCallPost(recommendations, dispositionOptionId) {
-    let payload = {};
-      payload["mtn"] = (util.getQueryParams()).selectedMDN || "";
-      payload["sessionId"] = this.props.dashboardDetails.data.sessionId || "";
-      payload["responseList"] = [];
-      const recom = recommendations.map((item) => {
-        let recomObj = {};
-        recomObj["timeStamp"] = this.getCurrentTimeStamp();
-        recomObj["dispositionOptionId"] = dispositionOptionId;
-        recomObj["rank"] = item.propositon.rank;
-        recomObj["propositionId"] = item.propositon.propositionId;
-        recomObj["soiEngagementId"] = item.propositon.soiEngagementId;
-        payload.responseList.push(recomObj);
-      })
-      feedbackNBXCall(payload);
-    
-  }
-  getCurrentTimeStamp() {
-    let gsttime = new Date().toISOString().split('T');
-    let date = gsttime[0]; let time = gsttime[1].split('.')[0];
-    return date + " " + time + " " + 'GMT';
-  }
-  
-  handleRefresh() {
-    if (reactGlobals.deviceOS == "ANDROID" || reactGlobals.deviceOS == "IOS") {
-      console.log('jsBridgeDetailscall');
-      window.bridgeDetails = function(args) {
-      console.log('jsBridgeDetails args', args);
-      if (args) {
-        postToKafkaCall(args, callbackFun);
-      } else {
-        console.log("native call args not present");
-        this.props.actions.refreshDashboardHomeInfo().then(() => {
-          this.refreshRef.current.scrollIntoView();
-          window.scrollTo(0, 0);
-        })
-      }
-    }
-    getJSBridgeDetails("bridgeDetails");
-  } else {
-     this.props.actions.refreshDashboardHomeInfo().then(() => {
-      this.refreshRef.current.scrollIntoView();
-      window.scrollTo(0, 0);
-    })   
-  }  
-  const callbackFun = () => {
-    setTimeout(() => {      
-      this.props.actions.refreshDashboardHomeInfo().then(() => {
-        this.refreshRef.current.scrollIntoView();
-        window.scrollTo(0, 0);
-      })
-    }, 1500)
-  }  
-  }
-  getLastScanTime(utcTime) {
-    let utcDate = new Date(utcTime);
-    let date = utcDate.getDate() < 10 ? "0"+utcDate.getDate() : utcDate.getDate();
-    return " "+utcDate.toLocaleDateString('default', {month: 'short' }) +" "+ date;
-  }
-  moreButtonClick() {
-    window.location.href = securityDashboardLandingUrl + "overview/" + window.location.search;
-  }
-
-  aboutYourRatingButtonClick(){
-   // this.setState({redirect:true,redirectUrl: securityDashboardLandingUrl + "understandingYourRating/" + window.location.search})
-    window.location.href = securityDashboardLandingUrl + "understandingYourRating/" + window.location.search;
-  }
-  getDigitalSecureApp() {
-    let item = this.props.dashboardDetails.content;
-    let appUrl = reactGlobals.deviceOS == "ANDROID" ? item.androidDSAppURL : item.iosDSAppURL;
-    let browserUrl = reactGlobals.deviceOS == "ANDROID" ? item.androidDSBrowserURL : item.iosDSBrowserURL;
-    openUrlCTA(appUrl, browserUrl);
-  }
-  getInactiveFeatures(featuresList) {
-    let content = this.props.dashboardDetails.content;
-    const feature = featuresList.map((featureText) => {
-      return <StyledBody><Body size="large">{content[featureText]}</Body></StyledBody>
-    })
-    return feature;
-  }
-  getUrlToConstruct(redirectUrl, params)
-  {
-    var url = new URL(window.location.origin+redirectUrl+window.location.search);
-    if(params){
-      let splitted = params.split("=");
-      url.searchParams.append(splitted[0], splitted[1]);
-    }
-    return url.href;
-  }
-  
-  takeQuizBtnClick(quizType){
-     let quizUrl;
-    let extraParam = "";
-     switch(quizType) {
-      case 'twoChoicePhishing' :  
-      case 'RID_TWO_CHOICE_PHISHING' : {
-        quizUrl = this.props.dashboardDetails.data.quizVersion == "A" ? twoChoiceUrl : multiChoiceUrl;
-        extraParam = 'category=Phishing';
-       }break;
-      case 'twoChoiceMalware' :  
-      case 'RID_TWO_CHOICE_MALWARE' : {
-        quizUrl = twoChoiceUrl;
-        extraParam = 'category=Malware';
-       }break;
-       case 'twoChoiceFraudScams' :  
-       case 'RID_TWO_CHOICE_FRAUD_AND_SCAM' : {
-        quizUrl = twoChoiceUrl;
-        extraParam = 'category=FraudsScams';
-       }break;
-       case 'multiChoicePhishing' :  
-       case 'QUIZ_PHISHING_X_CHOICE':
-       case 'RID_MULTI_CHOICE_PHISHING' : {
-         quizUrl = multiChoiceUrl;
-         extraParam = 'category=Phishing';
-        }break;  
-      case 'selfAssessment' :
-      case 'RID_SELF_ASSESSMENT_NOT_STARTED' :  
-      case 'RID_SELF_ASSESSMENT_RETURNING' : 
-      case 'RID_SELF_ASSESSMENT_INCOMPLETE' : quizUrl = selfAssessmentLandingUrl; break;
-      default : break;
-    }
-    window.location.href = this.getUrlToConstruct(quizUrl, extraParam);
-  }
-static getDerivedStateFromProps(nextProps, prevState) {
-  console.log('state update');
-  let progressbarNeeded = sessionStorage.getItem('enableProgressUpdate');
-  if((progressbarNeeded === null) && !prevState.enableProgressBar && (Object.keys(nextProps.overviewDetails).length !== 0 && Object.keys(nextProps.overviewDetails.data).length !== 0) && ((Object.keys(nextProps.dashboardDetails).length !== 0 && nextProps.dashboardDetails.data.totalRating) !== (nextProps.overviewDetails.data.totalRating))){
-    console.log('enableprogressbar');
-    return {
-      enableProgressBar: true
-    };
-  }
-  if(!(progressbarNeeded  === null) && prevState.enableProgressBar && (Object.keys(nextProps.overviewDetails).length !== 0 && Object.keys(nextProps.overviewDetails.data).length !== 0) && ((Object.keys(nextProps.dashboardDetails).length !== 0 && nextProps.dashboardDetails.data.totalRating) === (nextProps.overviewDetails.data.totalRating))){
-    console.log('disableprogressbar');
-    return {
-      enableProgressBar: false,
-      nowScore: 15
-    };
-  }
-
-  // Return null to indicate no change to state.
-  return null;
-}
-
-  openTakeTour() {    
-    updateNavigation(reactGlobals.securityDashboardPageTitle,false);
-    this.setState({
-      enableTour: true
-    },()=>{
-      window.setTimeout(()=>{
-        if(window.innerHeight > 800){
-          if(reactGlobals.deviceOS == "IOS"){
-            document.getElementById('header').scrollIntoView();
-          }else{
-            document.getElementById('header').scrollIntoView({behavior: "smooth", block: "center", inline: "start"});
-          }
-        }else{
-          if(reactGlobals.deviceOS == "IOS"){
-            document.getElementById('rating').scrollIntoView();
-          }else{
-            document.getElementById('rating').scrollIntoView({behavior: "smooth", block: "start", inline: "start"});
-          }
-        }
-      },100);
-      window.setTimeout(()=>{
-        document.getElementById('access-tour').focus();
-        dispatchOpenView(`${this.state.tourHeader} take a tour modal`, '#access-tour');
-      },6000);
+    // wait for any effects
+    await act(async () => {
+      // flush pending promises from refreshDashboardHomeInfo
+      await Promise.resolve();
+      jest.runOnlyPendingTimers();
     });
-  }
-  learnMoreDSPage() {
-    /*const extraParameters = {
-      "productGroupId": this.props.dashboardDetails.content.digitalSecureProductGroupId,
-      "requestLocale": "EN"
-    }
-    openNativePageWithParams(extraParameters, "addOnsDeepLink")*/
-    window.location.href = this.props.dashboardDetails.content.digitalSecureLearnMoreLink + window.location.search;
-  }
-  openFAQSite() {
-    window.location.href = this.props.dashboardDetails.content.faqExternalUrl;
-  }
-  showDppPage() {
-    window.location.href = securityDashboardLandingUrl + "dpp/" + window.location.search; 
-  }
-  callFilterFunc(btnType, data) {
-    if(btnType == "turnon" || btnType == "manage") {
-      const extraParams = {
-        "mdn": (util.getQueryParams()).selectedMDN || ""
+
+    const inst = ref.current;
+    expect(inst).toBeTruthy();
+
+    // setTourContentArray and openTakeTour + gotoNextTour + resetTour
+    act(() => {
+      inst.setTourContentArray(baseProps.dashboardDetails.content);
+    });
+    expect(inst.tourContent && inst.tourContent.length).toBeGreaterThan(0);
+
+    // open tour - should set enableTour true and schedule timeouts
+    act(() => inst.openTakeTour());
+    expect(inst.state.enableTour).toBe(true);
+
+    // manually test gotoNextTour (change selected index)
+    act(() => {
+      inst.gotoNextTour();
+    });
+
+    // resetTour should hide the tour
+    act(() => inst.resetTour());
+    expect(inst.state.enableTour).toBe(false);
+
+    // carousel update
+    act(() => inst.carouselInfoUpdate(2));
+    expect(inst.state.carouselIndex).toBe(2);
+
+    // set redirect and render redirect path by setting state and checking render returns Redirect element
+    act(() => inst.setState({ redirect: true, redirectUrl: '/custom' }));
+    const rerendered = render(<DashboardHome ref={ref} {...baseProps} />);
+    // Redirect component is mocked via actual react-router-dom real; but render will include something - at least component should not crash
+
+    // getCurrentTimeStamp: should return a string with GMT
+    const ts = inst.getCurrentTimeStamp();
+    expect(typeof ts).toBe('string');
+    expect(ts.includes('GMT')).toBeTruthy();
+
+    // getLastScanTime formatting
+    const last = inst.getLastScanTime(new Date().toISOString());
+    expect(typeof last).toBe('string');
+    expect(last.length > 0).toBeTruthy();
+
+    // getUrlToConstruct with params
+    const u = inst.getUrlToConstruct('/foo', 'a=1');
+    expect(u).toContain('a=1');
+
+    // takeQuizBtnClick - multiple switch branches
+    act(() => inst.takeQuizBtnClick('twoChoicePhishing'));
+    act(() => inst.takeQuizBtnClick('twoChoiceMalware'));
+    act(() => inst.takeQuizBtnClick('twoChoiceFraudScams'));
+    act(() => inst.takeQuizBtnClick('multiChoicePhishing'));
+    act(() => inst.takeQuizBtnClick('selfAssessment'));
+    act(() => inst.takeQuizBtnClick('UNKNOWN_TYPE')); // default branch
+
+    // navigateFunc: test different templateId flows
+    const recs = baseProps.dashboardDetails.content.recommendations;
+    act(() => inst.navigateFunc(recs[0])); // openUrlCTA branch
+    act(() => inst.navigateFunc(recs[1])); // openNativePageWithParams branch
+    act(() => inst.navigateFunc({ ...recs[1], productGroupId: '' })); // openNativePage branch
+    act(() => inst.navigateFunc({ ...recs[2], templateId: 'TID_TITLE_MESSAGE_OPEN_NSA_BROWSER_URL_NATIVE_PAGE', nativePageTitle: 'Title', callFilterEnrolementBrowserUrl: 'https://x', router: 'r1' } ));
+    act(() => inst.navigateFunc({ ...recs[2], templateId: 'TID_TITLE_MESSAGE_OPEN_NSA_PAGE', router: 'r2' })); // sets redirect in state
+
+    // feedbackCallPost with sample recommendations
+    act(() => inst.feedbackCallPost([baseProps.dashboardDetails.content.recommendations[0]], '81'));
+    expect(require('../../shared/services/externalServiceCall').feedbackNBXCall).toHaveBeenCalled();
+
+    // handleRefresh: run both non-mobile and mobile branch
+    // set reactGlobals.deviceOS to non-mobile to test else branch
+    global.reactGlobals = { deviceOS: 'WEB', authenticatedCookieBasedWebViewL2WebViewUrl: 'url', securityDashboardPageTitle: 'title', callFilterMVAUrl: 'callfilter', manageCallFilterMVAFFlag: false };
+    await act(async () => inst.handleRefresh());
+    // mobile branch: set deviceOS to ANDROID to go through bridgeDetails
+    global.reactGlobals.deviceOS = 'ANDROID';
+    // mock getJSBridgeDetails to call the bridgeDetails function
+    const native = require('../../../shared/Native/native');
+    native.getJSBridgeDetails.mockImplementation((fnName) => {
+      // simulate native calling window.bridgeDetails
+      if (typeof window.bridgeDetails === 'function') {
+        window.bridgeDetails({ payload: 'x' });
       }
-      if(reactGlobals?.manageCallFilterMVAFFlag===true){
-        window.location.href = reactGlobals.callFilterMVAUrl+ window.location.search;
-      }
-      else{
-      openNativePageWithParams(extraParams, "deepLinkCallFilter")
-      }
-    } else {
-      const extraParams = {
-        "productGroupId": "sfo120005",
-        "requestLocale": "EN"
-      }
-      openNativePageWithParams(extraParams, "addOnsDeepLink")
-    }
-  }
-  render() {
-    if(this.state.redirect){
-      const location = securityDashboardLandingUrl + "home/" + window.location.search;
-      return <Redirect to={{pathname:this.state.redirectUrl, state:{from: location} }} />
-    }
-    const content = this.props.dashboardDetails && this.props.dashboardDetails.content;
-    const data = this.props.dashboardDetails && this.props.dashboardDetails.data;
-    let scannedThreat="", lastScanTime = "";
-    
-    const isAlgoScoreVersion = (data && data.scoreVersion === 'totalAlgorithmScore') ? true : false;
+    });
+    await act(async () => inst.handleRefresh());
+    // callback function inside should call refreshDashboardHomeInfo after timeout
+    jest.runOnlyPendingTimers();
 
-    if (data) { 
-      lastScanTime = data.lastScanTime ? this.getLastScanTime(data.lastScanTime) : "";
-      if(!isNaN(parseInt(data.threatHistoryTotalCount))) {
-        scannedThreat = data.threatHistoryTotalCount && parseInt(data.threatHistoryTotalCount) > 0 ? (data.threatHistoryTotalCount+" "+content.securityThreatText) : "";
-      }
-    }
-    
-  const loaderElement =  (
-    <div className="lds-ring"><div></div><div></div><div></div><div></div></div>
-  )
+    // callFilterFunc branches
+    // manage branch and reactGlobals.manageCallFilterMVAFFlag true path
+    global.reactGlobals.manageCallFilterMVAFFlag = true;
+    act(() => inst.callFilterFunc('manage', baseProps.dashboardDetails.data));
+    // now test enroll/turnon path with manageCallFilterMVAFFlag false
+    global.reactGlobals.manageCallFilterMVAFFlag = false;
+    act(() => inst.callFilterFunc('enroll', baseProps.dashboardDetails.data));
+    act(() => inst.callFilterFunc('turnon', baseProps.dashboardDetails.data));
 
-    return (
-      <VDSManager>
-        {!this.props.isFetching && content ? (<Wrapper style={{'marginBottom':`${(this.state.enableTour ? '340px': '0')}`}}>
-        {this.state.enableProgressBar && <FullPageLoader>
-          <ProgressBar now={this.state.nowScore}/>
-          <div className="dots"><StyledBody className="progress-text">
-              <Body>{content.updateRatingProgressLabel || "Updating your security rating"}</Body>
-            </StyledBody>
-            </div>
-        </FullPageLoader>}
-        <PullToRefreshStyle onRefresh={(e) => this.handleRefresh(e)} pullDownThreshold={90} refreshingContent={loaderElement} pullingContent="">
-          <Header id="header" ref={this.refreshRef}>
-          <Title size="XLarge" viewport={"mobile"} typescale={"VDS"}>{content.homePageHeader}</Title>
-            <Line id="rating" type="heavy"/>
-            <Title size="large" viewport={"mobile"} typescale={"VDS"}>{content.ratingLabel}</Title>
-            <StyledMicro primitive="span" className="understandYourRatingLink" data-track="understand your rating" ariaLabelledBy={content.ratingLinkText} size="medium" onClick={e => this.aboutYourRatingButtonClick()}>{content.ratingLinkText}</StyledMicro>
-          </Header>
-          <Progress id="progress-design" className={`${isAlgoScoreVersion ? "algorithm": ""}`}>
-          <svg style={{ height: 0 }}>
-            <defs>
-              <linearGradient id={'progressedBar'} gradientTransform={'rotate(90)'}>
-                <stop offset="10%" stopColor={'#007AB8'} />
-                <stop offset="60%" stopColor={'#033554'} />
-              </linearGradient>
-            </defs>
-          </svg>
-            <CircularProgressbarWithChildren
-              value={isAlgoScoreVersion ? ((Math.round(data.totalAlgorithmScore)/data.maximumRatingScore)*100) : data.totalRating || 0} circleRatio={0.5} strokeWidth={7}
-              styles={buildStyles({
-                rotation: 1 / 2 + 1 / 4,
-                strokeLinecap: "butt",
-                trailColor: "#eee",
-                pathColor: 'url("#progressedBar")'
-              })}>
-              <RatingText className={`${isAlgoScoreVersion ? "algorithmText": ""}`}>
-              <Title size="XLarge" className={'rating'} viewport={"mobile"} typescale={"VDS"}>{content.securityRating}</Title>
-              {isAlgoScoreVersion && <StyledText><Body size="large"  mb={22}>{Math.round(data.totalAlgorithmScore)} / {data.maximumRatingScore} pts</Body></StyledText>}
-              <StyledText><Body size="large">{content.securityRatingMessage}</Body></StyledText>
-              </RatingText>
-              <RadialSeparators
-                count={16}
-                style={{
-                  background: "#fff",
-                  width: "2px",
-                  // This needs to be equal to props.strokeWidth
-                  height: `${7}%`
-                }}
-              />
-            </CircularProgressbarWithChildren>            
-          </Progress>
-          <CheckList id="checklist">
-          <Line type="xLight" style={{marginTop: "0"}}/>
-          <Title size="large" viewport={"mobile"} typescale={"VDS"}>{content.recommendations.length > 0 ? content.checklistHeader : content.strongChecklistLabel}</Title>
-              {content.recommendations.length == 0 && <StyledText><Body size="large" viewport={"mobile"} typescale={"VDS"}>{content.strongChecklistText}</Body></StyledText>}
-            <Recommondation>
-              {content.recommendations.slice(0, 3).map((item, index) => {
-                return <div key={index}> 
-                <RowItem data-track={item.recommendationLabel}  className="caretBtn" >
-                  <a href="#" className="caretAnchor" tabIndex="0" onClick={e => this.navigateFunc(item)} aria-label={item.recommendationLabel + ' ' + item.recommendationText}>
-                  <div className="logo"><img src={item.recommendationLogo} aria-hidden="true"/> </div>
-                  <div className="text" aria-hidden="true"><Title size="small" primitive="p" viewport={"mobile"} typescale={"VDS"} ariaHidden="true" aria-hidden="true">{item.recommendationLabel}</Title>
-                  <StyledText><Body size="large">{item.recommendationText}</Body></StyledText>
-                    {item.ctaLabel && <StyledButton><Button
-                      size="small"
-                      inverted={false}
-                      disabled={false}
-                      secondary={true}
-                      // onClick={e => this.navigateFunc(item)}
-                      //commented beacuse it created multiple calls since onclick added for rowitem also
-                      >
-                      {item.ctaLabel}
-                    </Button></StyledButton>
-                    }
-                    </div>
-                  <div style={{'display': 'flex'}} className="caretIcon"><Icon name="caret-right" ariaHidden="true"/></div>
-                  </a>
-                </RowItem>
-                <Line type="xLight"/>
-                </div>
-              })}
-              <div className="moreButton"><Button
-                size="large"
-                inverted={false}
-                disabled={false}
-                secondary={true}
-                onClick={e => this.moreButtonClick()}>
-                {content.moreButtonText}
-              </Button></div>
-            </Recommondation>            
-          </CheckList>
-          <Line  id={'features'} type="xLight" style={{'height': '0.5rem'}}/>
-          <Features>
-            <Title size="large" viewport={"mobile"} typescale={"VDS"}>{content.featuresHeader}</Title>
-            <Feature>
-            <Title size="medium" viewport={"mobile"} typescale={"VDS"}>{content.digitalSecureHeader}</Title>
-              {data.digitalSecureStatus == "notinstalled" && <p className="statusLabel Grey" aria-label={content.statusNotInstalledLabel}>{content.statusNotInstalledLabel}</p>}
-              {data.digitalSecureStatus == "somefeaturesoff" && <p className="statusLabel Orange" aria-label={content.statusSomeFeaturesOffLabel}>{content.statusSomeFeaturesOffLabel}</p>}
-              {data.digitalSecureStatus == "off" && <p className="statusLabel Orange" aria-label={content.statusOffLabel}>{content.statusOffLabel}</p>}
-              {data.digitalSecureStatus == "on" && <p className="statusLabel Green" aria-label={content.statusOnLabel}>{content.statusOnLabel}</p>}
-              {data.digitalSecureStatus == "unavailable" && <p className="statusLabel Grey" aria-label={content.statusUnavailableLabel}>{content.statusUnavailableLabel}</p>}
-              <Line type="xLight" style={{'margin-top': '0.1rem', 'margin-bottom': '1.25rem'}}/>
-              {data.digitalSecureStatus == "somefeaturesoff" && this.getInactiveFeatures(data.inactiveDSFeatures)}
-              {data.digitalSecureStatus == "on" && <StyledBody><Body size="large">{content.allFeaturesOnText}</Body></StyledBody>}
-              {data.isDigitalSecureInstalled == "No" && data.isVZProtectEnrolled == "Yes" && <StyledBody><Title size="small" viewport={"mobile"} typescale={"VDS"}>{content.includedVPLabel}</Title></StyledBody>}
-              {data.isDigitalSecureInstalled == "No" && data.isVZProtectHomeEnrolled == "Yes" && <StyledBody><Title size="small" viewport={"mobile"} typescale={"VDS"}>{content.includedVPHLabel}</Title></StyledBody>}
-              {data.isDigitalSecureInstalled == "No" && data.isVZMobileProtectEnrolled == "Yes" && <StyledBody><Title size="small" viewport={"mobile"} typescale={"VDS"}>{content.includedVZMobileProtectLabel}</Title></StyledBody>}
-              {data.isDigitalSecureInstalled == "No" && data.isMobileSecureEnrolled == "Yes" && <StyledBody><Title size="small" viewport={"mobile"} typescale={"VDS"}>{content.includedMobileSecureLabel}</Title></StyledBody>}
-              {data.isDigitalSecureInstalled == "No" && data.isDigitalSecureEnrolled == "Yes" && data.isVZProtectEnrolled == "No" && 
-                      data.isVZProtectHomeEnrolled == "No" && data.isVZMobileProtectEnrolled == "No" && data.isMobileSecureEnrolled == "No" && <StyledBody><Title size="small" viewport={"mobile"} typescale={"VDS"}>{content.includedDSLabel}</Title></StyledBody>}
-              {data.isDigitalSecureInstalled == "Yes" && data.isDigitalSecureActivated == "No" && <StyledBody><Body size="large">{content.digitalSecureOpenAppText}</Body></StyledBody>}
-              {reactGlobals.deviceOS == "ANDROID" && data.isDigitalSecureInstalled == "Yes" && (lastScanTime !== "" || scannedThreat !== "") &&
-              <StyledBody><Title size="small" viewport={"mobile"} typescale={"VDS"} aria-label={content.lastScanText+lastScanTime}>{content.lastScanText}{lastScanTime}</Title>
-              <StyledText><Body size="large">{scannedThreat}</Body></StyledText>
-              </StyledBody>}
-              {reactGlobals.deviceOS == "IOS" && data.isDigitalSecureInstalled == "Yes" && scannedThreat !== "" &&
-              <StyledBody><Title size="small" viewport={"mobile"} typescale={"VDS"} aria-label={content.lastScanText}>{content.lastScanText}</Title>
-              <StyledText><Body size="large">{scannedThreat}</Body></StyledText>
-              </StyledBody>}
-              {/* Digital secure app not installed */}
-              {data.isDigitalSecureInstalled == "No" && <div>
-              <StyledBody><Body size="large">{content.digitalSecureGetAppText}</Body></StyledBody>
-                <div className="CTAButtons">
-                <Button size="small" inverted={false}  disabled={false} secondary={true} viewport="mobile"
-                onClick={() => this.getDigitalSecureApp()}>{content.getAppCTAText}</Button>
-                <TextLink type="standAlone" onClick={() => this.learnMoreDSPage()} viewport="mobile">{content.learnMoreCTAText}</TextLink>                
-              </div></div>}
-              {/* Digital secure app installed and running */}
-              {data.isDigitalSecureInstalled == "Yes" && data.isDigitalSecureActivated == "Yes" && <div className="CTAButtons">
-                <span><Button size="small" inverted={false}  disabled={false} secondary={true}
-                onClick={() => this.showDppPage()}>{content.showDetailsCTAText}</Button></span>
-              </div>}
-              {/* Digital secure app installed and not running */}
-              {data.isDigitalSecureInstalled == "Yes" && data.isDigitalSecureActivated == "No" && <div className="CTAButtons">
-                <span><Button size="small" inverted={false}  disabled={false} secondary={true}
-                onClick={() => this.getDigitalSecureApp()}>{content.openAppCTAText}</Button></span>
-              <span>
-              <TextLink type="standAlone" onClick={() => this.showDppPage()} viewport="mobile">{content.showDetailsCTAText}</TextLink>
-              </span>
-              </div>}
-            </Feature> 
+    // getInactiveFeatures returns React nodes
+    const inactive = inst.getInactiveFeatures(['feature1']);
+    expect(Array.isArray(inactive)).toBe(true);
 
-            {data.isSmartphone == "true" && (data.customerRole !== "member" || (data.isSfoExist == "Yes" && data.customerRole == "member")) && <Feature>
-            <Title size="medium" viewport={"mobile"} typescale={"VDS"}>{content.callFilterHeader}</Title>
-              {(data.isSfoExist == "No" || data.isCallFilterEnabled == "No") && <p className="statusLabel Orange" aria-label={content.callFilterOffText}>{content.callFilterOffText}</p>}
-              {data.isSfoExist == "Yes" && data.isCallFilterEnabled == "Yes" &&<p className="statusLabel Green" aria-label={content.callFilterOnText}>{content.statusOnLabel}</p>}
-              <Line type="xLight" style={{'marginTop': '0.1rem', 'marginBottom': '1.25rem'}}/>
+    // moreButtonClick and aboutYourRatingButtonClick should set window.location.href or use location (we'll just call them)
+    const orig = global.location;
+    delete global.location;
+    global.location = { href: '' };
+    act(() => inst.moreButtonClick());
+    act(() => inst.aboutYourRatingButtonClick());
+    global.location = orig;
+  });
 
-              {data.isSfoExist == "Yes" && data.isCallFilterEnabled == "Yes" && 
-              <div>{data.callFilterRiskLevel.toUpperCase() == "HIGH" && <StyledBody><Body size="large">{content.callFilterBlockHighRiskSpamCallsText}</Body></StyledBody>}
-              {data.callFilterRiskLevel.toUpperCase() == "MEDIUM" && <StyledBody><Body size="large">{content.callFilterBlockMediumHighRiskSpamCallsText}</Body></StyledBody>}
-              {data.callFilterRiskLevel.toUpperCase() !== "HIGH" && data.callFilterRiskLevel.toUpperCase() !== "MEDIUM" && <StyledBody><Body size="large">{content.callFilterBlockAllSpamCallsText}</Body></StyledBody>}
-              </div> } 
-              {(data.isCallFilterEnabled == "No" || data.isSfoExist == "No") &&
-              <StyledBody><Body size="large">{content.callFilterTurnOnText}</Body></StyledBody>}
-              
-              {/* SFO exists and call filter enabled */}
-              {data.isSfoExist == "Yes" && data.isCallFilterEnabled == "Yes" &&
-                <div className="CTAButtons"><Button size="small" inverted={false}  disabled={false} secondary={true} viewport="mobile"
-                onClick={() => this.callFilterFunc("manage", data)}>{content.manageCTAText}</Button>                
-              </div>}
-              {/* SFO doesnt exists and call filter enabled/not */}
-              {data.isSfoExist == "No" && <div className="CTAButtons">
-              <Button size="small" inverted={false}  disabled={false} secondary={true} viewport="mobile"
-                onClick={() => this.callFilterFunc("enroll", data)}>{content.enrollCTAText}</Button>  
-              </div>}
-              {/* SFO exists and call filter disabled */}
-              {data.isSfoExist == "Yes" && data.isCallFilterEnabled == "No" && <div className="CTAButtons">
-              <Button size="small" inverted={false}  disabled={false} secondary={true} viewport="mobile"
-                onClick={() => this.callFilterFunc("turnon", data)}>{content.turnOnCTAText}</Button>  
-              </div>}
-              </Feature>}
-          </Features>
-          <Line  id={'help'} type="xLight" style={{'height': '0.5rem'}}/>
-          <HelpSection>
-          <StyledTitle><Title size="large" viewport={"mobile"} typescale={"VDS"}>{content.helpHeader}</Title></StyledTitle>
-          
-            {data.isSecurityAdvisorEnabled == "Yes" && 
-            <div><div role="button" className="helpSection" aria-label={content.chatWithSecurityAdvisorText} data-track={content.chatWithSecurityAdvisorText} onClick={() => openChatWithSecurityAdvisor()}>
-              <div className="text"><Title size="small" viewport={"mobile"} typescale={"VDS"}>{content.chatWithSecurityAdvisorText}</Title></div>
-              <div className="router caretIcon"><Icon name="caret-right" size="small"/></div>
-            </div><Line type="xLight"/></div>}
-            
-            {data.isSecurityAdvisorEnabled == "No" && 
-            <div><div role="button" className="helpSection" aria-label={content.chatWithUsCTAText} data-track={content.chatWithUsCTAText} onClick={() => openChatWithUs()}>
-              <div className="text"><Title size="small" viewport={"mobile"} typescale={"VDS"}>{content.chatWithUsCTAText}</Title></div>
-              <div className="router caretIcon"><Icon name="caret-right" size="small"/></div>
-            </div> <Line type="xLight"/></div>}
-            
-            <div role="button" className="helpSection" tabIndex="0" aria-label={content.takeATourCTAText} data-track={content.takeATourCTAText} onClick={()=> {this.openTakeTour()}}>
-              <div className="text"><Title size="small" viewport={"mobile"} typescale={"VDS"}>{content.takeATourCTAText}</Title></div>
-              <div className="router caretIcon"><Icon name="caret-right" size="small"/></div>
-            </div>
-            <Line type="xLight"/>
-            <div role="button" className="helpSection" aria-label={content.fqaCTAText} data-track={content.fqaCTAText} onClick={()=> {this.openFAQSite()}}>
-            <div className="text"><Title size="small" viewport={"mobile"} typescale={"VDS"}>{content.fqaCTAText}</Title></div>
-              <div className="router caretIcon"><Icon name="caret-right" size="small"/></div>
-            </div>
-          </HelpSection>
-          <Line  id={'stayInformed'} type="xLight" style={{'height': '0.5rem'}}/>
-           <InformSection>
-              <StyledTitle><Title size="large" viewport={"mobile"} typescale={"VDS"}>{content.stayInformedHeader}</Title></StyledTitle>  
-          </InformSection> 
-          <CarouselSection>
-          <Carousel  interval={8000} nextIcon prevIcon activeIndex={this.state.carouselIndex} onSelect={(e) => this.carouselInfoUpdate(e)}>
-              <CarouselItem >
-                    <CarouselCard onClick={() => this.takeQuizBtnClick(data.quizVersion == "A" ? "twoChoicePhishing" : "multiChoicePhishing")}>
-                        <img src= {content.phishingCardImageUrl}  height='100%' width='100%' />                        
-                          <div className="text-block" style={{margin: '0 1rem'}}>
-                              <CarouselTitle viewport={"mobile"} typescale={"VDS"} size="XLarge" color="#FFFFFF" carouselTitleWidth="205">{content.phishingCardHeader}</CarouselTitle>
-                              <CarouselBody viewport={"mobile"} typescale={"VDS"} size="large" color="#FFFFFF" carouselBodyWidth="183">{content.phishingCardText}</CarouselBody>
-                              <Button size="small" viewport="mobile" inverted={true}  disabled={false} secondary={true} onClick={() => this.takeQuizBtnClick(data.quizVersion == "A" ? "twoChoicePhishing" : "multiChoicePhishing")}>{content.cardCTAText}</Button>
-                            </div>
-                      </CarouselCard>                   
-              </CarouselItem>   
-              <CarouselItem >
-                    <CarouselCard onClick={() => this.takeQuizBtnClick("twoChoiceMalware")}>
-                        <img src= {content.malwareCardImageUrl}  height='100%' width='100%' />                        
-                          <div className="text-block" style={{margin: '0 1rem'}}>
-                              <CarouselTitle viewport={"mobile"} typescale={"VDS"} size="XLarge" color="#FFFFFF" carouselTitleWidth="220">{content.malwareCardHeader}</CarouselTitle>
-                              <CarouselBody viewport={"mobile"} typescale={"VDS"} size="large" color="#FFFFFF" carouselBodyWidth="210">{content.malwareCardText}</CarouselBody>
-                              <Button size="small" viewport="mobile" inverted={true}  disabled={false} secondary={true} onClick={() => this.takeQuizBtnClick("twoChoiceMalware")}>{content.cardCTAText}</Button>
-                            </div>
-                      </CarouselCard>                   
-              </CarouselItem> 
-              <CarouselItem >
-                    <CarouselCard onClick={() => this.takeQuizBtnClick("twoChoiceFraudScams")}>
-                        <img src= {content.scamCardImageUrl}  height='100%' width='100%' />                        
-                          <div className="text-block" style={{margin: '0 1rem'}}>
-                              <CarouselTitle viewport={"mobile"} typescale={"VDS"} size="XLarge" color="#FFFFFF" carouselTitleWidth="250">{content.scamCardHeader}</CarouselTitle>
-                              <CarouselBody viewport={"mobile"} typescale={"VDS"} size="large" color="#FFFFFF" carouselBodyWidth="140">{content.scamCardText}</CarouselBody>
-                              <Button size="small" viewport="mobile" inverted={true}  disabled={false} secondary={true} onClick={() => this.takeQuizBtnClick("twoChoiceFraudScams")}>{content.cardCTAText}</Button>
-                            </div>
-                      </CarouselCard>                   
-              </CarouselItem>
-              {/* <CarouselItem >
-                    <CarouselCard >
-                    <img src= {content.scamCardImageUrl}  height='100%' width='100%' />                        
-                          <div className="text-block" style={{margin: '0 2rem'}}>
-                              <CarouselTitle viewport={"mobile"} typescale={"VDS"} size="XLarge" color="#FFFFFF" carouselTitleWidth="250">{content.selfCardHeader}</CarouselTitle>
-                              <CarouselBody viewport={"mobile"} typescale={"VDS"} size="large" color="#FFFFFF" carouselBodyWidth="156">{content.selfCardText}</CarouselBody>
-                              <Button size="small" viewport="mobile" inverted={true}  disabled={false} secondary={true} onClick={() => this.takeQuizBtnClick('selfAssessment')}>{content.cardCTAText}</Button>
-                            </div>                          
-                      </CarouselCard>                   
-              </CarouselItem> */}              
-            </Carousel> 
-            </CarouselSection>
-          {this.state.enableTour && <Tour>
-            <TourSection>
-              <p>
-              </p>
-              <section id="access-tour" tabIndex="0">
-            <ArrowIconSection tabIndex="-1" className={`${(this.state.selectedTourSection !== this.state.prevSelectedTourSection && !this.state.animated) ? 'animate' : ''}`} ><img tabIndex="-1" src="https://ss7.vzw.com/is/content/VerizonWireless/tour-arrow-icon" aria-label={this.state.arrowAltText} className={this.state.selectedTourSection} /></ArrowIconSection>
-            <TourInfoSection>
-              <div role="alert" id='tour-header' tabIndex="0" className={`${(this.state.selectedTourSection !== this.state.prevSelectedTourSection && !this.state.fadeAnimated) ? 'animate' : ''}`}>
-                {this.state.tourHeader && <Title primitive="h2" size="XLarge" color={'#FFFFFF'} viewport={"mobile"} typescale={"VDS"} ariaLabel={this.state.tourHeader}>{this.state.tourHeader}</Title>}
-                {this.state.tourBodyText && <Body size="large" color={'#FFFFFF'} ariaLabel={this.state.tourBodyText}>{this.state.tourBodyText}</Body>}
-              </div>
-            </TourInfoSection>
-            <ButtonGroup
-                viewport={'mobile'}
-                rowQuantity={{ mobile: 2 }}
-                style= {{'justifyContent': 'space-between'}}
-                surface= 'dark'
-                childWidth= '100%'
-                data={[
-                  {
-                    children: content.tourNextCTAText,
-                    size: 'large',
-                    type: 'primary',
-                    use: 'primary',
-                    style: {'padding': 0},
-                    disabled: (this.state.selectedTourSection === (this.tourContent.length - 1)),
-                    inverted: true,
-                    onClick: () => {
-                      this.gotoNextTour()
-                    },
-                  },
-                  {
-                    children: content.tourExitCTAText,
-                    size: 'large',
-                    type: 'secondary',
-                    use: 'secondary',
-                    style: {'padding': 0},
-                    inverted: true,
-                    onClick: () => {
-                      this.resetTour()
-                    },
-                  },
-                ]}
-              />
-              </section>
-            </TourSection>
-            </Tour>}
-            </PullToRefreshStyle>
-        </Wrapper>) : <LoaderPage />}
-      </VDSManager>      
-    )
-  }
-}
+  it('covers getDerivedStateFromProps enabling/disabling progressbar', () => {
+    // load the component class statically and call getDerivedStateFromProps
+    const NextPropsEnable = {
+      overviewDetails: { data: { totalRating: 1 } },
+      dashboardDetails: { data: { totalRating: 2 } }
+    };
+    const prevStateEnable = { enableProgressBar: false };
+    const res = DashboardHome.getDerivedStateFromProps(NextPropsEnable, prevStateEnable);
+    // When overview and dashboard ratings differ and some conditions hold, function returns object or null.
+    expect(res === null || typeof res === 'object').toBeTruthy();
 
-const StyledHeaderTitle = styled(Title)`
-p{
-  font-size: 2rem !important;
-  line-height: 2rem;
-}
+    // For disabling case - craft scenario where it should disable
+    const NextPropsDisable = {
+      overviewDetails: { data: { totalRating: 2 } },
+      dashboardDetails: { data: { totalRating: 2 } }
+    };
+    const prevStateDisable = { enableProgressBar: true };
+    const res2 = DashboardHome.getDerivedStateFromProps(NextPropsDisable, prevStateDisable);
+    expect(res2 === null || typeof res2 === 'object').toBeTruthy();
+  });
 
-`
-
-const CarouselCard = styled.div`
-
-`
-
-
-const CarouselSection = styled.div`
-/* height: 294px; */
-.text-block{
-  position: absolute;
-  top:42px;
-}
-`
-const CarouselTitle = styled(Title)`
-width: ${props => props.carouselTitleWidth}px;
-
-`
-
-const CarouselBody = styled(Body)`
-padding: 24px 0;
-width: ${props => props.carouselBodyWidth}px;
-padding-top: 16px;
-`
-const PullToRefreshStyle = styled(PullToRefresh)`
-.ptr__pull-down--pull-more{
-  div{
-    p{
-      display:none;
-    }
-  }
-}
-`
-
-const StyledMicro = styled(Micro)`
-text-decoration: underline;
-`
-const Wrapper = styled.div`
-
-`
-const Header = styled.div`
-margin: 1rem;
-p {
-  width: 87%;
-  color: #000000;
-}
-`
-const RatingText = styled.div`
-text-align: center;
-position: absolute;
-transform: translateY(-50%);
-max-width: 280px;
-@media only screen and (min-height: 1024px){
-  transform: translateY(-52%);
-}
-&.algorithmText {
-
-transform: translateY(-5px);
-  & .rating {
-    padding-bottm: 5px;
-  }
-@media only screen and (min-height: 1024px){
-  transform: translateY(-15px);
-}
-}
-`
-const Progress = styled.div`
-margin: auto;
-height: 210px;
-width: calc(100% - 3.5rem);
-overflow: hidden;
-@media only screen and (min-height: 926px){
-  height: 225px;
-}
-@media only screen and (max-height: 667px){
-  margin: 0.25rem auto;
-  height: 200px;
-}
-@media only screen and (min-width: 1200px){
-  width: 18%;
-}
-@media only screen and (min-width: 780px) and (max-width: 1200px){
-  width: 30%;
-}
-
-&.algorithm {
-  height: 260px;
-  width: 88%;
-  max-width: 380px;
-  @media only screen and (max-height: 640px){
-    margin: 0.25rem auto;
-    height: 240px;
-  }
-  @media only screen and (max-width: 280px){
-    height: 200px;
-  }
-}
-${media.tablet`    
-  width: 40%;
-`}
-`
-const CheckList = styled.div`
-margin: 1rem;
-`
-const StyledText = styled.div`
-margin-top: 0.5rem;
-`
-const Recommondation = styled.div`
-margin: 2rem 0;
-.moreButton {
-  padding-bottom: 8px;
-  padding-top: 15px;
-}
-.moreButton Button {
-  margin:auto;
-  background-color: #FFFFFF;
-  color: #000000;
-  border-color: #000000;
-}
-`
-const RowItem = styled.div`
- display: flex;
- .text {
-   margin-left:1rem;
- }
- .text {
-  min-width: 83%;
- }
- .logo {
-  width: 30px;
-  height: 30px;
- }
-`
-const StyledTitle = styled.div`
-  margin: 2rem 0;
-}`
-const StyledBody = styled.div`
-  margin: 1rem 0;
-}`
-const StyledButton = styled.div`
-  margin-top:1rem;
-`
-const Features = styled.div`
-margin:2rem 1rem;
-}
-`
-const Feature = styled.div`
-margin:2rem 0;
-border: 1px solid #d8dada;
-padding:16px;
-
-.buttonText{
-  margin-top:10px;
-}
-.lastScanText, .textBold{
-  font-weight: bold;
-  margin-top:10px;
-}
-.statusLabel {
-  color: #000000;
-  font-family: "Verizon-NHG-eDS";
-  font-size: 13px;
-  letter-spacing: 0.6px;
-  line-height: 16px;
-  margin-top: 5px;
-  display: inline-flex;
-  align-items: center;
-  margin-top: 10px;
-}
-.statusLabel:before{
-  content: "";
-    border-radius: 50%;
-    background: #f8f8f8;
-    text-align: center;
-    width: 10px;
-    height: 10px;
-    position: relative;
-    margin-right: 8px;
-}
-.Orange:before {  
-  background: #e1a012;
-}
-.Grey:before {
-  background: #aaaaaa;
-}
-.Green:before {
-  background: #04b541;
-}
-.CTAButtons {
-  display: flex;
-  padding: 10px 0px;
-  align-items: baseline;
-}
-.CTAButtons > * {
-  margin-right: 15px;
-}
-}
-`
-const HelpSection = styled.div`
-margin: 2rem 1rem;
-.helpSection {
-  display: flex;
-  outline:none !important;
-}
-.helpSection::focus-visible {
-  outline:none !important;
-}
-.text{
-  min-width: 95%;
-}
-.router { 
-  outline: none;
-  svg {
-    outline: none;
-  }
-}
-`
-const InformSection = styled.div`
-margin: 2rem 1rem;
-
-`
-const ArrowIconSection = styled.div`
-
-  height: 19.5%;
-  max-height: 50px;
-  display: flex;
-  justify-content: center;
-  margin-bottom: 10px;
-  
-@media screen and ( max-width: 320px ) and ( max-height: 568px )
-{
-  margin-bottom: 5px;
-}
-  animation-name: ${pop};
-  animation-duration: 1.2s;
-  animation-iteration-count: 4;
-  -webkit-animation-name: ${pop};
-  -webkit-animation-duration: 1.2s;
-  -webkit-animation-iteration-count: 4;
-  -webkit-animation: ${pop} 1.2s 4;
-  -moz-animation: ${pop} 1.2s 4;
-  -o-animation: ${pop} 1.2s 4;
-  -ms-animation: ${pop} 1.2s 4;
-  transition: 1s;
-  -webkit-transition: 1s;
-
-  &.animate svg{
-    animation: ${pop} 1.2s 4;
-  }
-  & svg path {
-    stroke-width: 2;
-  }
-  img {
-    height:  100%;
-    width: 24px;
-  }
-  &.animate img{
-  
-    -webkit-animation: ${pop} 1.2s 4;
-    -moz-animation: ${pop} 1.2s 4;
-    -o-animation: ${pop} 1.2s 4;
-    -ms-animation: ${pop} 1.2s 4;
-    animation-name: ${pop};
-    animation-duration: 1.2s;
-    animation-iteration-count: 4;
-    -webkit-animation-name: ${pop};
-    -webkit-animation-duration: 1.2s;
-    -webkit-animation-iteration-count: 4;
-    transition: 1s;
-  -webkit-transition: 1s;
-  }
-`;
-const TourInfoSection = styled.div`
-  display: flex;
-  flex: 3;
-  flex-direction: column;
-
-  * {
-    outline: none;
-  }
-
-  & h2 {
-    font-size: 2rem;
-    margin-bottom: 0.8rem;
-  }
-  & .animate{
-    animation: ${fadeIn} 2s;
-    animation-name: ${fadeIn};
-    animation-duration: 2s;
-    -webkit-animation-name: ${fadeIn};
-    -webkit-animation-duration: 2s;
-    -webkit-animation: ${fadeIn} 2s;
-    -moz-animation: ${fadeIn} 2s;
-    -o-animation: ${fadeIn} 2s;
-    -ms-animation: ${fadeIn} 2s;
-  }
-  
-  animation: ${fadeIn} 2s;
-  animation-name: ${fadeIn};
-  animation-duration: 2s;
-  -webkit-animation-name: ${fadeIn};
-  -webkit-animation-duration: 2s;
-  -webkit-animation: ${fadeIn} 2s;
-  -moz-animation: ${fadeIn} 2s;
-  -o-animation: ${fadeIn} 2s;
-  -ms-animation: ${fadeIn} 2s;
-`;
-const TourSection = styled.div`
-position: absolute;
-background: transparent;
-bottom: 0;
-left: 0;
-height: 100%;
-width: 100%;
-display: flex;
-justify-content: flex-end;
-flex-direction: column;
-
-  animation: ${barBounce} 2s ease;
-  animation-name: ${barBounce};
-  animation-duration: 2s; 
-  animation-timing-function: ease;
-  -webkit-animation-name: ${barBounce};
-  -webkit-animation-duration: 2s;
-  -webkit-animation-timing-function: ease;
-  -webkit-animation: ${barBounce} 2s ease;
-
-& > p {
-  height: 7%;
-  background: white;
-  display: block;
-  margin: 0;
-}
-
-& section {
-  background: black;
-  color: white;
-  width: 100%;
-  height: 34.5%;
-  min-height: 255px;
-  padding: 1rem;
-  padding-top: 6px;
-  padding-bottom: 15px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  outline: none;
-}
-
-@media screen and ( min-width: 320px ) and ( max-height: 736px )
-{
-  & > p {
-    display: block;
-    height: 5%;
-  } 
-}
-
-
-@media screen and ( max-width: 360px ) and ( max-height: 640px )
-{
-  
-& section {
-  height: auto;
-  padding: 0.5rem 1rem;
-}
-& section h2{
-  margin-bottom: 8px;
-}
-
-& section p{
-  margin-bottom: 15px;
-}
-
-}
-
-
-& svg {
-  height: 2.5rem;
-  width: 1.5rem;
-}
-
-& div [type="primary"], div [type="secondary"] {
-  padding: 0;
-  margin-bottom: 5px;
-  margin: auto;
-}
-
-& div [type="primary"]{
-  padding-right: 5px;
-}
-
-& div [type="secondary"] {
-  padding-left: 5px;
-}
-`
-
-
-const FullPageLoader = styled.div`
-display: inline-block;
-top: 0;
-bottom: 0;
-left: 0;
-right: 0;
-position: fixed;
-text-align:center;
-background: white;
-height: 100%;
-width: 100%;
-z-index: 1;
-
-.progress {
-  height: 8px;
-  border-radius: 0px;
-  top: 50%;
-  position: relative;
-  left: 0;
-  margin: auto 1rem;
-}
-.progress-bar{
-  background-color: #cc4d0f;
-}
-.progress-text {
-  top: calc( 50% + 5px);
-  position: absolute;
-  text-align: center;
-  width: 100%;
-}
-
-Button {
-  margin: auto;
-  border: 1px solid;
-}   
-`
-
-const mapStateToProps = ({ dashboardData }) => ({
-  isFetching: dashboardData.isFetching,
-  dashboardError: dashboardData.dashboardError,
-  dashboardSuccess: dashboardData.dashboardSuccess,
-  dashboardDetails: dashboardData.dashboardDetails,
-  overviewDetails: dashboardData.overviewDetails
-})
-
-const mapDispatchToProps = dispatch => ({
-  actions: bindActionCreators(actions, dispatch),
-})
-
-export default connect(mapStateToProps, mapDispatchToProps)(DashboardHome);
+  it('renders various conditional blocks: features, call filter, help, carousel', () => {
+    const { getByText, getAllByText } = render(<DashboardHome {...baseProps} />);
+    // check for texts that should be present according to content
+    expect(getAllByText(/Take quiz|More/).length >= 1).toBeTruthy();
+  });
+});

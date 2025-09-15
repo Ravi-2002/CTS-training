@@ -1,16 +1,89 @@
-import DashboardHome from "../Project/code"; // adjust path
+import React from "react";
+import { render, act } from "@testing-library/react";
+import DashboardHome from "../Project/code";   // adjust path
+import * as native from "../../../shared/Native/native";
 
-const baseProps = {
-  dashboardDetails: {
-    isFetching: false,
-    data: { sections: [], pageContent: {} },
-  },
-  history: { push: jest.fn() },
-  getSecurityProtectDashboardDetails: jest.fn(),
-};
+jest.mock("../../../shared/Native/native", () => ({
+  openNativePageWithParams: jest.fn(),
+}));
 
-global.reactGlobals = {
-  manageCallFilterMVAFFlag: true,
-  callFilterMVAUrl: '/mvaUrl',
-  securityDashboardPageTitle: 'Title',
-};
+describe("DashboardHome callFilterFunc coverage", () => {
+  const baseProps = {
+    dashboardDetails: {
+      isFetching: false,
+      data: { sections: [], pageContent: {} },
+    },
+    history: { push: jest.fn() },
+    getSecurityProtectDashboardDetails: jest.fn(),
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    global.reactGlobals = {
+      manageCallFilterMVAFFlag: true,
+      callFilterMVAUrl: "/mvaUrl",
+      securityDashboardPageTitle: "Title",
+    };
+  });
+
+  it("covers manage branch with manageCallFilterMVAFFlag = true", () => {
+    const ref = React.createRef();
+    render(<DashboardHome ref={ref} {...baseProps} />);
+    const inst = ref.current;
+
+    const originalLocation = window.location;
+    delete window.location;
+    window.location = { href: "" };
+
+    act(() => {
+      inst.callFilterFunc("manage", baseProps.dashboardDetails.data);
+    });
+    expect(window.location.href).toContain("/mvaUrl");
+
+    window.location = originalLocation;
+  });
+
+  it("covers manage branch with manageCallFilterMVAFFlag = false", () => {
+    global.reactGlobals.manageCallFilterMVAFFlag = false;
+
+    const ref = React.createRef();
+    render(<DashboardHome ref={ref} {...baseProps} />);
+    const inst = ref.current;
+
+    act(() => {
+      inst.callFilterFunc("manage", baseProps.dashboardDetails.data);
+    });
+    expect(native.openNativePageWithParams).toHaveBeenCalledWith(
+      expect.any(Object),
+      "deepLinkCallFilter"
+    );
+  });
+
+  it("covers enroll branch", () => {
+    const ref = React.createRef();
+    render(<DashboardHome ref={ref} {...baseProps} />);
+    const inst = ref.current;
+
+    act(() => {
+      inst.callFilterFunc("enroll", baseProps.dashboardDetails.data);
+    });
+    expect(native.openNativePageWithParams).toHaveBeenCalledWith(
+      expect.any(Object),
+      "addOnsDeepLink"
+    );
+  });
+
+  it("covers turnon branch", () => {
+    const ref = React.createRef();
+    render(<DashboardHome ref={ref} {...baseProps} />);
+    const inst = ref.current;
+
+    act(() => {
+      inst.callFilterFunc("turnon", baseProps.dashboardDetails.data);
+    });
+    expect(native.openNativePageWithParams).toHaveBeenCalledWith(
+      expect.any(Object),
+      "deepLinkCallFilter"
+    );
+  });
+});

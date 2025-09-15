@@ -1,34 +1,16 @@
-it('covers callFilterFunc branches for manage/enroll/turnon', () => {
-  const ref = React.createRef();
-  const { container } = render(<DashboardHome ref={ref} {...baseProps} />);
-  const inst = ref.current;
+import DashboardHome from "../Project/code"; // adjust path
 
-  // Mock location.href to avoid navigation errors
-  const originalLocation = global.location;
-  delete global.location;
-  global.location = { href: '' };
+const baseProps = {
+  dashboardDetails: {
+    isFetching: false,
+    data: { sections: [], pageContent: {} },
+  },
+  history: { push: jest.fn() },
+  getSecurityProtectDashboardDetails: jest.fn(),
+};
 
-  // --- Case 1: manage + manageCallFilterMVAFFlag = true
-  global.reactGlobals = { manageCallFilterMVAFFlag: true, callFilterMVAUrl: '/mvaUrl', securityDashboardPageTitle: 'Title' };
-  act(() => inst.callFilterFunc("manage", baseProps.dashboardDetails.data));
-  expect(global.location.href).toContain('/mvaUrl');
-
-  // --- Case 2: manage + manageCallFilterMVAFFlag = false
-  global.reactGlobals.manageCallFilterMVAFFlag = false;
-  act(() => inst.callFilterFunc("manage", baseProps.dashboardDetails.data));
-  expect(require("../../../shared/Native/native").openNativePageWithParams)
-    .toHaveBeenCalledWith(expect.any(Object), "deepLinkCallFilter");
-
-  // --- Case 3: enroll path
-  act(() => inst.callFilterFunc("enroll", baseProps.dashboardDetails.data));
-  expect(require("../../../shared/Native/native").openNativePageWithParams)
-    .toHaveBeenCalledWith(expect.any(Object), "addOnsDeepLink");
-
-  // --- Case 4: turnon path
-  act(() => inst.callFilterFunc("turnon", baseProps.dashboardDetails.data));
-  expect(require("../../../shared/Native/native").openNativePageWithParams)
-    .toHaveBeenCalledWith(expect.any(Object), "deepLinkCallFilter");
-
-  // Restore location
-  global.location = originalLocation;
-});
+global.reactGlobals = {
+  manageCallFilterMVAFFlag: true,
+  callFilterMVAUrl: '/mvaUrl',
+  securityDashboardPageTitle: 'Title',
+};

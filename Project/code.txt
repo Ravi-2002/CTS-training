@@ -1,56 +1,45 @@
-import { render, screen, act } from "@testing-library/react";
-import Devices from "../Devices";   // adjust path
 import axios from "axios";
+import { changeParent } from "./devices"; // adjust path to your devices file
 
 jest.mock("axios");
-jest.useFakeTimers();
 
-it("should call axios.post inside changeParent", async () => {
-  const mockRes = { data: { body: { valid: true } } };
-  axios.post.mockResolvedValueOnce(mockRes);
-
-  const props = {
-    cDeviceDetails: [
-      { linkedMdn: "111", parentId: "p1", formattedMdn: "111", deviceType: "PHONE", type: "parentline" },
-      { linkedMdn: "222", parentId: "p2", formattedMdn: "222", deviceType: "PHONE", type: "childline" }
-    ],
-    deviceDetails: [],
-    devicesSection: { contents: [{ items: [] }] },
-    moveLineRequest: jest.fn(),
-    setSpkDragError: jest.fn(),
-    deviceContainerInFocus: jest.fn(),
-  };
-
-  render(<Devices {...props} />);
-
-  const announce = jest.fn();
-
-  const result = {
-    source: { index: 0 },
-    destination: { index: 1 },
-    draggableId: "id123",   // not SPK
-    reason: "DROP",
-  };
-
-  // Call onDragEnd manually
-  const instance = screen.getByTestId("DevicesTestId");
-  const { onDragEnd } = instance.parentElement._reactInternals.child.pendingProps; 
-  // ⚠️ depending on your setup you may need to pass `onDragEnd` via DragDropContext mock
-
-  act(() => {
-    onDragEnd(result, { announce });
-    // fast-forward the 100ms timeout
-    jest.runAllTimers();
+describe("changeParent coverage", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  // ✅ assert axios.post hit
-  expect(axios.post).toHaveBeenCalledWith(
-    expect.any(String),
-    expect.objectContaining({
-      moveFrom: "p1",
-      moveTo: "p2",
-      secondaryDevice: "123",
-    }),
-    expect.any(Object)
-  );
+  it("should call axios.post with correct params", async () => {
+    // mock apiUrl()
+    const mockApiUrl = () => ({
+      retrieveNumberShareDetails: "/mock-endpoint"
+    });
+    global.apiUrl = mockApiUrl; // if apiUrl is global, mock it like this
+
+    // mock axios response
+    axios.post.mockResolvedValue({ data: { status: "200" } });
+
+    const params = {
+      moveFrom: "123",
+      secondaryDevice: "456",
+      moveTo: "789"
+    };
+
+    await changeParent(params);
+
+    expect(axios.post).toHaveBeenCalledWith(
+      "/mock-endpoint",
+      {
+        trunkMdn: "123",
+        branchMtn: "456",
+        newtrunkMdn: "789",
+        numberShareIndicator: "M"
+      },
+      {
+        headers: {
+          pageName: "numberShare",
+          flowName: "numberShare"
+        }
+      }
+    );
+  });
 });

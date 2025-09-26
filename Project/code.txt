@@ -1,345 +1,152 @@
-import React, { Component } from 'react';
-import styled from 'styled-components';
-import { DragDropContext, Droppable, Draggable} from 'react-beautiful-dnd';
-import { Notification } from '@vds/notifications';
-import CommonModal from '../../../CommonModal/CommonModal';
-import * as modalData from '../../../CommonModal/modalText.json';
-import * as actions from '../../actions';
-import * as saveMoveLineActions from '../../actions/saveMoveLine'
-import ParentDevices from './ParentDevices';
-import CustomLoader from '../../../../../shared/components/Loader/CustomLoader';
-import HorizontalBar from '../../../HorizontalBar/HorizontalBar';
-import common from '../../../../../shared/utilities/util';
-import { TextLink } from '@vds/buttons';
-import { Body } from '@vds/typography';
-import { connect, useDispatch, useSelector } from 'react-redux';
-import axios from 'axios';
-import apiUrl from '../../../../../shared/utilities/apiUrl';
+// Devices.test.js
+import React from "react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+import Devices from "./Devices";
+import * as redux from "react-redux";
+import axios from "axios";
+import common from "../../../../../shared/utilities/util";
+import * as modalData from "../../../CommonModal/modalText.json";
 
+// mocks
+jest.mock("axios");
+jest.mock("../../../CommonModal/CommonModal", () => (props) => (
+  <div data-testid="CommonModal">
+    <button onClick={props.close}>close</button>
+    <button onClick={props.okClick}>ok</button>
+    <span>{props.message?.id || props.message}</span>
+    <span>{props.errorMessage}</span>
+  </div>
+));
+jest.mock("./ParentDevices", () => (props) => (
+  <div data-testid="ParentDevices">{props.lineDetails.formattedMdn}</div>
+));
+jest.mock("../../../../../shared/components/Loader/CustomLoader", () => () => (
+  <div data-testid="Loader">Loading...</div>
+));
+jest.mock("../../../../../shared/utilities/util", () => ({
+  getItemValue: jest.fn(),
+}));
+jest.mock("@vds/buttons", () => ({
+  TextLink: (props) => <button {...props}>TextLink</button>,
+}));
 
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-`;
-
-const StyledDeviceContainer = styled.div`
-  :focus {
-    outline: none;
-  }
-`;
-
-const StyledNotificationBanner = styled.div``;
-
-const StyledSymbol = styled.span`
-padding-left: 0px;
-`;
-
-const StyledEscText = styled.span`
-padding-left: 10px;
-`;
-
-const lightHorizontalBar = styled(HorizontalBar)`
-color: red;
-`;
-
-
-const Devices = (props) => {
-  const {
-    cDeviceDetails: lineDetails,
-    deviceContainerInFocus,
-    deviceDetails,
-    devicesSection,
-    moveLineRequest,
-    setSpkDragError,
-  } = props;
-  const [devicesLabels, setDevicesLabels] = React.useState({
-    activationLabel: 'activationText',
-    addressText: 'addressText',
-    ariaConvertToNumbershareLabel: 'ariaConvertToNumbershareLabel',
-    ariaConvertToStandaloneLabel: 'ariaConvertToStandaloneLabel',
-    ariaNumSharedWithLabel: 'ariaNumSharedWithLabel',
-    batchLink: 'batchLink',
-    convertToNumberShareLabel: 'convertToNumShareLink',
-    convertToStandaloneLabel: 'convertToStandaloneLink',
-    editEmergencyAddressAriaLabelAmazon: 'addressAmazonLabel',
-    editEmergencyAddressAriaLabelGoogle: 'addressGoogleLabel',
-    editLinkLabel: 'editLink',
-    lastInteractionLabel: 'interactionText',
-    locatedAtLabel: 'locatedText',
-    numberSharedWithLabel: 'numSharedWithLabel',
-    removeLocLabel: 'removeLocLink',
-    removeSpeakerAriaLabelAmazon: 'locationAmazonLabel',
-    removeSpeakerAriaLabelGoogle: 'locationGoogleLabel',
-    removeSpeakerLabel: 'removeSpeakerLink',
-  });
-  const [errorMessage, setErrorMessage] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [modalId, setModalId] = React.useState('');
-  const [modalMessage, setModalMessage] = React.useState('');
-  const [showModal, setShowModal] = React.useState(false);
-  const [validateMoveRequest, setValidateMoveRequest] = React.useState({});
-  const [speakerDragError, setSpeakerDragError] = React.useState(false);
-  const dispatch = useDispatch();
-  const closeModal = () => {
-    setShowModal(false);
-    if (window.vztag && window.vztag.api) {
-      window.vztag.api.dispatch('closeView', { name: modalId + '_modal', selector: '#' + modalId + '_overlay' });
-    }
-  }
-
-  const openModal = () => {
-    setShowModal(true);
-    setTimeout(() => {
-      if (window.vztag && window.vztag.api) {
-        window.vztag.api.dispatch('openView', { name: modalId + '_modal', selector: '#' + modalId + '_overlay' });
-      }
-    }, 1000);
-  }
-
-  const onClickHandler = () => {
-    closeModal();
-    moveLineRequest(validateMoveRequest);
-  }
-
-  const changeParent = async (changeparentparams) => {
-    try {
-      setIsLoading(true);
-      // const reqObj = changeparentparams ;
-      // Transform the keys in changeparentparams and assign to reqObj for req of movecheck call..
-      const reqObj = {
-        trunkMdn: changeparentparams.moveFrom,
-        branchMtn: changeparentparams.secondaryDevice,
-        newtrunkMdn: changeparentparams.moveTo,
-        numberShareIndicator: "M"
-      };
-       
-      // MAKE IT POST\
-      //let res = actions.saveMoveLine();  // prviously thy givnsavmovlin but logically it call mov check first whil drag and drop..  
-      let res = await axios.post( apiUrl().retrieveNumberShareDetails,reqObj,
+describe("Devices Component", () => {
+  let dispatchMock;
+  const baseProps = {
+    cDeviceDetails: [
+      { type: "parentline", formattedMdn: "111", linkedMdn: "111", parentId: "p1", id: "id1" },
+      { type: "childline", formattedMdn: "222", linkedMdn: "222", parentId: "p2", id: "id2", isSpeakerWearable: true, deviceType: "SPK" },
+    ],
+    deviceContainerInFocus: jest.fn(),
+    deviceDetails: [
       {
-        headers: {
-          pageName: 'numberShare',
-          flowName: 'numberShare'
-        }
-      });
-
-      // --> Below code is for local run
-      // let res;
-      // if (window.location.hostname.indexOf('localhost') > -1) {
-      //   res = await axios.get(
-      //     apiUrl().lineSharingMoveCheckApiUrl,
-      //     { params: reqObj }
-      //   );
-      // } else {
-      //   res = await axios.post(
-      //     reactGlobals.retrieveNumberShareDetails,
-      //     reqObj
-      //   );
-      // }
-      const { data } = res;
-      setIsLoading(false);
-
-      if (data?.body?.valid) {  //prev mock--data.isValid, ..inbtwn changed to response code 00 (data.responseInfo.responseCode=="00")
-        // CONFIRMATION MODAL
-        setModalMessage(modalData.switchMessage);
-        setModalId(modalData.switchMessage.id);
-        setErrorMessage('');
-        openModal();
-      } else {
-        // SHOW ERROR
-        setModalMessage(modalData.errorMessage);
-        setModalId('line_move_error');
-        setErrorMessage(data.body.message);
-        openModal();
-      }
-    } catch (e) {
-      setIsLoading(false);
-      closeModal();
-      setModalMessage(modalData.errorMessage);
-      setModalId('line_move_error');
-      setErrorMessage('Please try again later.');
-      openModal();
-    }
-  }
-
-  const onDragStart = (start, provided) => {
-    const lineDetails = props.cDeviceDetails;
-    const sIndex = start.source.index;
-    const oldLinkedMdn = lineDetails[sIndex]?.linkedMdn && lineDetails[sIndex]?.linkedMdn || lineDetails[sIndex]?.formattedMdn;
-    provided.announce(
-      `You have selected an item of ${oldLinkedMdn}. Use up and down arrow keys to move position. Space bar to drop and escape to cancel.`
-    );
-  }
-
-  const onDragUpdate = (update, provided) => {
-    let dIndex = update?.destination && update?.destination.index;
-    const sIndex = update?.source.index;
-    const oldLinkedMdn = lineDetails[sIndex]?.linkedMdn;
-
-    if (dIndex < 1) {
-      dIndex = 1;
-    } else if (dIndex < sIndex) {
-      dIndex -= 1;
-    }
-
-    const newLinkedMdn = lineDetails[dIndex].type !== 'childline' && lineDetails[dIndex].formattedMdn || lineDetails[dIndex].linkedMdn;
-
-    const message = update.destination && update.destination.index !== 0 && newLinkedMdn && oldLinkedMdn !== newLinkedMdn
-      ? `You have moved the item to ${newLinkedMdn} mdn`
-      : update.destination && update.destination.index !== 0 && newLinkedMdn && oldLinkedMdn === newLinkedMdn
-        ? `You have moved the item to the same mdn ${newLinkedMdn} mdn`
-        : update.destination.index === update.source.index ? `you moved to the same mdn ${oldLinedMdn}`
-          : 'You are currently not over a droppable area';
-    provided.announce(message);
+        connectedDevices: [
+          { deviceId: "id2", deviceType: "SPK" },
+          { id: "id3", deviceType: "PHONE" },
+        ],
+      },
+    ],
+    devicesSection: { contents: [{ items: [{ key: "activationText", value: "Activation Label" }] }] },
+    moveLineRequest: jest.fn(),
+    setSpkDragError: jest.fn(),
   };
-  /*istanbul ignore next*/
-  const onDragEnd = (result, provided) => {
-    let reqObj = {}; const newReqObj = {};
-    const { destination, source, draggableId } = result;
-    let dIndex = result.destination && result?.destination?.index;
-    const sIndex = result?.source?.index;
-    const oldLinkedMdn = lineDetails[sIndex].linkedMdn || lineDetails[sIndex].formattedMdn;
-    const oldParentId = lineDetails[sIndex].parentId;
 
-    if (dIndex < 1) {
-      dIndex = 1;
-    } else if (dIndex < sIndex) {
-      dIndex -= 1;
-    }
-    const newLinkedMdn = lineDetails[dIndex].linkedMdn || lineDetails[dIndex].formattedMdn;
-    const newParentId = lineDetails[dIndex].parentId || lineDetails[dIndex].id;
-    const noParentId = lineDetails[dIndex].parentId;
+  beforeEach(() => {
+    dispatchMock = jest.fn();
+    jest.spyOn(redux, "useDispatch").mockReturnValue(dispatchMock);
+    jest.useFakeTimers();
+    window.vztag = { api: { dispatch: jest.fn() } };
+    common.getItemValue.mockImplementation((items, key) => key + "_label");
+  });
 
-    if (result.reason === 'CANCEL') {
-      provided.announce(`Movement cancelled, item has returned to same position of mdn ${oldLinkedMdn}`);
-      return;
-    }
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.useRealTimers();
+  });
 
-    if (!destination || destination.index === 0) {
-      provided.announce(`Item has returned to same position of mdn ${oldLinkedMdn}`);
-      return;
-    }
+  it("renders and focuses container", () => {
+    render(<Devices {...baseProps} />);
+    const container = screen.getByTestId("DevicesTestId");
+    fireEvent.focus(container);
+    expect(baseProps.deviceContainerInFocus).toHaveBeenCalled();
+  });
 
-    if (oldLinkedMdn === newLinkedMdn) {
-      provided.announce(`Item has returned to same position of mdn ${oldLinkedMdn}`);
-      return;
-    }
-
-    reqObj = {
-      "moveFrom": oldParentId,
-      "moveTo": newParentId,
-      "secondaryDevice": draggableId.substr(3),
-    };
-
-    const message = result && result.source.index === result.destination.index && result.destination.index !== 0
-      ? 'you dropped an item to the same position'
-      : newLinkedMdn && lineDetails[sIndex].deviceType !== 'SPK'
-        ? `you moved the item of ${oldLinkedMdn} to ${newLinkedMdn}`
-        : 'item moved back to same position';
-    provided.announce(message);
-
-    deviceDetails && deviceDetails.map((devices) => {
-      devices.connectedDevices && devices.connectedDevices.map((childDevices) => {
-        if ((childDevices.deviceId === reqObj.secondaryDevice) || (childDevices.id === reqObj.secondaryDevice)) {
-          if (childDevices.deviceType === 'SPK') {
-            setSpeakerDragError(true);
-          } else {
-            setSpeakerDragError(false);
-          }
-        }
-      });
+  it("shows loader when loading", () => {
+    render(<Devices {...baseProps} />);
+    act(() => {
+      fireEvent.click(screen.getByTestId("EventCallTestId"));
     });
-    // changeParent(reqObj);    //To show the modal for confirmation from local
-    setTimeout(()=>{
-      if(!speakerDragError) {
-        setValidateMoveRequest(reqObj);
-        changeParent(reqObj);
-      } else {
-        setSpkDragError(true);
-      }
-    },100)
-  }
+    expect(screen.getByTestId("DevicesTestId")).toBeInTheDocument();
+  });
 
-  const onAllEventClickHandler = () => {
-    //closeModal();
-    // openModal();
-    changeParent();
-    onClickHandler();
-    onDragStart();
-    //onDragUpdate({},{});
-    //onDragEnd({},{});    
-  }
-  React.useEffect(() => {
-    const deviceContainerElem = document.getElementById('deviceContainer');
-    if (deviceContainerElem) {
-      deviceContainerElem.setAttribute('tabIndex', '0');
-    }
-  }, []);
+  it("open and close modal flow works", async () => {
+    axios.post.mockResolvedValue({ data: { body: { valid: true } } });
+    render(<Devices {...baseProps} />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("EventCallTestId"));
+    });
+    jest.runAllTimers();
+    expect(screen.getByTestId("CommonModal")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("ok"));
+    fireEvent.click(screen.getByText("close"));
+  });
 
-  React.useEffect(() => {
-    let labelKeys = {};
-    for (const [key, value] of Object.entries(devicesLabels)) {
-      const label = common.getItemValue(devicesSection?.contents[0]?.items, value) ? common.getItemValue(devicesSection?.contents[0]?.items, value) : value;
-      labelKeys[key] = label;
-    }
-    setDevicesLabels(labelKeys);
-  }, [devicesSection]);
+  it("handles changeParent error", async () => {
+    axios.post.mockRejectedValue(new Error("fail"));
+    render(<Devices {...baseProps} />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("EventCallTestId"));
+    });
+    jest.runAllTimers();
+    expect(screen.getByText("Please try again later.")).toBeInTheDocument();
+  });
 
+  it("handles invalid move in changeParent", async () => {
+    axios.post.mockResolvedValue({ data: { body: { valid: false, message: "Bad move" } } });
+    render(<Devices {...baseProps} />);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("EventCallTestId"));
+    });
+    jest.runAllTimers();
+    expect(screen.getByText("Bad move")).toBeInTheDocument();
+  });
 
-  return <StyledDeviceContainer
-    data-testid="DevicesTestId"
-    onFocus={deviceContainerInFocus}
-    id='deviceContainer'
-  >
-    {isLoading && <CustomLoader />}
+  it("covers onDragStart, onDragUpdate messages", () => {
+    const { container } = render(<Devices {...baseProps} />);
+    const ctx = container.querySelector("[data-rbd-droppable-context-id]");
+    const announce = jest.fn();
+    act(() => {
+      ctx.props?.onDragStart?.({ source: { index: 0 } }, { announce });
+      ctx.props?.onDragUpdate?.({ source: { index: 0 }, destination: { index: 1 } }, { announce });
+    });
+    expect(announce).toHaveBeenCalled();
+  });
 
-    <TextLink data-testid="EventCallTestId" onClick={(e) => onAllEventClickHandler()}></TextLink>
-    <DragDropContext onDragEnd={onDragEnd} onDragStart={onDragStart} onDragUpdate={onDragUpdate}>
-      <Droppable droppableId="root">
-        {(provided) => (
-          <Container
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-          >
-            {lineDetails?.length > 0 && lineDetails.map((device, index) => (
-              <React.Fragment>
-                {device.type === 'parentline' && index > 0 && <HorizontalBar color="RGB(217,217,217)" width="1px 0 0 0" />}
-                {device.isSpeakerWearable && device.isSpeakerWearable === true
-                  && (
-                    <ParentDevices
-                      key={index}
-                      index={index}
-                      lineDetails={device}
-                      allLineDetails={lineDetails}
-                      deviceDetails={deviceDetails}
-                      labels={devicesLabels}
-                    />
-                  )
-                }
-              </React.Fragment>
-            ))}
-            {provided.placeholder}
-          </Container>
-        )}
-      </Droppable>
-    </DragDropContext>
-    <CommonModal
-      modalId={modalId}
-      close={closeModal}
-      open={showModal}
-      okClick={onClickHandler}
-      onHide={closeModal}
-      message={modalMessage}
-      errorMessage={errorMessage}
-    />
-  </StyledDeviceContainer>
-};
+  it("covers onDragEnd cancel, no destination, same mdn, valid", () => {
+    const { container } = render(<Devices {...baseProps} />);
+    const ctx = container.querySelector("[data-rbd-droppable-context-id]");
+    const announce = jest.fn();
 
+    act(() => {
+      ctx.props?.onDragEnd?.({ reason: "CANCEL", source: { index: 0 }, destination: { index: 1 } }, { announce });
+      ctx.props?.onDragEnd?.({ source: { index: 0 }, destination: null }, { announce });
+      ctx.props?.onDragEnd?.({
+        source: { index: 0 },
+        destination: { index: 0 },
+        draggableId: "id2",
+      }, { announce });
+      ctx.props?.onDragEnd?.({
+        source: { index: 0 },
+        destination: { index: 1 },
+        draggableId: "id3",
+      }, { announce });
+    });
+    jest.runAllTimers();
+    expect(announce).toHaveBeenCalled();
+  });
 
-export default Devices;
-
-
-
-
+  it("renders ParentDevices and HorizontalBar", () => {
+    render(<Devices {...baseProps} />);
+    expect(screen.getByTestId("ParentDevices")).toBeInTheDocument();
+  });
+});

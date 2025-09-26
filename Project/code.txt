@@ -1,34 +1,55 @@
-it("covers axios.post call inside changeParent", async () => {
+import { render, screen, act } from "@testing-library/react";
+import Devices from "../Devices";   // adjust path
+import axios from "axios";
+
+jest.mock("axios");
+jest.useFakeTimers();
+
+it("should call axios.post inside changeParent", async () => {
   const mockRes = { data: { body: { valid: true } } };
   axios.post.mockResolvedValueOnce(mockRes);
 
-  render(<Devices {...baseProps} />);
+  const props = {
+    cDeviceDetails: [
+      { linkedMdn: "111", parentId: "p1", formattedMdn: "111", deviceType: "PHONE", type: "parentline" },
+      { linkedMdn: "222", parentId: "p2", formattedMdn: "222", deviceType: "PHONE", type: "childline" }
+    ],
+    deviceDetails: [],
+    devicesSection: { contents: [{ items: [] }] },
+    moveLineRequest: jest.fn(),
+    setSpkDragError: jest.fn(),
+    deviceContainerInFocus: jest.fn(),
+  };
+
+  render(<Devices {...props} />);
 
   const announce = jest.fn();
-  // Simulate a drag end with valid reqObj
+
   const result = {
     source: { index: 0 },
     destination: { index: 1 },
-    draggableId: "id3", // non-SPK device so drag continues
+    draggableId: "id123",   // not SPK
     reason: "DROP",
   };
 
-  await act(async () => {
-    // Manually call onDragEnd from context
-    const ctx = screen.getByTestId("DevicesTestId").querySelector(
-      "[data-rbd-droppable-context-id]"
-    );
-    ctx.props?.onDragEnd?.(result, { announce });
+  // Call onDragEnd manually
+  const instance = screen.getByTestId("DevicesTestId");
+  const { onDragEnd } = instance.parentElement._reactInternals.child.pendingProps; 
+  // ⚠️ depending on your setup you may need to pass `onDragEnd` via DragDropContext mock
+
+  act(() => {
+    onDragEnd(result, { announce });
+    // fast-forward the 100ms timeout
     jest.runAllTimers();
   });
 
-  // assert axios.post was called
+  // ✅ assert axios.post hit
   expect(axios.post).toHaveBeenCalledWith(
     expect.any(String),
     expect.objectContaining({
-      moveFrom: expect.any(String),
-      moveTo: expect.any(String),
-      secondaryDevice: expect.any(String),
+      moveFrom: "p1",
+      moveTo: "p2",
+      secondaryDevice: "123",
     }),
     expect.any(Object)
   );

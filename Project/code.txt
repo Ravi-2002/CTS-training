@@ -1,152 +1,35 @@
-// Devices.test.js
-import React from "react";
-import { render, screen, fireEvent, act } from "@testing-library/react";
-import Devices from "./Devices";
-import * as redux from "react-redux";
-import axios from "axios";
-import common from "../../../../../shared/utilities/util";
-import * as modalData from "../../../CommonModal/modalText.json";
+it("covers axios.post call inside changeParent", async () => {
+  const mockRes = { data: { body: { valid: true } } };
+  axios.post.mockResolvedValueOnce(mockRes);
 
-// mocks
-jest.mock("axios");
-jest.mock("../../../CommonModal/CommonModal", () => (props) => (
-  <div data-testid="CommonModal">
-    <button onClick={props.close}>close</button>
-    <button onClick={props.okClick}>ok</button>
-    <span>{props.message?.id || props.message}</span>
-    <span>{props.errorMessage}</span>
-  </div>
-));
-jest.mock("./ParentDevices", () => (props) => (
-  <div data-testid="ParentDevices">{props.lineDetails.formattedMdn}</div>
-));
-jest.mock("../../../../../shared/components/Loader/CustomLoader", () => () => (
-  <div data-testid="Loader">Loading...</div>
-));
-jest.mock("../../../../../shared/utilities/util", () => ({
-  getItemValue: jest.fn(),
-}));
-jest.mock("@vds/buttons", () => ({
-  TextLink: (props) => <button {...props}>TextLink</button>,
-}));
+  render(<Devices {...baseProps} />);
 
-describe("Devices Component", () => {
-  let dispatchMock;
-  const baseProps = {
-    cDeviceDetails: [
-      { type: "parentline", formattedMdn: "111", linkedMdn: "111", parentId: "p1", id: "id1" },
-      { type: "childline", formattedMdn: "222", linkedMdn: "222", parentId: "p2", id: "id2", isSpeakerWearable: true, deviceType: "SPK" },
-    ],
-    deviceContainerInFocus: jest.fn(),
-    deviceDetails: [
-      {
-        connectedDevices: [
-          { deviceId: "id2", deviceType: "SPK" },
-          { id: "id3", deviceType: "PHONE" },
-        ],
-      },
-    ],
-    devicesSection: { contents: [{ items: [{ key: "activationText", value: "Activation Label" }] }] },
-    moveLineRequest: jest.fn(),
-    setSpkDragError: jest.fn(),
+  const announce = jest.fn();
+  // Simulate a drag end with valid reqObj
+  const result = {
+    source: { index: 0 },
+    destination: { index: 1 },
+    draggableId: "id3", // non-SPK device so drag continues
+    reason: "DROP",
   };
 
-  beforeEach(() => {
-    dispatchMock = jest.fn();
-    jest.spyOn(redux, "useDispatch").mockReturnValue(dispatchMock);
-    jest.useFakeTimers();
-    window.vztag = { api: { dispatch: jest.fn() } };
-    common.getItemValue.mockImplementation((items, key) => key + "_label");
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-    jest.useRealTimers();
-  });
-
-  it("renders and focuses container", () => {
-    render(<Devices {...baseProps} />);
-    const container = screen.getByTestId("DevicesTestId");
-    fireEvent.focus(container);
-    expect(baseProps.deviceContainerInFocus).toHaveBeenCalled();
-  });
-
-  it("shows loader when loading", () => {
-    render(<Devices {...baseProps} />);
-    act(() => {
-      fireEvent.click(screen.getByTestId("EventCallTestId"));
-    });
-    expect(screen.getByTestId("DevicesTestId")).toBeInTheDocument();
-  });
-
-  it("open and close modal flow works", async () => {
-    axios.post.mockResolvedValue({ data: { body: { valid: true } } });
-    render(<Devices {...baseProps} />);
-    await act(async () => {
-      fireEvent.click(screen.getByTestId("EventCallTestId"));
-    });
+  await act(async () => {
+    // Manually call onDragEnd from context
+    const ctx = screen.getByTestId("DevicesTestId").querySelector(
+      "[data-rbd-droppable-context-id]"
+    );
+    ctx.props?.onDragEnd?.(result, { announce });
     jest.runAllTimers();
-    expect(screen.getByTestId("CommonModal")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("ok"));
-    fireEvent.click(screen.getByText("close"));
   });
 
-  it("handles changeParent error", async () => {
-    axios.post.mockRejectedValue(new Error("fail"));
-    render(<Devices {...baseProps} />);
-    await act(async () => {
-      fireEvent.click(screen.getByTestId("EventCallTestId"));
-    });
-    jest.runAllTimers();
-    expect(screen.getByText("Please try again later.")).toBeInTheDocument();
-  });
-
-  it("handles invalid move in changeParent", async () => {
-    axios.post.mockResolvedValue({ data: { body: { valid: false, message: "Bad move" } } });
-    render(<Devices {...baseProps} />);
-    await act(async () => {
-      fireEvent.click(screen.getByTestId("EventCallTestId"));
-    });
-    jest.runAllTimers();
-    expect(screen.getByText("Bad move")).toBeInTheDocument();
-  });
-
-  it("covers onDragStart, onDragUpdate messages", () => {
-    const { container } = render(<Devices {...baseProps} />);
-    const ctx = container.querySelector("[data-rbd-droppable-context-id]");
-    const announce = jest.fn();
-    act(() => {
-      ctx.props?.onDragStart?.({ source: { index: 0 } }, { announce });
-      ctx.props?.onDragUpdate?.({ source: { index: 0 }, destination: { index: 1 } }, { announce });
-    });
-    expect(announce).toHaveBeenCalled();
-  });
-
-  it("covers onDragEnd cancel, no destination, same mdn, valid", () => {
-    const { container } = render(<Devices {...baseProps} />);
-    const ctx = container.querySelector("[data-rbd-droppable-context-id]");
-    const announce = jest.fn();
-
-    act(() => {
-      ctx.props?.onDragEnd?.({ reason: "CANCEL", source: { index: 0 }, destination: { index: 1 } }, { announce });
-      ctx.props?.onDragEnd?.({ source: { index: 0 }, destination: null }, { announce });
-      ctx.props?.onDragEnd?.({
-        source: { index: 0 },
-        destination: { index: 0 },
-        draggableId: "id2",
-      }, { announce });
-      ctx.props?.onDragEnd?.({
-        source: { index: 0 },
-        destination: { index: 1 },
-        draggableId: "id3",
-      }, { announce });
-    });
-    jest.runAllTimers();
-    expect(announce).toHaveBeenCalled();
-  });
-
-  it("renders ParentDevices and HorizontalBar", () => {
-    render(<Devices {...baseProps} />);
-    expect(screen.getByTestId("ParentDevices")).toBeInTheDocument();
-  });
+  // assert axios.post was called
+  expect(axios.post).toHaveBeenCalledWith(
+    expect.any(String),
+    expect.objectContaining({
+      moveFrom: expect.any(String),
+      moveTo: expect.any(String),
+      secondaryDevice: expect.any(String),
+    }),
+    expect.any(Object)
+  );
 });

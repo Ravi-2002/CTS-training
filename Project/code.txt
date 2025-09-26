@@ -1,37 +1,35 @@
 import axios from "axios";
-import { changeParent } from "./devices"; // adjust path to your devices file
+import { changeParent } from "./devices"; // adjust path
+import * as api from "../api"; // adjust path to apiUrl
 
 jest.mock("axios");
 
-describe("changeParent coverage", () => {
+describe("changeParent axios coverage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it("should call axios.post with correct params", async () => {
-    // mock apiUrl()
-    const mockApiUrl = () => ({
+  it("should hit axios.post with correct args", async () => {
+    // 🔹 mock apiUrl so retrieveNumberShareDetails exists
+    jest.spyOn(api, "apiUrl").mockReturnValue({
       retrieveNumberShareDetails: "/mock-endpoint"
     });
-    global.apiUrl = mockApiUrl; // if apiUrl is global, mock it like this
 
-    // mock axios response
+    // 🔹 mock axios response
     axios.post.mockResolvedValue({ data: { status: "200" } });
 
-    const params = {
-      moveFrom: "123",
-      secondaryDevice: "456",
-      moveTo: "789"
-    };
+    const params = { moveFrom: "111", secondaryDevice: "222", moveTo: "333" };
 
-    await changeParent(params);
+    const result = await changeParent(params);
 
+    // 🔹 assertions
+    expect(axios.post).toHaveBeenCalledTimes(1);
     expect(axios.post).toHaveBeenCalledWith(
       "/mock-endpoint",
       {
-        trunkMdn: "123",
-        branchMtn: "456",
-        newtrunkMdn: "789",
+        trunkMdn: "111",
+        branchMtn: "222",
+        newtrunkMdn: "333",
         numberShareIndicator: "M"
       },
       {
@@ -41,5 +39,6 @@ describe("changeParent coverage", () => {
         }
       }
     );
+    expect(result).toEqual({ status: "200" });
   });
 });

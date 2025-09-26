@@ -1,44 +1,175 @@
+import React from "react";
+import { render, fireEvent, screen, act } from "@testing-library/react";
+import Devices from "./Devices";
 import axios from "axios";
-import { changeParent } from "./devices"; // adjust path
-import * as api from "../api"; // adjust path to apiUrl
+import apiUrl from "../../../../../shared/utilities/apiUrl";
+import common from "../../../../../shared/utilities/util";
 
 jest.mock("axios");
+jest.mock("../../../../../shared/utilities/apiUrl", () => jest.fn());
+jest.mock("../../../../../shared/utilities/util", () => ({
+  getItemValue: jest.fn(),
+}));
+jest.mock("../../../CommonModal/CommonModal", () => (props) => (
+  <div data-testid="CommonModal">
+    <button onClick={props.okClick}>OK</button>
+    <button onClick={props.close}>CLOSE</button>
+    <span>{props.message}</span>
+    <span>{props.errorMessage}</span>
+  </div>
+));
+jest.mock("./ParentDevices", () => () => <div>MockParentDevices</div>);
+jest.mock(
+  "../../../../../shared/components/Loader/CustomLoader",
+  () => () => <div data-testid="Loader">Loading...</div>
+);
+jest.mock("../../../HorizontalBar/HorizontalBar", () => () => (
+  <div>MockHorizontalBar</div>
+));
 
-describe("changeParent axios coverage", () => {
+describe("Devices Component - full coverage", () => {
+  let props;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    props = {
+      cDeviceDetails: [
+        { type: "parentline", isSpeakerWearable: true, formattedMdn: "111", parentId: "p1", linkedMdn: "l1", deviceType: "PHN" },
+        { type: "childline", formattedMdn: "222", parentId: "p2", linkedMdn: "l2", id: "id2", deviceType: "SPK" },
+      ],
+      deviceContainerInFocus: jest.fn(),
+      deviceDetails: [
+        {
+          connectedDevices: [{ deviceId: "sec", deviceType: "PHN" }],
+        },
+      ],
+      devicesSection: {
+        contents: [{ items: [{ key: "convertToNumShareLink", value: "mock" }] }],
+      },
+      moveLineRequest: jest.fn(),
+      setSpkDragError: jest.fn(),
+    };
+
+    // mock api url
+    apiUrl.mockReturnValue({ retrieveNumberShareDetails: "/mock-url" });
+
+    // default axios mock
+    axios.post.mockResolvedValue({ data: { body: { valid: true } } });
+
+    // mock util
+    common.getItemValue.mockReturnValue("MockLabel");
   });
 
-  it("should hit axios.post with correct args", async () => {
-    // 🔹 mock apiUrl so retrieveNumberShareDetails exists
-    jest.spyOn(api, "apiUrl").mockReturnValue({
-      retrieveNumberShareDetails: "/mock-endpoint"
+  const renderComp = () => render(<Devices {...props} />);
+
+  it("renders and triggers useEffect (deviceContainer focus)", () => {
+    renderComp();
+    expect(screen.getByTestId("DevicesTestId")).toBeInTheDocument();
+    const deviceContainer = document.getElementById("deviceContainer");
+    expect(deviceContainer.getAttribute("tabIndex")).toBe("0");
+  });
+
+  it("covers onClickHandler -> closeModal + moveLineRequest", () => {
+    renderComp();
+    fireEvent.click(screen.getByTestId("EventCallTestId"));
+    // triggers onAllEventClickHandler -> changeParent + onClickHandler
+    expect(props.moveLineRequest).toHaveBeenCalled();
+  });
+
+  it("covers changeParent success -> valid branch", async () => {
+    renderComp();
+    await act(async () => {
+      await screen.getByTestId("EventCallTestId").click();
     });
+    expect(axios.post).toHaveBeenCalled();
+    expect(await screen.findByTestId("CommonModal")).toBeInTheDocument();
+  });
 
-    // 🔹 mock axios response
-    axios.post.mockResolvedValue({ data: { status: "200" } });
+  it("covers changeParent success -> invalid branch", async () => {
+    axios.post.mockResolvedValue({ data: { body: { valid: false, message: "Invalid" } } });
+    renderComp();
+    await act(async () => {
+      await screen.getByTestId("EventCallTestId").click();
+    });
+    expect(await screen.findByText("Invalid")).toBeInTheDocument();
+  });
 
-    const params = { moveFrom: "111", secondaryDevice: "222", moveTo: "333" };
+  it("covers changeParent error -> catch block", async () => {
+    axios.post.mockRejectedValue(new Error("fail"));
+    renderComp();
+    await act(async () => {
+      await screen.getByTestId("EventCallTestId").click();
+    });
+    expect(await screen.findByText("Please try again later.")).toBeInTheDocument();
+  });
 
-    const result = await changeParent(params);
+  it("covers modal open and close", async () => {
+    renderComp();
+    // open modal
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("EventCallTestId"));
+    });
+    fireEvent.click(screen.getByText("CLOSE"));
+    fireEvent.click(screen.getByText("OK"));
+    expect(props.moveLineRequest).toHaveBeenCalled();
+  });
 
-    // 🔹 assertions
-    expect(axios.post).toHaveBeenCalledTimes(1);
-    expect(axios.post).toHaveBeenCalledWith(
-      "/mock-endpoint",
-      {
-        trunkMdn: "111",
-        branchMtn: "222",
-        newtrunkMdn: "333",
-        numberShareIndicator: "M"
-      },
-      {
-        headers: {
-          pageName: "numberShare",
-          flowName: "numberShare"
-        }
-      }
+  it("covers onDragStart announcement", () => {
+    renderComp();
+    const start = { source: { index: 0 } };
+    const provided = { announce: jest.fn() };
+    act(() => {
+      screen.getByTestId("DevicesTestId").firstChild.props.onDragStart(start, provided);
+    });
+    expect(provided.announce).toHaveBeenCalled();
+  });
+
+  it("covers onDragUpdate with different branches", () => {
+    renderComp();
+    const update = { source: { index: 0 }, destination: { index: 1 } };
+    const provided = { announce: jest.fn() };
+    act(() => {
+      screen.getByTestId("DevicesTestId").firstChild.props.onDragUpdate(update, provided);
+    });
+    expect(provided.announce).toHaveBeenCalled();
+  });
+
+  it("covers onDragEnd with multiple branches", () => {
+    jest.useFakeTimers();
+    renderComp();
+    const provided = { announce: jest.fn() };
+    const result = {
+      source: { index: 0 },
+      destination: { index: 1 },
+      draggableId: "sec123",
+      reason: "DROP",
+    };
+    act(() => {
+      screen.getByTestId("DevicesTestId").firstChild.props.onDragEnd(result, provided);
+      jest.runAllTimers();
+    });
+    expect(provided.announce).toHaveBeenCalled();
+  });
+
+  it("covers onDragEnd cancel + same position", () => {
+    renderComp();
+    const provided = { announce: jest.fn() };
+    const cancelResult = { source: { index: 0 }, destination: { index: 0 }, draggableId: "sec123", reason: "CANCEL" };
+    act(() => {
+      screen.getByTestId("DevicesTestId").firstChild.props.onDragEnd(cancelResult, provided);
+    });
+    expect(provided.announce).toHaveBeenCalled();
+  });
+
+  it("renders loader when isLoading true", async () => {
+    axios.post.mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve({ data: { body: { valid: true } } }), 10)
+        )
     );
-    expect(result).toEqual({ status: "200" });
+    renderComp();
+    fireEvent.click(screen.getByTestId("EventCallTestId"));
+    expect(screen.getByTestId("Loader")).toBeInTheDocument();
   });
 });

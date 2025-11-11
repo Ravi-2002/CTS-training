@@ -1,14 +1,84 @@
-  toggleOn(e, service, i) {
-    const { selectedDevice } = this.props
-    const { services } = this.state
-    e.preventDefault();
-    const newsfoEnabled = services[service].data[i].sfoEnabled == "Y" ? "N" : "Y";
-    const payload = {
-      "mdn": selectedDevice.encryptedMtn,
-      "sfoCode": services[service].data[i].sfoCode,
-      "sfoEnabled": newsfoEnabled
-    }
-  
-    this.props.actions.postServices(payload);
-    this.setState({ pendingService: { service, i } });
-  }
+import React from "react";
+import { render } from "@testing-library/react";
+import BlockServices from "../BlockServices";
+
+describe("BlockServices.toggleOn full line coverage", () => {
+  const getInstance = (props) => {
+    const { container } = render(<BlockServices {...props} />);
+    return container.firstChild?._reactRootContainer?._internalRoot?.current?.child?.stateNode;
+  };
+
+  it("covers toggleOn() when sfoEnabled is 'Y'", () => {
+    const mockPostServices = jest.fn();
+    const mockPrevent = jest.fn();
+
+    const props = {
+      selectedDevice: { encryptedMtn: "99999" },
+      actions: { postServices: mockPostServices },
+    };
+
+    const instance = getInstance(props);
+
+    // Set up initial state with sfoEnabled 'Y'
+    instance.setState({
+      services: {
+        internet: {
+          data: [{ sfoEnabled: "Y", sfoCode: "CODE1" }],
+        },
+      },
+    });
+
+    // Call toggleOn with mock event
+    instance.toggleOn({ preventDefault: mockPrevent }, "internet", 0);
+
+    // ✅ e.preventDefault() line covered
+    expect(mockPrevent).toHaveBeenCalled();
+
+    // ✅ payload verified and postServices called
+    expect(mockPostServices).toHaveBeenCalledWith({
+      mdn: "99999",
+      sfoCode: "CODE1",
+      sfoEnabled: "N", // toggled
+    });
+
+    // ✅ setState covered
+    expect(instance.state.pendingService).toEqual({ service: "internet", i: 0 });
+  });
+
+  it("covers toggleOn() when sfoEnabled is 'N'", () => {
+    const mockPostServices = jest.fn();
+    const mockPrevent = jest.fn();
+
+    const props = {
+      selectedDevice: { encryptedMtn: "88888" },
+      actions: { postServices: mockPostServices },
+    };
+
+    const instance = getInstance(props);
+
+    // Set up initial state with sfoEnabled 'N'
+    instance.setState({
+      services: {
+        sms: {
+          data: [{ sfoEnabled: "N", sfoCode: "CODE2" }],
+        },
+      },
+    });
+
+    // Call toggleOn
+    instance.toggleOn({ preventDefault: mockPrevent }, "sms", 0);
+
+    // ✅ e.preventDefault() again covered
+    expect(mockPrevent).toHaveBeenCalled();
+
+    // ✅ payload verified for "N" -> "Y"
+    expect(mockPostServices).toHaveBeenCalledWith({
+      mdn: "88888",
+      sfoCode: "CODE2",
+      sfoEnabled: "Y",
+    });
+
+    // ✅ setState again covered
+    expect(instance.state.pendingService).toEqual({ service: "sms", i: 0 });
+  });
+});

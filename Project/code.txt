@@ -1,41 +1,43 @@
 import React from "react";
-import { shallow } from "enzyme";
+import { render } from "@testing-library/react";
 import BlockServices from "../BlockServices";
 
-describe("BlockServices toggleOn() coverage", () => {
-  it("covers postServices and pendingService setState", () => {
-    const mockPostServices = jest.fn().mockResolvedValue({ responseCode: "00" });
+describe("BlockServices toggleOn() coverage without async/await", () => {
+  it("covers postServices call and pendingService setState", () => {
+    const mockPostServices = jest.fn(); // not async
 
     const props = {
-      selectedDevice: { encryptedMtn: "ENC123" },
+      selectedDevice: { encryptedMtn: "8888" },
       actions: { postServices: mockPostServices },
     };
 
-    const wrapper = shallow(<BlockServices {...props} />);
-    const instance = wrapper.instance();
+    const { container } = render(<BlockServices {...props} />);
+    const instance =
+      container.firstChild?._reactRootContainer?._internalRoot?.current?.child?.stateNode;
 
-    // Prepare state
+    // Set fake services data
     instance.setState({
       services: {
-        broadband: { data: [{ sfoEnabled: "Y", sfoCode: "CODE1" }] },
+        data1: {
+          data: [{ sfoEnabled: "Y", sfoCode: "SFO999" }],
+        },
       },
     });
 
     const mockEvent = { preventDefault: jest.fn() };
 
-    // ✅ Return the Promise so Jest waits automatically
-    return instance.toggleOn(mockEvent, "broadband", 0).then(() => {
-      // Verify the async call and state update
-      expect(mockPostServices).toHaveBeenCalledWith({
-        mdn: "ENC123",
-        sfoCode: "CODE1",
-        sfoEnabled: "N",
-      });
+    // Call toggleOn synchronously (no await)
+    instance.toggleOn(mockEvent, "data1", 0);
 
-      expect(instance.state.pendingService).toEqual({
-        service: "broadband",
-        i: 0,
-      });
+    // ✅ Both lines are now executed
+    expect(mockPostServices).toHaveBeenCalledTimes(1);
+    expect(mockPostServices).toHaveBeenCalledWith({
+      mdn: "8888",
+      sfoCode: "SFO999",
+      sfoEnabled: "N",
     });
+
+    // ✅ pendingService line covered
+    expect(instance.state.pendingService).toEqual({ service: "data1", i: 0 });
   });
 });

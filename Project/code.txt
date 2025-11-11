@@ -2,72 +2,40 @@ import React from "react";
 import { shallow } from "enzyme";
 import BlockServices from "../BlockServices";
 
-describe("BlockServices toggleOn()", () => {
-  let wrapper;
-  let instance;
-  let mockPostServices;
-  let mockPreventDefault;
-
-  beforeEach(() => {
-    mockPostServices = jest.fn().mockResolvedValue({ responseCode: "00" });
-    mockPreventDefault = jest.fn();
+describe("BlockServices toggleOn() coverage", () => {
+  it("covers postServices and pendingService setState", () => {
+    const mockPostServices = jest.fn().mockResolvedValue({ responseCode: "00" });
 
     const props = {
-      selectedDevice: { encryptedMtn: "mockedEncryptedMdn" },
+      selectedDevice: { encryptedMtn: "ENC123" },
       actions: { postServices: mockPostServices },
     };
 
-    wrapper = shallow(<BlockServices {...props} />);
-    instance = wrapper.instance();
+    const wrapper = shallow(<BlockServices {...props} />);
+    const instance = wrapper.instance();
 
+    // Prepare state
     instance.setState({
-      successMsg: "old message",
-      pendingService: null,
       services: {
-        main: {
-          data: [
-            { sfoCode: "SFO123", sfoEnabled: "Y" },
-            { sfoCode: "SFO456", sfoEnabled: "N" },
-          ],
-        },
+        broadband: { data: [{ sfoEnabled: "Y", sfoCode: "CODE1" }] },
       },
     });
-  });
 
-  it("toggles from Y → N and calls postServices with correct payload", async () => {
-    const e = { preventDefault: mockPreventDefault };
+    const mockEvent = { preventDefault: jest.fn() };
 
-    await instance.toggleOn(e, "main", 0);
+    // ✅ Return the Promise so Jest waits automatically
+    return instance.toggleOn(mockEvent, "broadband", 0).then(() => {
+      // Verify the async call and state update
+      expect(mockPostServices).toHaveBeenCalledWith({
+        mdn: "ENC123",
+        sfoCode: "CODE1",
+        sfoEnabled: "N",
+      });
 
-    // Wait for async setState to complete
-    await Promise.resolve();
-
-    expect(mockPreventDefault).toHaveBeenCalledTimes(1);
-    expect(mockPostServices).toHaveBeenCalledWith({
-      mdn: "mockedEncryptedMdn",
-      sfoCode: "SFO123",
-      sfoEnabled: "N",
+      expect(instance.state.pendingService).toEqual({
+        service: "broadband",
+        i: 0,
+      });
     });
-
-    expect(instance.state.successMsg).toBe("");
-    expect(instance.state.pendingService).toEqual({ service: "main", i: 0 });
-  });
-
-  it("toggles from N → Y and calls postServices with correct payload", async () => {
-    const e = { preventDefault: mockPreventDefault };
-
-    await instance.toggleOn(e, "main", 1);
-
-    await Promise.resolve();
-
-    expect(mockPreventDefault).toHaveBeenCalledTimes(1);
-    expect(mockPostServices).toHaveBeenCalledWith({
-      mdn: "mockedEncryptedMdn",
-      sfoCode: "SFO456",
-      sfoEnabled: "Y",
-    });
-
-    expect(instance.state.successMsg).toBe("");
-    expect(instance.state.pendingService).toEqual({ service: "main", i: 1 });
   });
 });

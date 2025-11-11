@@ -1,443 +1,913 @@
-import React, { Component } from "react";
-import { connect } from 'react-redux'
+import React from 'react';
+import { shallow, mount } from 'enzyme';
+import configureMockStore from 'redux-mock-store';
+import { Provider } from 'react-redux';
+import BlockServices from './BlockServices';
 import * as actions from '../../actions/fetchServices';
-import { bindActionCreators } from 'redux';
-import styled from "styled-components";
 
-import './style.css';
-import Alert from '../../../alert';
-import BSEmailDomains from "../blocksEmailDomains/BSEmailDomains";
-import { Modal, ModalBody, ModalFooter, ModalTitle } from "@vds/modals";
-import { Button, TextLink } from "@vds/buttons";
-import common from '../../../../../shared/utilities/util';
-import { Link } from "react-router-dom/cjs/react-router-dom.min";
-import { Body, Title } from "@vds/typography";
-import { Loader } from "@vds/loaders";
-import { Toggle } from "@vds/toggles";
-import { Col, Grid, Row } from "@vds/grids";
+// Mock the dependencies
+jest.mock('../../../alert', () => 'Alert');
+jest.mock('../blocksEmailDomains/BSEmailDomains', () => 'BSEmailDomains');
+jest.mock('../../../../../shared/utilities/util', () => ({
+  getContentFromSection: jest.fn(),
+  getActionKey: jest.fn(),
+  getActionByKey: jest.fn(),
+  getItemValue: jest.fn(),
+}));
 
-const BLOCK_EMAIL_DOMAIN = 'Emails & domains';
+const mockStore = configureMockStore([]);
 
-class BlockServices extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      open: false,
-      services: {},
-      openSub: false,
-      modalStatus: false,
-      status:'',
-      longDesc: "",
-      shortDesc: "",
-      featureName: "",
-      successMsg:"",
-    }
-  }
+describe('BlockServices Component', () => {
+  let wrapper;
+  let store;
+  let mockActions;
+  let defaultProps;
+  let mockServices;
 
-  handleServices(e, accordion) {
-    e.preventDefault();
-    if (accordion === 'BS') {
-      window.scrollTo(0,0);
-      this.props.selectAccordian('BS')
-      this.props.actions.getServices(this.props.selectedDevice.encryptedMtn)
-    }
-  };
-
-  componentDidUpdate(prevProps) {
-    if (
-      prevProps.services !== this.props.services &&
-      this.props.services &&
-      Object.keys(this.props.services).length > 0
-    ) {
-      const obj = {};
-      const additionalSer = "Additional Services";
-      let isAdditionalServiceAvailable = false;
-      const emailDomainObj = { [BLOCK_EMAIL_DOMAIN]: { isExpand: false } };
-  
-      Object.keys(this.props.services).forEach((key) => {
-        this.props.services[key].forEach((item) => {
-          item.showMore = false;
-        });
-  
-        if (key === additionalSer) isAdditionalServiceAvailable = true;
-  
-        obj[key] = {
-          isExpand: false,
-          data: this.props.services[key],
-        };
-      });
-  
-      const { [additionalSer]: additionalService, ...rest } = obj;
-  
-      this.setState({
-        services: isAdditionalServiceAvailable
-          ? { ...emailDomainObj, ...rest, [additionalSer]: additionalService }
-          : { ...emailDomainObj, ...rest },
-      });
-    }
-    if (
-      prevProps.confirmServices !== this.props.confirmServices &&
-      this.props.confirmServices?.responseInfo?.responseCode === "00"
-    ) {
-      const { pendingService } = this.state;
-      if (pendingService) {
-        const { service, i } = pendingService;
-        const { services } = this.state;
-  
-        services[service].data[i].sfoEnabled =
-          services[service].data[i].sfoEnabled === "Y" ? "N" : "Y";
-  
-        this.setState({
-          services,
-          updatedService: services[service].data[i].sfoCode,
-          successMsg: `We have successfully saved settings for "${services[service].data[i].serviceName}"`,
-          pendingService: null,
-        });
-      }
-    }
-  }
-
-  handleSubServices(e, service) {
-    e.preventDefault();
-    const services = this.state.services;
-    Object.keys(this.state.services).forEach((key) => {
-      if(key==service){
-        services[key].isExpand = !services[key].isExpand;
-      }else{
-        services[key].isExpand = false;
-      }
-    });
-    this.setState({
-      services
-    })
-  }
-  async toggleOn(e, service, i) {
-    const { selectedDevice } = this.props;
-    const { services } = this.state;
-    e.preventDefault();
-  
-    this.setState({
-      successMsg: "",
-    });
-  
-    const newsfoEnabled = services[service].data[i].sfoEnabled === "Y" ? "N" : "Y";
-    const payload = {
-      mdn: selectedDevice.encryptedMtn,
-      sfoCode: services[service].data[i].sfoCode,
-      sfoEnabled: newsfoEnabled,
+  beforeEach(() => {
+    mockActions = {
+      getServices: jest.fn(),
+      postServices: jest.fn(),
     };
-  
-    await this.props.actions.postServices(payload);
-    console.log("API call made, waiting for confirmServices update...");
-    this.setState({ pendingService: { service, i } });
-  }
-  closePupup=(e)=>{
-    debugger;
-    this.setState({
-      showPopup:false,
-    })
-  }
-  render() {
-    const { services,showPopup,successMsg} = this.state;
-    const { isFetching, confirmServices, servicesError, failServices, serviceFail} = this.props
-    let pageContent;
-    if (this.props?.serviceStatus && this.props?.serviceStatus?.body?.sections) {
-      pageContent = common.getContentFromSection(this.props?.serviceStatus?.body,'devicesBlocksMainSection');     
-      if(pageContent){
-        pageContent = pageContent?.sections?.[0];
-      }else {
-        window.location.reload();
-      }
-    }
-    const pageItems = pageContent && pageContent?.contents && pageContent?.contents?.[0]?.items;
-    const pageActions = pageContent && pageContent?.actions;
-    let showNotice = false
-    let Message = ""
-    let Type = ""
-    let trackingId = ""
-    if(this.props.serviceFail && this.props.serviceFail){
-      showNotice = true,
-        Message = this.props.failServices && failServices.errorMessage ? failServices.errorMessage:"Something went wrong, Please try again later",
-        Type = 3,
-        trackingId = "blockServicesFailureNotification"
-    }
-    else if(this.props.serviceErrorFlag  && this.props.serviceErrorFlag == true){
-      showNotice = true,
-        Message = this.props.servicesError && servicesError ?  this.props.servicesError?.internalErrors?.[0]?.errorMessage : "Something went wrong, Please try again later!",
-        Type = 3,
-        trackingId = "blockServicesFailureNotification"
-    }
 
-    else if(this.props.confirmServiceFlag && this.props.confirmServiceFlag == true){
-      showNotice = true,
-        Message = this.props.confirmServices && confirmServices ? successMsg : 'Sucessfully blocked',
-        Type = 2,
-        trackingId = "blockServicesSuccessNotification"
-    }
-    return (
-      <div className="accordion">
-        <div className="accordion__item">
-          <div className="accordion__title"
-            role="button"
-            tabIndex="0" onClick={(e) => this.handleServices(e, 'BS')} onKeyPress={(e) => this.handleServices(e, 'BS')}
-            aria-expanded={this.props.selectedAccordian == 'BS' ? true : false}
-          >
-            <div className="u-position-relative">
-              <div className="accordion-title">
-                <FAQsHeadSection id="blockservices" data-testid="BlockServicesTestId">
-                  Block services
-                </FAQsHeadSection>
-              </div>
-              <div
-                id="blockservice"
-                className="accordion__arrow"
-                role="presentation"
-              />
-            </div>
-          </div>
-          
-          
-            <div data-testid="loader"> <Loader active={isFetching} fullscreen /></div>
-          
-          
-          {<div id="myNotification">
-            {showNotice && <div data-track={trackingId}> <Alert Message={Message} Type={Type} closeBanner={true}> </Alert></div>}
-          </div>}
+    mockServices = {
+      'Additional Services': [
+        {
+          sfoCode: 'SFO001',
+          serviceName: 'Service 1',
+          sfoEnabled: 'Y',
+          shortDescription: 'Short desc 1',
+          longDescription: 'Long desc 1',
+          showMore: false,
+        },
+      ],
+      'Other Services': [
+        {
+          sfoCode: 'SFO002',
+          serviceName: 'Service 2',
+          sfoEnabled: 'N',
+          shortDescription: 'Short desc 2',
+          longDescription: 'Long desc 2',
+          showMore: false,
+        },
+      ],
+    };
 
+    defaultProps = {
+      selectedDevice: { encryptedMtn: '1234567890' },
+      selectedAccordian: '',
+      selectAccordian: jest.fn(),
+      actions: mockActions,
+      services: {},
+      serviceStatus: {
+        statusCode: '0',
+        body: {
+          sections: [
+            {
+              sections: [
+                {
+                  contents: [
+                    {
+                      items: [
+                        { key: 'dcbLink', value: 'DCB Link Text' },
+                        { key: 'videoLink', value: 'Video Link Text' },
+                        { key: 'faqsLink', value: 'FAQs Link Text' },
+                      ],
+                    },
+                  ],
+                  actions: [
+                    { key: 'dcbLink', actionValue: 'http://dcb.com' },
+                    { key: 'videoLink', actionValue: 'http://video.com' },
+                    { key: 'faqsLink', actionValue: 'http://faqs.com' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      },
+      getServices: false,
+      failServices: null,
+      serviceFail: false,
+      confirmServices: null,
+      serviceErrorFlag: false,
+      confirmServiceFlag: false,
+      servicesError: null,
+      isFetching: false,
+    };
 
+    store = mockStore({
+      Detail: {
+        serviceCalls: {
+          services: {},
+          serviceStatus: null,
+          getServices: false,
+          failServices: null,
+          serviceFail: false,
+          confirmServices: null,
+          serviceErrorFlag: false,
+          confirmServiceFlag: false,
+          servicesError: null,
+          isFetching: false,
+        },
+      },
+    });
+
+    // Mock common utility functions
+    const common = require('../../../../../shared/utilities/util').default;
+    common.getContentFromSection.mockReturnValue({
+      sections: [
+        {
+          contents: [
+            {
+              items: [
+                { key: 'dcbLink', value: 'DCB Link Text' },
+                { key: 'videoLink', value: 'Video Link Text' },
+                { key: 'faqsLink', value: 'FAQs Link Text' },
+              ],
+            },
+          ],
+          actions: [
+            { key: 'dcbLink', actionValue: 'http://dcb.com' },
+            { key: 'videoLink', actionValue: 'http://video.com' },
+            { key: 'faqsLink', actionValue: 'http://faqs.com' },
+          ],
+        },
+      ],
+    });
+    common.getActionKey.mockReturnValue('dcbLink');
+    common.getActionByKey.mockReturnValue({ actionValue: 'http://test.com' });
+    common.getItemValue.mockReturnValue('Link Text');
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('Component Initialization', () => {
+    it('should render without crashing', () => {
+      wrapper = shallow(<BlockServices.WrappedComponent {...defaultProps} />);
+      expect(wrapper.exists()).toBe(true);
+    });
+
+    it('should initialize with correct default state', () => {
+      wrapper = shallow(<BlockServices.WrappedComponent {...defaultProps} />);
+      const state = wrapper.state();
+      expect(state.open).toBe(false);
+      expect(state.services).toEqual({});
+      expect(state.openSub).toBe(false);
+      expect(state.modalStatus).toBe(false);
+      expect(state.status).toBe('');
+      expect(state.longDesc).toBe('');
+      expect(state.shortDesc).toBe('');
+      expect(state.featureName).toBe('');
+      expect(state.successMsg).toBe('');
+    });
+  });
+
+  describe('handleServices', () => {
+    it('should handle BS accordion click', () => {
+      wrapper = shallow(<BlockServices.WrappedComponent {...defaultProps} />);
+      const event = { preventDefault: jest.fn() };
+      const scrollToSpy = jest.spyOn(window, 'scrollTo').mockImplementation();
+
+      wrapper.instance().handleServices(event, 'BS');
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(scrollToSpy).toHaveBeenCalledWith(0, 0);
+      expect(defaultProps.selectAccordian).toHaveBeenCalledWith('BS');
+      expect(mockActions.getServices).toHaveBeenCalledWith('1234567890');
+
+      scrollToSpy.mockRestore();
+    });
+  });
+
+  describe('componentDidUpdate - Services Update', () => {
+    it('should update state when services prop changes', () => {
+      const props = { ...defaultProps };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      const newProps = {
+        ...props,
+        services: mockServices,
+      };
+
+      wrapper.setProps(newProps);
+
+      const state = wrapper.state();
+      expect(Object.keys(state.services)).toContain('Emails & domains');
+      expect(Object.keys(state.services)).toContain('Other Services');
+      expect(Object.keys(state.services)).toContain('Additional Services');
+    });
+
+    it('should handle services without Additional Services', () => {
+      const props = { ...defaultProps };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      const servicesWithoutAdditional = {
+        'Other Services': mockServices['Other Services'],
+      };
+
+      wrapper.setProps({ services: servicesWithoutAdditional });
+
+      const state = wrapper.state();
+      expect(Object.keys(state.services)).toContain('Emails & domains');
+      expect(Object.keys(state.services)).toContain('Other Services');
+      expect(Object.keys(state.services)).not.toContain('Additional Services');
+    });
+
+    it('should not update state if services prop is empty', () => {
+      const props = { ...defaultProps };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      const initialState = wrapper.state().services;
+      wrapper.setProps({ services: {} });
+
+      expect(wrapper.state().services).toEqual(initialState);
+    });
+
+    it('should not update state if services prop is null', () => {
+      const props = { ...defaultProps };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      const initialState = wrapper.state().services;
+      wrapper.setProps({ services: null });
+
+      expect(wrapper.state().services).toEqual(initialState);
+    });
+  });
+
+  describe('componentDidUpdate - Confirm Services', () => {
+    it('should handle successful service confirmation', () => {
+      const props = {
+        ...defaultProps,
+        services: mockServices,
+        getServices: true,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      // First update to set services
+      wrapper.setProps({ services: mockServices });
+
+      // Set pending service
+      wrapper.setState({
+        pendingService: { service: 'Additional Services', i: 0 },
+      });
+
+      // Simulate confirmation
+      const confirmServices = {
+        responseInfo: { responseCode: '00' },
+      };
+
+      wrapper.setProps({ confirmServices });
+
+      const state = wrapper.state();
+      expect(state.services['Additional Services'].data[0].sfoEnabled).toBe('N');
+      expect(state.updatedService).toBe('SFO001');
+      expect(state.successMsg).toContain('Service 1');
+      expect(state.pendingService).toBeNull();
+    });
+
+    it('should toggle sfoEnabled from N to Y', () => {
+      const props = {
+        ...defaultProps,
+        services: mockServices,
+        getServices: true,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      wrapper.setState({
+        pendingService: { service: 'Other Services', i: 0 },
+      });
+
+      const confirmServices = {
+        responseInfo: { responseCode: '00' },
+      };
+
+      wrapper.setProps({ confirmServices });
+
+      const state = wrapper.state();
+      expect(state.services['Other Services'].data[0].sfoEnabled).toBe('Y');
+    });
+
+    it('should not update if responseCode is not 00', () => {
+      const props = {
+        ...defaultProps,
+        services: mockServices,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      const initialState = wrapper.state().services;
+
+      wrapper.setState({
+        pendingService: { service: 'Additional Services', i: 0 },
+      });
+
+      const confirmServices = {
+        responseInfo: { responseCode: '99' },
+      };
+
+      wrapper.setProps({ confirmServices });
+
+      expect(wrapper.state().services).toEqual(initialState);
+    });
+
+    it('should not update if no pending service', () => {
+      const props = {
+        ...defaultProps,
+        services: mockServices,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      const confirmServices = {
+        responseInfo: { responseCode: '00' },
+      };
+
+      wrapper.setProps({ confirmServices });
+
+      expect(wrapper.state().pendingService).toBeUndefined();
+    });
+  });
+
+  describe('handleSubServices', () => {
+    it('should expand selected service and collapse others', () => {
+      const props = {
+        ...defaultProps,
+        services: mockServices,
+        getServices: true,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      const event = { preventDefault: jest.fn() };
+      wrapper.instance().handleSubServices(event, 'Additional Services');
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(wrapper.state().services['Additional Services'].isExpand).toBe(true);
+      expect(wrapper.state().services['Other Services'].isExpand).toBe(false);
+    });
+
+    it('should toggle expansion state of the same service', () => {
+      const props = {
+        ...defaultProps,
+        services: mockServices,
+        getServices: true,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      const event = { preventDefault: jest.fn() };
+
+      // First click - expand
+      wrapper.instance().handleSubServices(event, 'Additional Services');
+      expect(wrapper.state().services['Additional Services'].isExpand).toBe(true);
+
+      // Second click - collapse
+      wrapper.instance().handleSubServices(event, 'Additional Services');
+      expect(wrapper.state().services['Additional Services'].isExpand).toBe(false);
+    });
+  });
+
+  describe('toggleOn', () => {
+    it('should call postServices with correct payload when toggling on', async () => {
+      const props = {
+        ...defaultProps,
+        services: mockServices,
+        getServices: true,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      const event = { preventDefault: jest.fn() };
+
+      await wrapper.instance().toggleOn(event, 'Additional Services', 0);
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(wrapper.state().successMsg).toBe('');
+      expect(mockActions.postServices).toHaveBeenCalledWith({
+        mdn: '1234567890',
+        sfoCode: 'SFO001',
+        sfoEnabled: 'N',
+      });
+      expect(wrapper.state().pendingService).toEqual({
+        service: 'Additional Services',
+        i: 0,
+      });
+    });
+
+    it('should toggle from N to Y', async () => {
+      const props = {
+        ...defaultProps,
+        services: mockServices,
+        getServices: true,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      const event = { preventDefault: jest.fn() };
+
+      await wrapper.instance().toggleOn(event, 'Other Services', 0);
+
+      expect(mockActions.postServices).toHaveBeenCalledWith({
+        mdn: '1234567890',
+        sfoCode: 'SFO002',
+        sfoEnabled: 'Y',
+      });
+    });
+  });
+
+  describe('closePupup', () => {
+    it('should set showPopup to false', () => {
+      wrapper = shallow(<BlockServices.WrappedComponent {...defaultProps} />);
+
+      wrapper.setState({ showPopup: true });
+
+      const event = {};
+      wrapper.instance().closePupup(event);
+
+      expect(wrapper.state().showPopup).toBe(false);
+    });
+  });
+
+  describe('Render - Alert Notifications', () => {
+    it('should show failure notification when serviceFail is true', () => {
+      const props = {
+        ...defaultProps,
+        serviceFail: true,
+        failServices: { errorMessage: 'Service failed' },
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      expect(wrapper.find('Alert').prop('Message')).toBe('Service failed');
+      expect(wrapper.find('Alert').prop('Type')).toBe(3);
+    });
+
+    it('should show default error message when failServices has no errorMessage', () => {
+      const props = {
+        ...defaultProps,
+        serviceFail: true,
+        failServices: {},
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      expect(wrapper.find('Alert').prop('Message')).toBe(
+        'Something went wrong, Please try again later'
+      );
+    });
+
+    it('should show error notification when serviceErrorFlag is true', () => {
+      const props = {
+        ...defaultProps,
+        serviceErrorFlag: true,
+        servicesError: {
+          internalErrors: [{ errorMessage: 'Internal error' }],
+        },
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      expect(wrapper.find('Alert').prop('Message')).toBe('Internal error');
+      expect(wrapper.find('Alert').prop('Type')).toBe(3);
+    });
+
+    it('should show default error when servicesError has no message', () => {
+      const props = {
+        ...defaultProps,
+        serviceErrorFlag: true,
+        servicesError: null,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      expect(wrapper.find('Alert').prop('Message')).toBe(
+        'Something went wrong, Please try again later!'
+      );
+    });
+
+    it('should show success notification when confirmServiceFlag is true', () => {
+      const props = {
+        ...defaultProps,
+        confirmServiceFlag: true,
+        confirmServices: { success: true },
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+      wrapper.setState({ successMsg: 'Service updated successfully' });
+
+      expect(wrapper.find('Alert').prop('Message')).toBe('Service updated successfully');
+      expect(wrapper.find('Alert').prop('Type')).toBe(2);
+    });
+
+    it('should show default success message when successMsg is empty', () => {
+      const props = {
+        ...defaultProps,
+        confirmServiceFlag: true,
+        confirmServices: null,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      expect(wrapper.find('Alert').prop('Message')).toBe('Sucessfully blocked');
+    });
+  });
+
+  describe('Render - Services List', () => {
+    it('should render services when getServices is true', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'BS',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      expect(wrapper.find('.accordion__body').length).toBeGreaterThan(0);
+    });
+
+    it('should render service details with Toggle component', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'BS',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      const toggle = wrapper.find('Toggle').first();
+      expect(toggle.exists()).toBe(true);
+      expect(toggle.prop('on')).toBe(true);
+    });
+
+    it('should render service with showMore expanded', () => {
+      const servicesWithShowMore = {
+        'Test Services': [
           {
-            //  (this.props.serviceStatus && parseInt(this.props.serviceStatus.statusCode) == 0) && this.props.serviceFail != true &&
-            this.props.getServices &&
-            services && services && Object.keys(services).length > 0 && Object.keys(services).map((service, index) => {
-              return (
+            ...mockServices['Additional Services'][0],
+            showMore: true,
+          },
+        ],
+      };
 
-                <Col colSizes={{ desktop: 3 }}>
-                  <div key={index}
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: servicesWithShowMore,
+        selectedAccordian: 'BS',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
 
-                    className={
-                      this.props.selectedAccordian == 'BS'
-                        ? "accordion__body"
-                        : "accordion__body accordion__body--hidden"
-                    }
-                    aria-hidden={this.props.selectedAccordian == 'BS' ? false : true}
-                  >
+      wrapper.setProps({ services: servicesWithShowMore });
 
-                    <Grid
-                      bleed="1272"
-                      rowGutter="10px"
-                      colSizes={{
-                        mobile: 1,
-                        tablet: 2,
-                        desktop: 3,
-                      }}
-                    >
-                      <Row>
-                        <Col colSizes={{ desktop: 2,tablet:4, mobile: 0 }}></Col>
-                        <Col colSizes={{ desktop: 10.5,tablet:8, mobile: 4 }}>   {service != BLOCK_EMAIL_DOMAIN ?
-                          <div className="oneD row">
-                            <div className="col-lg-3">
-                            </div>
-                            <div className="col-lg-9 col-md-12 col-xs-12 col-xs-12">
-                              <div className="o-expander o-block-content o-sub-accordion">
-                                <div
-                                  role="tablist"
-                                  className="o-block-page panel-group ng-isolate-scope"
-                                >
-                                  {/* sub accordians */}
-                                  <div
-                                    onClick={(e) => this.handleSubServices(e, service)} onKeyPress={(e) => this.handleSubServices(e, service)}
-                                    aria-expanded={services[service].isExpand ? true : false}
-                                    className="accordion__title"
-                                    role="button"
-                                    tabIndex="0"
-                                    aria-label={service}
-                                  >
-                                    <div className="u-position-relative">
-                                      <div className="accordion-title">
-                                        <FAQs1HeadSection id={service}>
-                                          {service}
-                                        </FAQs1HeadSection>
-                                      </div>
-                                      <div
-                                        id={service}
-                                        className="accordion__arrow"
-                                        role="presentation"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div
+      // Check if long description is rendered
+      const longDescElement = wrapper.findWhere(
+        (node) =>
+          node.type() === 'p' &&
+          node.prop('dangerouslySetInnerHTML') &&
+          node.prop('dangerouslySetInnerHTML').__html === 'Long desc 1'
+      );
+      expect(longDescElement.exists()).toBe(true);
+    });
 
-                                    className={
-                                      services[service].isExpand
-                                        ? "accordion__body"
-                                        : "accordion__body accordion__body--hidden"
-                                    }
-                                    aria-hidden={services[service].isExpand ? false : true}
-                                  >
-                                    {service == BLOCK_EMAIL_DOMAIN ?
-                                      <div className="o-expander o-block-subcontent ">
-                                        <BSEmailDomains selectedDevice={this.props.selectedDevice} />
-                                      </div> : null
-                                    }
+    it('should not render BLOCK_EMAIL_DOMAIN service in the main list', () => {
+      const servicesWithEmailDomain = {
+        'Emails & domains': [mockServices['Additional Services'][0]],
+        'Other Services': mockServices['Other Services'],
+      };
 
-                                    <div className="o-expander o-block-subcontent ">
-                                      {
-                                        services[service].data && services[service].data.length > 0 && services[service].data.map((serviceDetail, i) => {
-                                          return (
-                                            <div key={serviceDetail.sfoCode} className="o-row o-clr " style={{ paddingBottom: '0%' }}>
-                                              <div className="col-lg-10 col-md-10 col-sm-10 col-xs-10">
-                                                <Body size='large' bold='true'>
-                                                  {serviceDetail.serviceName}
-                                                </Body>
-                                              </div>
-                                              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                <Toggle
-                                                  value="default"
-                                                  surface="light"
-                                                  surfaceType="colorFill"
-                                                  showText={true}
-                                                  textWeight="regular"
-                                                  textSize="small"
-                                                  textPosition="left"
-                                                  on={serviceDetail.sfoEnabled === "Y" ? true : false}
-                                                  data-track={serviceDetail.serviceName.split(' ').join('') + "Toggle"}
-                                                  statusText={(e) => e ? 'On' : 'Off'}
-                                                  onChange={(e) => this.toggleOn(e, service, i)}
-                                                />
-                                              </div>
-                                              <div className="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                                                <div className="o-short-desc width-100">
-                                                  <p className="o-concatText ng-binding" dangerouslySetInnerHTML={{ __html: serviceDetail.shortDescription }} />
-                                                  <br />
-                                                  {serviceDetail.showMore &&
-                                                    <React.Fragment>
-                                                      <br />
-                                                      <p className="o-concatText ng-binding" dangerouslySetInnerHTML={{ __html: serviceDetail.longDescription }} />
-                                                      <br />
-                                                    </React.Fragment>
-                                                  }
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: servicesWithEmailDomain,
+        selectedAccordian: 'BS',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
 
-                                                  <Modal
-                                                    toggleButton={<TextLink ><Body size='medium'> View More Details </Body></TextLink>}
-                                                    surface="light"
-                                                    fullScreenDialog={false}
-                                                    disableAnimation={false}
-                                                    disableOutsideClick={false}
-                                                    ariaLabel="Testing Modal"
-                                                  >
-                                                    <ModalTitle>
-                                                      <Title size='large' bold='true'>{serviceDetail.serviceName}</Title>
-                                                    </ModalTitle>
-                                                    <ModalBody>
-                                                      <p dangerouslySetInnerHTML={{ __html: serviceDetail.shortDescription }}></p>
-                                                      <br></br>
-                                                      <Title size='medium' bold='true'>Further details</Title>
-                                                      <br></br>
-                                                      <p dangerouslySetInnerHTML={{ __html: serviceDetail.longDescription }}></p>
-                                                    </ModalBody>
+      wrapper.setProps({ services: servicesWithEmailDomain });
 
-                                                  </Modal>
+      // The component should render but the Emails & domains section should be empty
+      const emailDomainSection = wrapper.findWhere(
+        (node) => node.prop('id') === 'Emails & domains'
+      );
+      expect(emailDomainSection.exists()).toBe(false);
+    });
+  });
 
-                                                  <br />
-                                                  <hr />
+  describe('Render - Modal', () => {
+    it('should render Modal with service details', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'BS',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
 
-                                                </div>
-                                              </div>
-                                            </div>
-                                          )
-                                        })
-                                      }
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div> : ''}</Col>
+      wrapper.setProps({ services: mockServices });
 
-                      </Row>
+      const modal = wrapper.find('Modal').first();
+      expect(modal.exists()).toBe(true);
+      expect(modal.find('ModalTitle').dive().text()).toContain('Service 1');
+    });
+  });
 
-                    </Grid>
+  describe('Render - Links Section', () => {
+    it('should render links when selectedAccordian is BS and getServices is true', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'BS',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
 
-                  </div>
-                </Col>
-              )
-            })
-          }
-          {this.props.selectedAccordian == 'BS' && this.props.getServices?
-            <div style={{ marginBottom: 15, paddingLeft: "27%" }}>
-              <div><Body> <TextLink onClick={(e) => {
-                e.preventDefault();
-                let actionKey = pageContent && common.getActionKey(pageItems, `dcbLink`);
-                const actionKeyValue = pageContent && common.getActionByKey(pageActions, actionKey);
-                const actionValue = actionKeyValue && actionKeyValue.actionValue;
-                window.location.href = `${actionValue}`;
-              }} data-track="ViewMediaAppPurchases">{common.getItemValue(pageItems,'dcbLink')}</TextLink></Body></div><br />
-              <div ><Body> <TextLink onClick={(e) => {
-                e.preventDefault();
-                let actionKey = pageContent && common.getActionKey(pageItems, `videoLink`);
-                const actionKeyValue = pageContent && common.getActionByKey(pageActions, actionKey);
-                const actionValue = actionKeyValue && actionKeyValue.actionValue;
-                window.location.href = `${actionValue}`;
-              }} data-track="VideoForBlockServices">{common.getItemValue(pageItems,'videoLink')}</TextLink></Body></div><br />
-              <div ><Body><TextLink onClick={(e) => {
-                e.preventDefault();
-                let actionKey = pageContent && common.getActionKey(pageItems, `faqsLink`);
-                const actionKeyValue = pageContent && common.getActionByKey(pageActions, actionKey);
-                const actionValue = actionKeyValue && actionKeyValue.actionValue;
-                window.location.href = `${actionValue}`;              
-                }} data-track="BlockFAQ">{common.getItemValue(pageItems,'faqsLink')}</TextLink></Body></div><br />
-            </div>:null}
-        </div><br />
-      </div>
-    );
-  }
-}
+      const links = wrapper.find('TextLink');
+      expect(links.length).toBeGreaterThan(0);
+    });
 
-const FAQsHeadSection = styled.div`
-  margin-top: 0px;
-  padding: 10px 0 12px;
-  border-bottom: 2px solid #000;
-  display: block;
-  width: 100%;
-  font-family: "NeueHaasGroteskDisplayBold", arial;
-  font-size: 18px;
-  color: #000000;
-  clear: both;
-`;
+    it('should not render links when selectedAccordian is not BS', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'OTHER',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
 
-const FAQs1HeadSection = styled.div`
-  margin-top: 0px;
-  padding: 10px 0 12px;
-  border-bottom: 1px solid #000;
-  display: block;
-  width: 100%;
-  font-family: "NeueHaasGroteskDisplayBold", arial;
-  font-size: 18px;
-  color: #000000;
-  clear: both;
-`;
+      const linksSection = wrapper.findWhere(
+        (node) => node.prop('style') && node.prop('style').marginBottom === 15
+      );
+      expect(linksSection.exists()).toBe(false);
+    });
 
-const FAQsSection = styled.div`
-  border-top: none;
-`;
+    it('should handle dcbLink click', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'BS',
+      };
 
-const mapStateToProps = state => {
-  return {
-    services: state.Detail.serviceCalls.services,
-    serviceStatus: state.Detail.serviceCalls.serviceStatus,
-    getServices: state.Detail.serviceCalls.getServices,
-    failServices: state.Detail.serviceCalls.failServices,
-    serviceFail: state.Detail.serviceCalls.serviceFail,
-    confirmServices: state.Detail.serviceCalls.confirmServices,
-    serviceErrorFlag: state.Detail.serviceCalls.serviceErrorFlag,
-    confirmServiceFlag: state.Detail.serviceCalls.confirmServiceFlag,
-    servicesError: state.Detail.serviceCalls.servicesError,
-    isFetching: state.Detail.serviceCalls.isFetching,
-  }
-}
+      delete window.location;
+      window.location = { href: jest.fn() };
 
-const mapDispatchToProps = dispatch => ({
-  actions: bindActionCreators(actions, dispatch),
-})
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
 
-export default connect(mapStateToProps, mapDispatchToProps)(BlockServices)
+      const dcbLink = wrapper.findWhere(
+        (node) => node.prop('data-track') === 'ViewMediaAppPurchases'
+      );
+      expect(dcbLink.exists()).toBe(true);
+
+      const event = { preventDefault: jest.fn() };
+      dcbLink.prop('onClick')(event);
+
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+
+    it('should handle videoLink click', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'BS',
+      };
+
+      delete window.location;
+      window.location = { href: jest.fn() };
+
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      const videoLink = wrapper.findWhere(
+        (node) => node.prop('data-track') === 'VideoForBlockServices'
+      );
+      expect(videoLink.exists()).toBe(true);
+
+      const event = { preventDefault: jest.fn() };
+      videoLink.prop('onClick')(event);
+
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+
+    it('should handle faqsLink click', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'BS',
+      };
+
+      delete window.location;
+      window.location = { href: jest.fn() };
+
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      const faqsLink = wrapper.findWhere(
+        (node) => node.prop('data-track') === 'BlockFAQ'
+      );
+      expect(faqsLink.exists()).toBe(true);
+
+      const event = { preventDefault: jest.fn() };
+      faqsLink.prop('onClick')(event);
+
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+  });
+
+  describe('Render - Loader', () => {
+    it('should show loader when isFetching is true', () => {
+      const props = {
+        ...defaultProps,
+        isFetching: true,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      const loader = wrapper.find('Loader');
+      expect(loader.prop('active')).toBe(true);
+    });
+
+    it('should not show loader when isFetching is false', () => {
+      const props = {
+        ...defaultProps,
+        isFetching: false,
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      const loader = wrapper.find('Loader');
+      expect(loader.prop('active')).toBe(false);
+    });
+  });
+
+  describe('Render - Accordion States', () => {
+    it('should set aria-expanded to true when selectedAccordian is BS', () => {
+      const props = {
+        ...defaultProps,
+        selectedAccordian: 'BS',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      const accordion = wrapper.find('.accordion__title').first();
+      expect(accordion.prop('aria-expanded')).toBe(true);
+    });
+
+    it('should set aria-expanded to false when selectedAccordian is not BS', () => {
+      const props = {
+        ...defaultProps,
+        selectedAccordian: 'OTHER',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      const accordion = wrapper.find('.accordion__title').first();
+      expect(accordion.prop('aria-expanded')).toBe(false);
+    });
+
+    it('should handle keyboard event on accordion', () => {
+      wrapper = shallow(<BlockServices.WrappedComponent {...defaultProps} />);
+
+      const accordion = wrapper.find('.accordion__title').first();
+      const event = { preventDefault: jest.fn() };
+
+      accordion.prop('onKeyPress')(event);
+
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+  });
+
+  describe('Edge Cases - pageContent', () => {
+    it('should handle missing pageContent gracefully', () => {
+      const common = require('../../../../../shared/utilities/util').default;
+      common.getContentFromSection.mockReturnValue(null);
+
+      const reloadSpy = jest.spyOn(window.location, 'reload').mockImplementation();
+
+      const props = {
+        ...defaultProps,
+        serviceStatus: {
+          body: { sections: [] },
+        },
+      };
+
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      expect(reloadSpy).toHaveBeenCalled();
+
+      reloadSpy.mockRestore();
+    });
+
+    it('should handle missing serviceStatus', () => {
+      const props = {
+        ...defaultProps,
+        serviceStatus: null,
+      };
+
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      expect(wrapper.exists()).toBe(true);
+    });
+  });
+
+  describe('Redux Connection', () => {
+    it('should map state to props correctly', () => {
+      const ConnectedComponent = BlockServices;
+      const wrapper = mount(
+        <Provider store={store}>
+          <ConnectedComponent {...defaultProps} />
+        </Provider>
+      );
+
+      expect(wrapper.find('BlockServices').props()).toHaveProperty('services');
+      expect(wrapper.find('BlockServices').props()).toHaveProperty('isFetching');
+    });
+  });
+
+  describe('Toggle statusText', () => {
+    it('should return "On" when toggle is on', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'BS',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      const toggle = wrapper.find('Toggle').first();
+      const statusText = toggle.prop('statusText');
+
+      expect(statusText(true)).toBe('On');
+    });
+
+    it('should return "Off" when toggle is off', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'BS',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      const toggle = wrapper.find('Toggle').first();
+      const statusText = toggle.prop('statusText');
+
+      expect(statusText(false)).toBe('Off');
+    });
+  });
+
+  describe('Sub-accordion aria states', () => {
+    it('should set aria-expanded correctly for sub-accordions', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'BS',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      // Expand a sub-accordion
+      const event = { preventDefault: jest.fn() };
+      wrapper.instance().handleSubServices(event, 'Additional Services');
+
+      wrapper.update();
+
+      const subAccordions = wrapper.find('.accordion__title').filterWhere(
+        (node) => node.prop('id') === 'Additional Services'
+      );
+
+      expect(subAccordions.first().prop('aria-expanded')).toBe(true);
+    });
+
+    it('should handle keyboard event on sub-accordion', () => {
+      const props = {
+        ...defaultProps,
+        getServices: true,
+        services: mockServices,
+        selectedAccordian: 'BS',
+      };
+      wrapper = shallow(<BlockServices.WrappedComponent {...props} />);
+
+      wrapper.setProps({ services: mockServices });
+
+      const subAccordion = wrapper.find('.accordion__title').filterWhere(
+        (node) => node.prop('id') === 'Additional Services'
+      );
+
+      const event = { preventDefault: jest.fn() };
+      subAccordion.first().prop('onKeyPress')(event);
+
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+  });
+});

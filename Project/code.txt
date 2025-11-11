@@ -1,36 +1,19 @@
-it('should not update state when confirmServices success but no pendingService', () => {
-  const ref = React.createRef();
-  const initialProps = {
-    confirmServices: {},
-    fetchServices: jest.fn(),
-    getServices: jest.fn(),
-  };
-
-  // Render with initial props
-  const { rerender } = render(<BlockServices {...initialProps} ref={ref} />);
-
-  // Set state: no pendingService
-  ref.current.setState({
-    services: {
-      testService: { data: [{ sfoEnabled: "Y", sfoCode: "123", serviceName: "Test" }] },
-    },
-    pendingService: null,
-  });
-
-  // Re-render with success confirmServices
-  const newProps = {
-    ...initialProps,
-    confirmServices: { responseInfo: { responseCode: "00" } },
-  };
-
-  act(() => {
-    rerender(<BlockServices {...newProps} ref={ref} />);
-  });
-
-  // Verify state did not change (else branch covered)
-  const { services, updatedService, successMsg, pendingService } = ref.current.state;
-  expect(services.testService.data[0].sfoEnabled).toBe("Y");
-  expect(updatedService).toBeUndefined();
-  expect(successMsg).toBeNull();
-  expect(pendingService).toBeNull();
-});
+async toggleOn(e, service, i) {
+    const { selectedDevice } = this.props;
+    const { services } = this.state;
+    e.preventDefault();
+  
+    this.setState({
+      successMsg: "",
+    });
+  
+    const newsfoEnabled = services[service].data[i].sfoEnabled === "Y" ? "N" : "Y";
+    const payload = {
+      mdn: selectedDevice.encryptedMtn,
+      sfoCode: services[service].data[i].sfoCode,
+      sfoEnabled: newsfoEnabled,
+    };
+  
+    await this.props.actions.postServices(payload);
+    this.setState({ pendingService: { service, i } });
+  }

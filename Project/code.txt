@@ -1,41 +1,20 @@
-it('should update state when confirmServices responseCode is "00"', () => {
-  const mockDispatch = jest.fn();
-
-  const initialProps = {
-    fetchServices: jest.fn(),
-    postServices: jest.fn(),
-    confirmServices: { responseInfo: { responseCode: "99" } }, // initial
-  };
-
-  const { rerender } = render(
-    <BlockServices.WrappedComponent {...initialProps} dispatch={mockDispatch} />
-  );
-
-  // Simulate state before update
-  const instance = screen.getByTestId('block-services-instance')?.__instance;
-  if (instance) {
-    instance.setState({
-      pendingService: { service: 'email', i: 0 },
-      services: {
-        email: {
-          data: [{ sfoEnabled: 'Y', sfoCode: 'ABC' }],
-        },
-      },
-    });
-  }
-
-  // Now rerender with updated props to trigger componentDidUpdate
-  rerender(
-    <BlockServices.WrappedComponent
-      {...initialProps}
-      confirmServices={{ responseInfo: { responseCode: "00" } }}
-      dispatch={mockDispatch}
-    />
-  );
-
-  // Expect successMsg to be updated based on state change
-  if (instance) {
-    expect(instance.state.successMsg).toContain('We have successfully saved settings');
-    expect(instance.state.pendingService).toBeNull();
-  }
-});
+if (
+      prevProps.confirmServices !== this.props.confirmServices &&
+      this.props.confirmServices?.responseInfo?.responseCode === "00"
+    ) {
+      const { pendingService } = this.state;
+      if (pendingService) {
+        const { service, i } = pendingService;
+        const { services } = this.state;
+  
+        services[service].data[i].sfoEnabled =
+          services[service].data[i].sfoEnabled === "Y" ? "N" : "Y";
+  
+        this.setState({
+          services,
+          updatedService: services[service].data[i].sfoCode,
+          successMsg: `We have successfully saved settings for "${services[service].data[i].serviceName}"`,
+          pendingService: null,
+        });
+      }
+    }

@@ -1,20 +1,76 @@
-if (
-      prevProps.confirmServices !== this.props.confirmServices &&
-      this.props.confirmServices?.responseInfo?.responseCode === "00"
-    ) {
-      const { pendingService } = this.state;
-      if (pendingService) {
-        const { service, i } = pendingService;
-        const { services } = this.state;
-  
-        services[service].data[i].sfoEnabled =
-          services[service].data[i].sfoEnabled === "Y" ? "N" : "Y";
-  
-        this.setState({
-          services,
-          updatedService: services[service].data[i].sfoCode,
-          successMsg: `We have successfully saved settings for "${services[service].data[i].serviceName}"`,
-          pendingService: null,
-        });
-      }
-    }
+/* Updated comprehensive unit tests for BlockServices component
+
+Adds a test that explicitly covers the componentDidUpdate branch when confirmServices changes to responseCode "00"
+
+Uses React Testing Library and refs to access the class instance */
+
+
+import React from 'react'; import { render, screen, fireEvent, act } from '@testing-library/react'; import '@testing-library/jest-dom/extend-expect';
+
+import ConnectedBlockServices from './BlockServices'; const BlockServices = ConnectedBlockServices && ConnectedBlockServices.WrappedComponent ? ConnectedBlockServices.WrappedComponent : ConnectedBlockServices;
+
+jest.mock('../../actions/fetchServices', () => ({ getServices: jest.fn(() => ({ type: 'GET_SERVICES' })), postServices: jest.fn(() => ({ type: 'POST_SERVICES' })), }));
+
+jest.mock('../../../../../shared/utilities/util', () => ({ getContentFromSection: jest.fn((body, key) => { if (body && body.RETURN_NULL) return null; return { sections: [ { contents: [ { items: [ { key: 'dcbLink', value: 'DCB Link' }, { key: 'videoLink', value: 'Video Link' }, { key: 'faqsLink', value: 'FAQ Link' }, ], }, ], actions: [ { key: 'dcbLink', actionValue: 'https://dcb' }, { key: 'videoLink', actionValue: 'https://video' }, { key: 'faqsLink', actionValue: 'https://faqs' }, ], }, ], }; }), getActionKey: jest.fn((items, key) => key), getActionByKey: jest.fn((actions, key) => ({ actionValue: 'https://dummy' })), getItemValue: jest.fn((items, key) => key), }));
+
+jest.mock('../../../alert', () => ({ __esModule: true, default: ({ Message }) => <div data-testid="alert">{Message}</div>, }));
+
+jest.mock('@vds/loaders', () => ({ Loader: ({ active }) => <div data-testid="loader">Loader:{active ? 'on' : 'off'}</div> }));
+
+jest.mock('@vds/toggles', () => ({ Toggle: ({ on, onChange, statusText }) => ( <button data-testid="toggle" onClick={(e) => onChange(!on)}> {statusText ? statusText(on) : (on ? 'On' : 'Off')} </button> ), }));
+
+jest.mock('../blocksEmailDomains/BSEmailDomains', () => ({ __esModule: true, default: () => <div data-testid="bs-email">BSEmailDomains</div>, }));
+
+jest.mock('@vds/modals', () => ({ Modal: ({ children, toggleButton }) => ( <div> <div data-testid="modal-button">{toggleButton}</div> <div data-testid="modal">{children}</div> </div> ), ModalBody: ({ children }) => <div>{children}</div>, ModalTitle: ({ children }) => <div>{children}</div>, ModalFooter: ({ children }) => <div>{children}</div>, }));
+
+jest.mock('@vds/buttons', () => ({ TextLink: ({ children, ...rest }) => <a {...rest} href="#">{children}</a>, Button: ({ children }) => <button>{children}</button> })); jest.mock('@vds/typography', () => ({ Body: ({ children, ...rest }) => <div>{children}</div>, Title: ({ children }) => <div>{children}</div> })); jest.mock('@vds/grids', () => ({ Grid: ({ children }) => <div>{children}</div>, Row: ({ children }) => <div>{children}</div>, Col: ({ children, ...props }) => <div>{children}</div> }));
+
+delete window.location; window.location = { reload: jest.fn(), href: '' };
+
+const baseProps = () => ({ selectedAccordian: null, selectAccordian: jest.fn(), selectedDevice: { encryptedMtn: '9999' }, actions: { getServices: jest.requireMock('../../actions/fetchServices').getServices, postServices: jest.requireMock('../../actions/fetchServices').postServices, }, services: {}, confirmServices: null, serviceStatus: { body: { sections: [{ contents: [{ items: [] }], actions: [] }] } }, getServices: true, failServices: null, serviceFail: false, serviceErrorFlag: false, confirmServiceFlag: false, servicesError: null, isFetching: false, });
+
+describe('BlockServices component - componentDidUpdate confirmServices branch coverage', () => { afterEach(() => jest.clearAllMocks());
+
+test('componentDidUpdate: when confirmServices changes to responseCode "00" and pendingService exists, service toggles and state updates', async () => { const props = baseProps();
+
+// Create a ref to access the class instance
+const ref = React.createRef();
+
+const { rerender } = render(<BlockServices ref={ref} {...props} confirmServices={null} />);
+
+// Ensure instance is available
+expect(ref.current).toBeTruthy();
+
+// Set state to simulate a pendingService with sfoEnabled 'Y'
+act(() => {
+  ref.current.setState({
+    pendingService: { service: 'Group', i: 0 },
+    services: {
+      Group: {
+        data: [
+          { sfoEnabled: 'Y', sfoCode: 'C1', serviceName: 'MyService' },
+        ],
+        isExpand: false,
+      },
+    },
+  });
+});
+
+// Now rerender with updated confirmServices prop to trigger componentDidUpdate
+await act(async () => {
+  rerender(<BlockServices ref={ref} {...props} confirmServices={{ responseInfo: { responseCode: '00' } }} />);
+});
+
+// After update, sfoEnabled should have toggled from 'Y' to 'N'
+expect(ref.current.state.services.Group.data[0].sfoEnabled).toBe('N');
+
+// updatedService should be set to the sfoCode
+expect(ref.current.state.updatedService).toBe('C1');
+
+// successMsg should contain the serviceName
+expect(ref.current.state.successMsg).toContain('We have successfully saved settings for "MyService"');
+
+// pendingService should be cleared
+expect(ref.current.state.pendingService).toBeNull();
+
+}); });

@@ -1,43 +1,14 @@
-import React from "react";
-import { render } from "@testing-library/react";
-import BlockServices from "../BlockServices";
-
-describe("BlockServices toggleOn() coverage without async/await", () => {
-  it("covers postServices call and pendingService setState", () => {
-    const mockPostServices = jest.fn(); // not async
-
-    const props = {
-      selectedDevice: { encryptedMtn: "8888" },
-      actions: { postServices: mockPostServices },
-    };
-
-    const { container } = render(<BlockServices {...props} />);
-    const instance =
-      container.firstChild?._reactRootContainer?._internalRoot?.current?.child?.stateNode;
-
-    // Set fake services data
-    instance.setState({
-      services: {
-        data1: {
-          data: [{ sfoEnabled: "Y", sfoCode: "SFO999" }],
-        },
-      },
-    });
-
-    const mockEvent = { preventDefault: jest.fn() };
-
-    // Call toggleOn synchronously (no await)
-    instance.toggleOn(mockEvent, "data1", 0);
-
-    // ✅ Both lines are now executed
-    expect(mockPostServices).toHaveBeenCalledTimes(1);
-    expect(mockPostServices).toHaveBeenCalledWith({
-      mdn: "8888",
-      sfoCode: "SFO999",
-      sfoEnabled: "N",
-    });
-
-    // ✅ pendingService line covered
-    expect(instance.state.pendingService).toEqual({ service: "data1", i: 0 });
-  });
-});
+  toggleOn(e, service, i) {
+    const { selectedDevice } = this.props
+    const { services } = this.state
+    e.preventDefault();
+    const newsfoEnabled = services[service].data[i].sfoEnabled == "Y" ? "N" : "Y";
+    const payload = {
+      "mdn": selectedDevice.encryptedMtn,
+      "sfoCode": services[service].data[i].sfoCode,
+      "sfoEnabled": newsfoEnabled
+    }
+  
+    this.props.actions.postServices(payload);
+    this.setState({ pendingService: { service, i } });
+  }

@@ -1,19 +1,74 @@
-async toggleOn(e, service, i) {
-    const { selectedDevice } = this.props;
-    const { services } = this.state;
-    e.preventDefault();
-  
-    this.setState({
-      successMsg: "",
-    });
-  
-    const newsfoEnabled = services[service].data[i].sfoEnabled === "Y" ? "N" : "Y";
-    const payload = {
-      mdn: selectedDevice.encryptedMtn,
-      sfoCode: services[service].data[i].sfoCode,
-      sfoEnabled: newsfoEnabled,
+import React from "react";
+import { shallow } from "enzyme";
+import BlockServices from "../BlockServices";
+
+describe("BlockServices toggleOn", () => {
+  let wrapper;
+  let instance;
+  let mockPostServices;
+  let mockPreventDefault;
+
+  beforeEach(() => {
+    mockPostServices = jest.fn().mockResolvedValue({});
+    mockPreventDefault = jest.fn();
+
+    const props = {
+      selectedDevice: { encryptedMtn: "encrypted123" },
+      actions: {
+        postServices: mockPostServices,
+      },
     };
-  
-    await this.props.actions.postServices(payload);
-    this.setState({ pendingService: { service, i } });
-  }
+
+    const state = {
+      services: {
+        voice: {
+          data: [
+            { sfoCode: "CODE1", sfoEnabled: "Y" },
+            { sfoCode: "CODE2", sfoEnabled: "N" },
+          ],
+        },
+      },
+      successMsg: "previous",
+      pendingService: null,
+    };
+
+    wrapper = shallow(<BlockServices {...props} />);
+    instance = wrapper.instance();
+    instance.setState(state);
+  });
+
+  it("should toggle service from Y to N and call postServices", async () => {
+    const e = { preventDefault: mockPreventDefault };
+    await instance.toggleOn(e, "voice", 0);
+
+    // ✅ should prevent default
+    expect(mockPreventDefault).toHaveBeenCalled();
+
+    // ✅ should clear successMsg
+    expect(instance.state.successMsg).toBe("");
+
+    // ✅ should call postServices with correct payload
+    expect(mockPostServices).toHaveBeenCalledWith({
+      mdn: "encrypted123",
+      sfoCode: "CODE1",
+      sfoEnabled: "N",
+    });
+
+    // ✅ should update pendingService
+    expect(instance.state.pendingService).toEqual({ service: "voice", i: 0 });
+  });
+
+  it("should toggle service from N to Y and call postServices", async () => {
+    const e = { preventDefault: mockPreventDefault };
+    await instance.toggleOn(e, "voice", 1);
+
+    expect(mockPreventDefault).toHaveBeenCalled();
+    expect(instance.state.successMsg).toBe("");
+    expect(mockPostServices).toHaveBeenCalledWith({
+      mdn: "encrypted123",
+      sfoCode: "CODE2",
+      sfoEnabled: "Y",
+    });
+    expect(instance.state.pendingService).toEqual({ service: "voice", i: 1 });
+  });
+});

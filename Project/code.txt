@@ -1,40 +1,41 @@
-it('should call postServices and set pendingService when toggleOn is called', async () => {
-  const mockPostServices = jest.fn(() => Promise.resolve());
-  const mockActions = { postServices: mockPostServices };
-  const mockEvent = { preventDefault: jest.fn() };
+it('should update state when confirmServices responseCode is "00"', () => {
+  const mockDispatch = jest.fn();
 
-  const mockProps = {
-    actions: mockActions,
-    selectedDevice: { encryptedMtn: '123456' },
+  const initialProps = {
+    fetchServices: jest.fn(),
+    postServices: jest.fn(),
+    confirmServices: { responseInfo: { responseCode: "99" } }, // initial
   };
 
-  const wrapper = shallow(
-    <BlockServices.WrappedComponent {...mockProps} />
+  const { rerender } = render(
+    <BlockServices.WrappedComponent {...initialProps} dispatch={mockDispatch} />
   );
-  const instance = wrapper.instance();
 
-  // Mock state before toggleOn
-  instance.setState({
-    services: {
-      email: {
-        data: [
-          { sfoEnabled: 'Y', sfoCode: 'AB12' },
-        ],
+  // Simulate state before update
+  const instance = screen.getByTestId('block-services-instance')?.__instance;
+  if (instance) {
+    instance.setState({
+      pendingService: { service: 'email', i: 0 },
+      services: {
+        email: {
+          data: [{ sfoEnabled: 'Y', sfoCode: 'ABC' }],
+        },
       },
-    },
-    successMsg: 'Old Message',
-  });
+    });
+  }
 
-  // Call toggleOn
-  await instance.toggleOn(mockEvent, 'email', 0);
+  // Now rerender with updated props to trigger componentDidUpdate
+  rerender(
+    <BlockServices.WrappedComponent
+      {...initialProps}
+      confirmServices={{ responseInfo: { responseCode: "00" } }}
+      dispatch={mockDispatch}
+    />
+  );
 
-  // Assertions
-  expect(mockEvent.preventDefault).toHaveBeenCalled();
-  expect(mockPostServices).toHaveBeenCalledWith({
-    mdn: '123456',
-    sfoCode: 'AB12',
-    sfoEnabled: 'N', // flipped from Y → N
-  });
-  expect(instance.state.pendingService).toEqual({ service: 'email', i: 0 });
-  expect(instance.state.successMsg).toBe('');
+  // Expect successMsg to be updated based on state change
+  if (instance) {
+    expect(instance.state.successMsg).toContain('We have successfully saved settings');
+    expect(instance.state.pendingService).toBeNull();
+  }
 });

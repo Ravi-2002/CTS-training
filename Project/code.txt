@@ -1,280 +1,40 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect';
+it('should call postServices and set pendingService when toggleOn is called', async () => {
+  const mockPostServices = jest.fn(() => Promise.resolve());
+  const mockActions = { postServices: mockPostServices };
+  const mockEvent = { preventDefault: jest.fn() };
 
-// Import the connected default export then access the wrapped component
-import ConnectedBlockServices from './BlockServices';
+  const mockProps = {
+    actions: mockActions,
+    selectedDevice: { encryptedMtn: '123456' },
+  };
 
-// access wrapped component (react-redux connect adds WrappedComponent)
-const BlockServices = ConnectedBlockServices && ConnectedBlockServices.WrappedComponent ? ConnectedBlockServices.WrappedComponent : ConnectedBlockServices;
+  const wrapper = shallow(
+    <BlockServices.WrappedComponent {...mockProps} />
+  );
+  const instance = wrapper.instance();
 
-// ---- Mock modules used inside the component ----
-jest.mock('../../actions/fetchServices', () => ({
-  getServices: jest.fn(() => ({ type: 'GET_SERVICES' })),
-  postServices: jest.fn(() => ({ type: 'POST_SERVICES' })),
-}));
-
-jest.mock('../../../../../shared/utilities/util', () => ({
-  getContentFromSection: jest.fn((body, key) => {
-    if (body && body.__RETURN_NULL__) return null; // helper to force reload branch
-    return {
-      sections: [
-        {
-          contents: [
-            {
-              items: [
-                { key: 'dcbLink', value: 'DCB Link' },
-                { key: 'videoLink', value: 'Video Link' },
-                { key: 'faqsLink', value: 'FAQ Link' },
-              ],
-            },
-          ],
-          actions: [
-            { key: 'dcbLink', actionValue: 'https://dcb' },
-            { key: 'videoLink', actionValue: 'https://video' },
-            { key: 'faqsLink', actionValue: 'https://faqs' },
-          ],
-        },
-      ],
-    };
-  }),
-  getActionKey: jest.fn((items, key) => key),
-  getActionByKey: jest.fn((actions, key) => ({ actionValue: 'https://dummy' })),
-  getItemValue: jest.fn((items, key) => key),
-}));
-
-// Mock VDS and other presentational components used so tests can interact predictably
-jest.mock('../../../alert', () => ({
-  __esModule: true,
-  default: ({ Message }) => <div data-testid="alert">{Message}</div>,
-}));
-
-jest.mock('@vds/loaders', () => ({ Loader: ({ active }) => <div data-testid="loader">Loader:{active ? 'on' : 'off'}</div> }));
-
-// Mock Toggle - clickable element that toggles and calls onChange
-jest.mock('@vds/toggles', () => ({
-  Toggle: ({ on, onChange, statusText }) => (
-    <button data-testid="toggle" onClick={(e) => onChange(!on)}>
-      {statusText ? statusText(on) : (on ? 'On' : 'Off')}
-    </button>
-  ),
-}));
-
-jest.mock('../blocksEmailDomains/BSEmailDomains', () => ({
-  __esModule: true,
-  default: () => <div data-testid="bs-email">BSEmailDomains</div>,
-}));
-
-jest.mock('@vds/modals', () => ({
-  Modal: ({ children, toggleButton }) => (
-    <div>
-      <div data-testid="modal-button">{toggleButton}</div>
-      <div data-testid="modal">{children}</div>
-    </div>
-  ),
-  ModalBody: ({ children }) => <div>{children}</div>,
-  ModalTitle: ({ children }) => <div>{children}</div>,
-  ModalFooter: ({ children }) => <div>{children}</div>,
-}));
-
-jest.mock('@vds/buttons', () => ({ TextLink: ({ children, ...rest }) => <a {...rest} href="#">{children}</a>, Button: ({ children }) => <button>{children}</button> }));
-jest.mock('@vds/typography', () => ({ Body: ({ children, ...rest }) => <div>{children}</div>, Title: ({ children }) => <div>{children}</div> }));
-jest.mock('@vds/grids', () => ({ Grid: ({ children }) => <div>{children}</div>, Row: ({ children }) => <div>{children}</div>, Col: ({ children, ...props }) => <div>{children}</div> }));
-
-// Ensure window.location.reload doesn't actually reload during test
-delete window.location;
-window.location = { reload: jest.fn(), href: '' };
-
-// helper to create minimal props
-const baseProps = () => ({
-  selectedAccordian: null,
-  selectAccordian: jest.fn(),
-  selectedDevice: { encryptedMtn: '9999' },
-  actions: {
-    getServices: jest.requireMock('../../actions/fetchServices').getServices,
-    postServices: jest.requireMock('../../actions/fetchServices').postServices,
-  },
-  services: {},
-  confirmServices: null,
-  serviceStatus: { body: { sections: [{ contents: [{ items: [] }], actions: [] }] } },
-  getServices: true,
-  failServices: null,
-  serviceFail: false,
-  serviceErrorFlag: false,
-  confirmServiceFlag: false,
-  servicesError: null,
-  isFetching: false,
-});
-
-describe('BlockServices component - full coverage', () => {
-  afterEach(() => jest.clearAllMocks());
-
-  test('renders header and loader when collapsed, and handleServices triggers getServices', async () => {
-    const props = baseProps();
-    render(<BlockServices {...props} />);
-
-    // header text present
-    expect(screen.getByText('Block services')).toBeInTheDocument();
-
-    // loader present but off
-    expect(screen.getByTestId('loader')).toHaveTextContent('Loader:off');
-
-    // clicking header triggers selectAccordian and getServices
-    const header = screen.getByText('Block services');
-    fireEvent.click(header);
-    expect(props.selectAccordian).toHaveBeenCalledWith('BS');
-    expect(props.actions.getServices).toHaveBeenCalledWith('9999');
+  // Mock state before toggleOn
+  instance.setState({
+    services: {
+      email: {
+        data: [
+          { sfoEnabled: 'Y', sfoCode: 'AB12' },
+        ],
+      },
+    },
+    successMsg: 'Old Message',
   });
 
-  test('componentDidUpdate: populates services state when props.services changes', async () => {
-    const props = baseProps();
-    const { rerender } = render(<BlockServices {...props} />);
+  // Call toggleOn
+  await instance.toggleOn(mockEvent, 'email', 0);
 
-    const servicesPayload = {
-      'Additional Services': [
-        { sfoCode: 'A1', serviceName: 'Add1', sfoEnabled: 'N', shortDescription: 's', longDescription: 'l' },
-      ],
-      'Regular': [
-        { sfoCode: 'R1', serviceName: 'Reg1', sfoEnabled: 'Y', shortDescription: 's2', longDescription: 'l2' },
-      ],
-    };
-
-    // update props.services to trigger componentDidUpdate
-    await act(async () => {
-      rerender(<BlockServices {...props} services={servicesPayload} />);
-    });
-
-    // Now UI should contain the service group label
-    expect(screen.getByText('Regular')).toBeInTheDocument();
-    // Expand subservices panel
-    fireEvent.click(screen.getByLabelText('Regular'));
-    // service name visible
-    expect(screen.getByText('Reg1')).toBeInTheDocument();
-    // Toggle exists
-    expect(screen.getAllByTestId('toggle').length).toBeGreaterThan(0);
+  // Assertions
+  expect(mockEvent.preventDefault).toHaveBeenCalled();
+  expect(mockPostServices).toHaveBeenCalledWith({
+    mdn: '123456',
+    sfoCode: 'AB12',
+    sfoEnabled: 'N', // flipped from Y → N
   });
-
-  test('handleSubServices toggles specific panel and collapses others', async () => {
-    const props = baseProps();
-    const servicesPayload = {
-      'G1': [{ sfoCode: 'g1', serviceName: 'G1Name', sfoEnabled: 'N', shortDescription: 's', longDescription: 'l' }],
-      'G2': [{ sfoCode: 'g2', serviceName: 'G2Name', sfoEnabled: 'Y', shortDescription: 's2', longDescription: 'l2' }],
-    };
-    const { rerender } = render(<BlockServices {...props} services={{}} />);
-
-    await act(async () => rerender(<BlockServices {...props} services={servicesPayload} />));
-
-    // expand G1
-    fireEvent.click(screen.getByLabelText('G1'));
-    expect(screen.getByText('G1Name')).toBeInTheDocument();
-
-    // expand G2 -> G1 should collapse
-    fireEvent.click(screen.getByLabelText('G2'));
-    expect(screen.getByText('G2Name')).toBeInTheDocument();
-  });
-
-  test('toggleOn dispatches postServices and sets pendingService; then confirmServices update flips sfoEnabled and sets successMsg', async () => {
-    const props = baseProps();
-    const servicesPayload = {
-      'Group': [{ sfoCode: 'S1', serviceName: 'Svc1', sfoEnabled: 'N', shortDescription: 'short', longDescription: 'long' }],
-    };
-
-    const { rerender } = render(<BlockServices {...props} services={servicesPayload} />);
-
-    // Expand group
-    fireEvent.click(screen.getByLabelText('Group'));
-
-    // click toggle to call toggleOn
-    fireEvent.click(screen.getByTestId('toggle'));
-
-    // postServices should have been called
-    expect(props.actions.postServices).toHaveBeenCalled();
-
-    // Re-render with confirmServices success to trigger componentDidUpdate branch
-    const confirm = { responseInfo: { responseCode: '00' } };
-    await act(async () => rerender(<BlockServices {...props} services={servicesPayload} confirmServices={confirm} />));
-
-    // success message rendered via Alert
-    expect(screen.getByTestId('alert')).toBeInTheDocument();
-    expect(screen.getByTestId('alert')).toHaveTextContent('We have successfully saved settings');
-  });
-
-  test('renders BSEmailDomains when service key is "Emails & domains" and expands it', async () => {
-    const props = baseProps();
-    const servicesPayload = {
-      'Emails & domains': [{ sfoCode: 'E1', serviceName: 'Email', sfoEnabled: 'N', shortDescription: 's', longDescription: 'l' }],
-    };
-    const { rerender } = render(<BlockServices {...props} services={{}} />);
-
-    await act(async () => rerender(<BlockServices {...props} services={servicesPayload} />));
-
-    // The top-level service list should include the domain header
-    expect(screen.getByText('Emails & domains')).toBeInTheDocument();
-    // expand it
-    fireEvent.click(screen.getByLabelText('Emails & domains'));
-    // BSEmailDomains mock should be present
-    expect(screen.getByTestId('bs-email')).toBeInTheDocument();
-  });
-
-  test('renders additional links section when selectedAccordian and getServices true', async () => {
-    const props = { ...baseProps(), selectedAccordian: 'BS' };
-    const servicesPayload = { 'Some': [{ sfoCode: 'x', serviceName: 'X', sfoEnabled: 'N', shortDescription: 'a', longDescription: 'b' }] };
-    const { rerender } = render(<BlockServices {...props} services={{}} />);
-
-    await act(async () => rerender(<BlockServices {...props} services={servicesPayload} />));
-
-    // There should be links with the item keys as text
-    expect(screen.getByText('dcbLink')).toBeInTheDocument();
-    expect(screen.getByText('videoLink')).toBeInTheDocument();
-    expect(screen.getByText('faqsLink')).toBeInTheDocument();
-
-    // clicking link changes window.location.href (common.getActionByKey was mocked)
-    fireEvent.click(screen.getByText('dcbLink'));
-    expect(window.location.href).toBe('https://dummy');
-  });
-
-  test('error and failure banners: serviceFail, serviceErrorFlag, confirmServiceFlag branches', () => {
-    const propsFail = { ...baseProps(), serviceFail: true, failServices: { errorMessage: 'failure' } };
-    render(<BlockServices {...propsFail} />);
-    expect(screen.getByTestId('alert')).toHaveTextContent('failure');
-
-    jest.clearAllMocks();
-    const propsErr = { ...baseProps(), serviceErrorFlag: true, servicesError: { internalErrors: [{ errorMessage: 'err' }] } };
-    render(<BlockServices {...propsErr} />);
-    expect(screen.getByTestId('alert')).toHaveTextContent('err');
-
-    jest.clearAllMocks();
-    const propsConf = { ...baseProps(), confirmServiceFlag: true, confirmServices: { responseInfo: { responseCode: '00' } } };
-    render(<BlockServices {...propsConf} />);
-    // successMsg uses default if not set; Alert should render
-    expect(screen.getByTestId('alert')).toBeInTheDocument();
-  });
-
-  test('pageContent reload path when getContentFromSection returns null triggers window.location.reload', () => {
-    const util = require('../../../../../shared/utilities/util');
-    // configure to return null
-    util.getContentFromSection.mockImplementation(() => null);
-    const props = { ...baseProps(), serviceStatus: { body: { __RETURN_NULL__: true } } };
-
-    render(<BlockServices {...props} />);
-    expect(window.location.reload).toHaveBeenCalled();
-  });
-
-  test('closePupup sets showPopup false (covering closePupup and state update)', () => {
-    const props = baseProps();
-    const { container } = render(<BlockServices {...props} />);
-    const instance = container.firstChild._reactInternals ? null : null; // there's no direct instance when rendering functionally
-    // Instead we call the method via mounting using a ref
-    // Create a wrapper that exposes instance
-    class Wrapper extends React.Component {
-      render() {
-        return <BlockServices ref={(r) => (this.bs = r)} {...this.props} />;
-      }
-    }
-    const wrapper = render(<Wrapper {...props} />);
-    const inst = wrapper.container.firstChild && wrapper.container.firstChild._reactRootContainer ? wrapper.container.firstChild : null;
-    // call method if available
-    // Access the instance via internal fiber is unreliable; instead just ensure calling closePupup via prototype works without error
-    expect(() => BlockServices.prototype.closePupup.call({ setState: jest.fn() })).not.toThrow();
-  });
+  expect(instance.state.pendingService).toEqual({ service: 'email', i: 0 });
+  expect(instance.state.successMsg).toBe('');
 });

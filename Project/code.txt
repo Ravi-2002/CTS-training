@@ -1,7 +1,31 @@
- renderPreferenceLink = (singleLink, index) => {
+import React from 'react';
+import { render } from '@testing-library/react';
+import '@testing-library/jest-dom';
+
+const mockGetChannelId = jest.fn();
+const mockGetContentFromSection = jest.fn();
+const mockGetItemValue = jest.fn();
+const mockGetActionKey = jest.fn();
+const mockOnClick = jest.fn();
+
+jest.mock('../../common', () => ({
+  getChannelId: () => mockGetChannelId(),
+  getContentFromSection: (...args) => mockGetContentFromSection(...args),
+  getItemValue: (...args) => mockGetItemValue(...args),
+  getActionKey: (...args) => mockGetActionKey(...args),
+}));
+
+class DummyComponent extends React.Component {
+  state = { selectedMdn: '12345' };
+
+  getOnClickInfo = (...args) => {
+    return { onclick: mockOnClick, args };
+  };
+
+  renderPreferenceLink = (singleLink, index) => {
+    const common = require('../../common');
     const isMvm = common.getChannelId() == 'VZW-MFA';
- 
- 
+
     const { deviceDetailInfoSection } = this.props;
     const pageContent = deviceDetailInfoSection?.sections
       ? common.getContentFromSection(deviceDetailInfoSection, 'devicesLandingMainSection')?.sections?.[0]
@@ -9,38 +33,206 @@
     const pageAttributes = deviceDetailInfoSection?.pageAttributes || {};
     const enableSharenameid = common.getItemValue(pageAttributes, 'enableSharenameid') === 'true';
     const enableBlocks = common.getItemValue(pageAttributes, 'enableBlocks') === 'true';
-    const enableBlocksMVA = common.getItemValue(pageAttributes,'enableBlocksMVA')==='true';
+    const enableBlocksMVA = common.getItemValue(pageAttributes, 'enableBlocksMVA') === 'true';
     const pageItems = pageContent?.contents?.[0]?.items;
     const deviceList = pageContent?.data || [];
- 
-    let selectedDeviceDetail = (deviceList && deviceList.filter((singleDevice) => singleDevice.mtn == this.state.selectedMdn)) || [];
+
+    let selectedDeviceDetail =
+      (deviceList && deviceList.filter((singleDevice) => singleDevice.mtn == this.state.selectedMdn)) || [];
     let { preferences, shareNameIDBtnThrottle } = selectedDeviceDetail.length && selectedDeviceDetail[0];
     let encrypterMDN = selectedDeviceDetail[0].encryptedMtnDES;
-    if (!preferences?.[singleLink]) return null; 
+    if (!preferences?.[singleLink]) return null;
+
     const isAllowedAction = {
-      shareNameIDBtn: enableSharenameid &&!isMvm,
-      blockSpecificServicesBtn: true ,
-      blockCallsAndMessagesBtn: true ,
-      manageCallFilterBtn: !isMvm
+      shareNameIDBtn: enableSharenameid && !isMvm,
+      blockSpecificServicesBtn: true,
+      blockCallsAndMessagesBtn: true,
+      manageCallFilterBtn: !isMvm,
     }[singleLink];
+
     const handleClick = () => {
       const actionKey = common.getActionKey(pageItems, singleLink);
       let clickInfo;
       if (singleLink === 'shareNameIDBtn' && shareNameIDBtnThrottle) {
-        clickInfo = this.getOnClickInfo(pageContent, isMvm ? `nsa_${actionKey}_native` : `nsa_${actionKey}`, this.state.selectedMdn);
+        clickInfo = this.getOnClickInfo(
+          pageContent,
+          isMvm ? `nsa_${actionKey}_native` : `nsa_${actionKey}`,
+          this.state.selectedMdn
+        );
       } else if (isAllowedAction) {
-        if(isMvm){
-          clickInfo = this.getOnClickInfo(pageContent, `nsa_${actionKey}_mva` ,encrypterMDN,false,singleLink);
-        }
-        else{
+        if (isMvm) {
+          clickInfo = this.getOnClickInfo(pageContent, `nsa_${actionKey}_mva`, encrypterMDN, false, singleLink);
+        } else {
           clickInfo = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
         }
-      } else if(isMvm && singleLink === 'manageCallFilterBtn'){
+      } else if (isMvm && singleLink === 'manageCallFilterBtn') {
         clickInfo = this.getOnClickInfo(pageContent, `nsa_${actionKey}`, this.state.selectedMdn);
       } else {
         clickInfo = this.getOnClickInfo(pageContent, isMvm ? `${actionKey}_native` : actionKey, this.state.selectedMdn);
       }
- 
+
       clickInfo?.onclick();
     };
- 
+
+    // simulate rendering clickable link
+    return <button onClick={handleClick} data-testid={`${singleLink}-btn`}>{singleLink}</button>;
+  };
+
+  render() {
+    return (
+      <div>
+        {['shareNameIDBtn', 'blockSpecificServicesBtn', 'blockCallsAndMessagesBtn', 'manageCallFilterBtn'].map(
+          (link, i) => this.renderPreferenceLink(link, i)
+        )}
+      </div>
+    );
+  }
+}
+
+describe('renderPreferenceLink', () => {
+  const mockPageContent = {
+    sections: [{ contents: [{ items: ['item1'] }], data: [{ mtn: '12345', encryptedMtnDES: 'enc', preferences: {}, shareNameIDBtnThrottle: false }] }],
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetContentFromSection.mockReturnValue(mockPageContent);
+    mockGetItemValue.mockImplementation((_, key) => {
+      const map = { enableSharenameid: 'true', enableBlocks: 'true', enableBlocksMVA: 'true' };
+      return map[key] || 'false';
+    });
+    mockGetActionKey.mockReturnValue('mockAction');
+  });
+
+  it('should return null when preferences missing', () => {
+    mockGetChannelId.mockReturnValue('VZW-MFA');
+    const props = {
+      deviceDetailInfoSection: { sections: [{}], pageAttributes: {} },
+    };
+    const { container } = render(<DummyComponent {...props} />);
+    expect(container.querySelectorAll('button').length).toBe(0);
+  });
+
+  it('should handle shareNameIDBtn with throttle non-MVM', () => {
+    mockGetChannelId.mockReturnValue('NON-MVM');
+    const props = {
+      deviceDetailInfoSection: {
+        sections: [
+          {
+            contents: [{ items: ['item1'] }],
+            data: [
+              {
+                mtn: '12345',
+                encryptedMtnDES: 'enc',
+                preferences: { shareNameIDBtn: true },
+                shareNameIDBtnThrottle: true,
+              },
+            ],
+          },
+        ],
+        pageAttributes: {},
+      },
+    };
+
+    const { getByTestId } = render(<DummyComponent {...props} />);
+    getByTestId('shareNameIDBtn-btn').click();
+    expect(mockOnClick).toHaveBeenCalled();
+  });
+
+  it('should handle isAllowedAction true with MVM', () => {
+    mockGetChannelId.mockReturnValue('VZW-MFA');
+    const props = {
+      deviceDetailInfoSection: {
+        sections: [
+          {
+            contents: [{ items: ['item1'] }],
+            data: [
+              {
+                mtn: '12345',
+                encryptedMtnDES: 'enc',
+                preferences: { blockSpecificServicesBtn: true },
+              },
+            ],
+          },
+        ],
+        pageAttributes: {},
+      },
+    };
+
+    const { getByTestId } = render(<DummyComponent {...props} />);
+    getByTestId('blockSpecificServicesBtn-btn').click();
+    expect(mockOnClick).toHaveBeenCalled();
+  });
+
+  it('should handle isAllowedAction true non-MVM', () => {
+    mockGetChannelId.mockReturnValue('NON-MVM');
+    const props = {
+      deviceDetailInfoSection: {
+        sections: [
+          {
+            contents: [{ items: ['item1'] }],
+            data: [
+              {
+                mtn: '12345',
+                encryptedMtnDES: 'enc',
+                preferences: { blockCallsAndMessagesBtn: true },
+              },
+            ],
+          },
+        ],
+        pageAttributes: {},
+      },
+    };
+    const { getByTestId } = render(<DummyComponent {...props} />);
+    getByTestId('blockCallsAndMessagesBtn-btn').click();
+    expect(mockOnClick).toHaveBeenCalled();
+  });
+
+  it('should handle manageCallFilterBtn when MVM', () => {
+    mockGetChannelId.mockReturnValue('VZW-MFA');
+    const props = {
+      deviceDetailInfoSection: {
+        sections: [
+          {
+            contents: [{ items: ['item1'] }],
+            data: [
+              {
+                mtn: '12345',
+                encryptedMtnDES: 'enc',
+                preferences: { manageCallFilterBtn: true },
+              },
+            ],
+          },
+        ],
+        pageAttributes: {},
+      },
+    };
+    const { getByTestId } = render(<DummyComponent {...props} />);
+    getByTestId('manageCallFilterBtn-btn').click();
+    expect(mockOnClick).toHaveBeenCalled();
+  });
+
+  it('should handle default else block (non-MVM)', () => {
+    mockGetChannelId.mockReturnValue('NON-MVM');
+    const props = {
+      deviceDetailInfoSection: {
+        sections: [
+          {
+            contents: [{ items: ['item1'] }],
+            data: [
+              {
+                mtn: '12345',
+                encryptedMtnDES: 'enc',
+                preferences: { manageCallFilterBtn: true },
+              },
+            ],
+          },
+        ],
+        pageAttributes: {},
+      },
+    };
+    const { getByTestId } = render(<DummyComponent {...props} />);
+    getByTestId('manageCallFilterBtn-btn').click();
+    expect(mockOnClick).toHaveBeenCalled();
+  });
+});

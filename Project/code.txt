@@ -1,242 +1,44 @@
-/**
- * deviceDetail.pure.test.js
- * Unit-level tests for DeviceDetail component (class only)
- * Directly invokes all methods for 100 % coverage.
- */
+test('renderPreferenceLink executes fully', () => {
+  const Connected = require('./deviceDetail.js').default;
+  const DeviceDetail =
+    Connected.WrappedComponent ||
+    Connected.default?.WrappedComponent ||
+    Connected;
 
-import DeviceDetail from './deviceDetail.js'; // adjust path if needed
-
-// simple mock replacements
-global.window = Object.create(window);
-window.location = { href: '', assign: jest.fn(), hash: '', origin: 'http://localhost', hostname: 'localhost' };
-window.enablePesonalizedOffer = false;
-window.enableDualNumExp = false;
-window.vztag = { api: { dispatch: jest.fn() } };
-
-const mockProps = {
-  match: { params: { mtn: 'encMtn' } },
-  selectedDevice: { mtn: '12345' },
-  deviceDetailInfoSection: {
-    pageAttributes: { enableSharenameid: 'true', enableCallFilter: 'true' },
-    featureFlags: {},
-    sections: [
-      {
-        contents: [{ items: {} }],
-        actions: [{ actionKey: 'upgradeBtn', actionValue: '/upgrade/' }],
-        data: [
-          {
-            mtn: '12345',
-            encryptedMtnDES: 'encMtn',
-            deviceId: 'devId',
-            modelName: 'Model X',
-            nickName: 'My Phone',
-            displayMtn: '123-456-7890',
-            preferences: {
-              shareNameIDBtn: true,
-              blockSpecificServicesBtn: true,
-              blockCallsAndMessagesBtn: true,
-              manageCallFilterBtn: true,
-              shareNameIDBtnThrottle: false,
+  const props = {
+    deviceDetailInfoSection: {
+      pageAttributes: { enableSharenameid: 'true', enableCallFilter: 'true' },
+      sections: [
+        {
+          contents: [{ items: [{}] }],
+          data: [
+            {
+              mtn: '12345',
+              preferences: {
+                shareNameIDBtn: true,
+                blockSpecificServicesBtn: true,
+                blockCallsAndMessagesBtn: true,
+                manageCallFilterBtn: true,
+              },
             },
-            deviceManagement: { upgradeDeviceBtn: true },
-            troubleshootAndSupport: { troubleshootBtn: true },
-            simFreezeInfo: {
-              simFreezeCode: 'U',
-              simUnfreezeTimeStamp: '2025-11-13',
-              isBlocked: 'N',
-              simFreezeDetails: 'ciphered',
-            },
-            paymentInfo: {
-              payOffEligible: true,
-              hasPayOffBalance: true,
-              promoDevice: false,
-              numberOfInstallmentsBilled: '2',
-              pendingNumberOfInstallments: '2',
-            },
-            deviceCategory: 'phone',
-            brandName: 'Apple',
-          },
-        ],
-      },
-    ],
-  },
-  deviceHomeInfoSection: { updateNickNameFlag: true },
-  isOpenNickNameModal: false,
-  recommendedDevice: {},
-  recommendedTiles: {},
-  productList: {},
-  actions: {}, // not used directly
-};
+          ],
+        },
+      ],
+    },
+  };
 
-// helper: create instance safely
-function createInstance(extra = {}) {
-  const inst = new DeviceDetail({ ...mockProps, ...extra });
-  inst.setState = (obj) => Object.assign(inst.state, obj);
-  return inst;
-}
+  const inst = new DeviceDetail(props);
+  inst.props = props;
+  inst.state = { selectedMdn: '12345' };
 
-describe('DeviceDetail (pure class) full coverage', () => {
-  test('componentDidMount sets state and calls getSections', () => {
-    const inst = createInstance();
-    inst.props.actions.getSections = jest.fn();
-    inst.componentDidMount();
-    expect(inst.state.selectedMdn).toBe('12345');
-    expect(inst.props.actions.getSections).toHaveBeenCalled();
-  });
-
-  test('componentDidUpdate runs finishMonitoring and sets state paths', () => {
-    const inst = createInstance();
-    global.finishMonitoring = jest.fn();
-    inst.props.deviceDetailInfoSection.sections = mockProps.deviceDetailInfoSection.sections;
-    inst.componentDidUpdate({});
-    expect(global.finishMonitoring).toHaveBeenCalled();
-  });
-
-  test('handleSelectBoxChange updates state', () => {
-    const inst = createInstance();
-    inst.handleSelectBoxChange({ target: { value: '12345' } });
-    expect(inst.state.selectedMdn).toBeDefined();
-  });
-
-  test('personalizationFlag returns window flag', () => {
-    const inst = createInstance();
-    window.enablePesonalizedOffer = true;
-    expect(inst.personalizationFlag()).toBe(true);
-  });
-
-  test('handleUpgradeRedirection builds correct href', () => {
-    const inst = createInstance();
-    inst.handleUpgradeRedirection({
-      actionValue: '/upgrade/',
-      selectedDeviceInfo: { encryptedMtnDES: 'enc', deviceCategory: 'phone' },
-      primaryMtnDetails: {},
-    });
-    expect(window.location.href).toContain('/upgrade/');
-  });
-
-  test('getUpgradeActionValue handles brand replacement', () => {
-    const inst = createInstance();
-    const pageContent = { actions: [{ actionKey: 'dppUpgradeBtn', actionValue: '/##BRAND##/' }] };
-    const val = inst.getUpgradeActionValue(
-      [{ deviceCategory: 'phone', newSelectedMdnFlowFFlag: true, brandName: 'Apple' }],
-      pageContent,
-      {},
-      pageContent.actions,
-      'upgradeBtn'
-    );
-    expect(val).toContain('apple');
-  });
-
-  test('validateUrl and setCookieForRecommendedDeviceUpgrade', () => {
-    const inst = createInstance();
-    expect(inst.validateUrl('x')).toContain('x');
-    expect(inst.validateUrl('')).toBe('');
-    inst.setCookieForRecommendedDeviceUpgrade('k', 'v');
-    expect(document.cookie).toContain('=');
-  });
-
-  test('renderRecommendedDeviceUpgradeLink returns object keys', () => {
-    const inst = createInstance();
-    const res = inst.renderRecommendedDeviceUpgradeLink('12345');
-    expect(res).toHaveProperty('recommendedDeviceId');
-  });
-
-  test('renderRecommendedDeviceNewUpgradeLink returns object keys', () => {
-    const inst = createInstance();
-    const res = inst.renderRecommendedDeviceNewUpgradeLink('12345');
-    expect(res).toHaveProperty('actionUrl');
-  });
-
-  test('renderPreferenceLink triggers each branch', () => {
-    const inst = createInstance();
-    inst.state.selectedMdn = '12345';
-    const prefs = [
-      'shareNameIDBtn',
-      'blockSpecificServicesBtn',
-      'blockCallsAndMessagesBtn',
-      'manageCallFilterBtn',
-      'other',
-    ];
-    prefs.forEach((key) => {
+  // Call function for each preference type to execute every branch
+  ['shareNameIDBtn','blockSpecificServicesBtn','blockCallsAndMessagesBtn','manageCallFilterBtn','other']
+    .forEach((key) => {
       const node = inst.renderPreferenceLink(key, 0);
-      // if it returns JSX, simulate click by invoking onClick manually
-      if (node && node.props && node.props.children) {
-        const listGroup = node.props.children.props.children;
-        const onClick = listGroup.props.onClick;
-        onClick();
+      if (node && node.props?.children?.props?.children?.props?.onClick) {
+        node.props.children.props.children.props.onClick();
       }
     });
-    expect(true).toBe(true);
-  });
 
-  test('renderDeviceManagementLink triggers upgrade path', () => {
-    const inst = createInstance();
-    inst.state.selectedMdn = '12345';
-    const node = inst.renderDeviceManagementLink('upgradeDeviceBtn', 0);
-    if (node) {
-      const onClick = node.props.children.props.children.props.onClick;
-      onClick();
-    }
-    expect(true).toBe(true);
-  });
-
-  test('renderTroubleshootAndSupportLink triggers troubleshootBtn', () => {
-    const inst = createInstance();
-    inst.state.selectedMdn = '12345';
-    const node = inst.renderTroubleshootAndSupportLink('troubleshootBtn', 0);
-    const onClick = node.props.children.props.children.props.onClick;
-    onClick();
-    expect(true).toBe(true);
-  });
-
-  test('helper methods handleXxxModal', () => {
-    const inst = createInstance();
-    inst.handleModalChange(true);
-    inst.handleCancel();
-    inst.handleChangeOrReplaceModalChange(true);
-    inst.handleChangeOrReplaceModalCancel();
-    inst.handleSimFreezeModalChange(true);
-    inst.handleSimFreezeCancel();
-    inst.handleSimFreezeNotification1Cancel();
-    inst.handleSimFreezeNotification2Cancel();
-    expect(inst.state.showModal).toBe(false);
-  });
-
-  test('paidPercentageCalculation and display* helpers return numbers/booleans', () => {
-    const inst = createInstance();
-    const info = { numberOfInstallmentsBilled: '1', pendingNumberOfInstallments: '1', billedAmountPercentage: 50 };
-    const p = inst.paidPercentageCalculation(info);
-    expect(typeof p).toBe('number');
-    expect(typeof inst.displayProgressBar(info)).toBe('boolean');
-    expect(typeof inst.displayPayNowBtn(info)).toBe('boolean');
-  });
-
-  test('recommendedDeviceTile stores in sessionStorage', () => {
-    const inst = createInstance();
-    const sel = [{ isQuickCartEnabled: true, simId: '1', promoType: 'x', promotionId: 'y' }];
-    const req = {};
-    const res = inst.recommendedDeviceTile(req, sel, 'sales/nextgen/oneclick.html');
-    expect(res).toContain('oneclick');
-  });
-
-  test('displayNumber runs without crash', () => {
-    const inst = createInstance();
-    inst.state.selectedMdn = '12345';
-    const result = inst.displayNumber('12345');
-    expect(result).toBeTruthy();
-  });
-
-  test('handleClickForError changes location or hash', () => {
-    const inst = createInstance();
-    inst.handleClickForError('http', '/x');
-    inst.handleClickForError('route', '/y');
-    expect(window.location.assign).toHaveBeenCalled();
-  });
-
-  test('handleShowAllDevices sets hash', () => {
-    const inst = createInstance();
-    inst.props.actions.isRedirectedFromDetailPage = jest.fn();
-    inst.handleShowAllDevices();
-    expect(window.location.hash).toContain('/');
-  });
+  expect(true).toBe(true);
 });

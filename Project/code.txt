@@ -1,44 +1,69 @@
-test('renderPreferenceLink executes fully', () => {
-  const Connected = require('./deviceDetail.js').default;
-  const DeviceDetail =
-    Connected.WrappedComponent ||
-    Connected.default?.WrappedComponent ||
-    Connected;
-
-  const props = {
-    deviceDetailInfoSection: {
-      pageAttributes: { enableSharenameid: 'true', enableCallFilter: 'true' },
-      sections: [
-        {
-          contents: [{ items: [{}] }],
-          data: [
-            {
-              mtn: '12345',
-              preferences: {
-                shareNameIDBtn: true,
-                blockSpecificServicesBtn: true,
-                blockCallsAndMessagesBtn: true,
-                manageCallFilterBtn: true,
-              },
-            },
-          ],
-        },
-      ],
-    },
+renderPreferenceLink = (singleLink, index) => {
+    let enableSharenameid, enableCallFilter, enableBlocks;
+    Eif (this.props.deviceDetailInfoSection && this.props.deviceDetailInfoSection.pageAttributes) {
+      enableSharenameid = common.getItemValue(
+        this.props.deviceDetailInfoSection.pageAttributes,
+        'enableSharenameid'
+      )
+      enableCallFilter = common.getItemValue(
+        this.props.deviceDetailInfoSection.pageAttributes,
+        'enableCallFilter'
+      )
+     
+    }
+ 
+    let pageContent;
+    if (this.props.deviceDetailInfoSection && this.props.deviceDetailInfoSection.sections) {
+      pageContent = common.getContentFromSection(this.props.deviceDetailInfoSection, 'devicesLandingMainSection');
+      pageContent = pageContent.sections[0];
+    }
+    let pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
+    let deviceList = (pageContent && pageContent.data) || [];
+    let selectedDeviceDetail = (deviceList && deviceList.filter((singleDevice) => singleDevice.mtn == this.state.selectedMdn)) || [];
+    let { preferences, shareNameIDBtnThrottle } = selectedDeviceDetail.length && selectedDeviceDetail[0];
+ 
+    return preferences[`${singleLink}`] ? (
+      <Col
+        key={`${singleLink}`}
+        colSizes={{
+          desktop: 6,
+          tablet: 6,
+        }}
+      >
+        <ListGroup topLine={false} bottomLine={true} surface='light' viewport='desktop'>
+          <ListGroupItem
+            ariaLabel={`${common.getItemValue(pageItems, `${singleLink}`)}`}
+            actionElement='icon'
+            onClick={() => {
+              if (
+                singleLink == 'shareNameIDBtn' &&
+                (enableSharenameid === 'true' || shareNameIDBtnThrottle)
+              ) {
+                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
+                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
+                click_info?.onclick();
+              } else if (singleLink == 'blockSpecificServicesBtn') {
+                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
+                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
+                click_info?.onclick();
+              } else if (singleLink == 'blockCallsAndMessagesBtn') {
+                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
+                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
+                click_info?.onclick();
+              } else if (singleLink == 'manageCallFilterBtn') {
+                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
+                let click_info = this.getOnClickInfo(pageContent, `nsa_${actionKey}`);
+                click_info?.onclick();
+              } else {
+                let actionKey = pageContent && common.getActionKey(pageItems, `${singleLink}`);
+                let click_info = this.getOnClickInfo(pageContent, actionKey);
+                click_info?.onclick();
+              }
+            }}
+          >
+            {this.listGroupCommonCode(pageItems, singleLink)}
+          </ListGroupItem>
+        </ListGroup>
+      </Col>
+    ) : null;
   };
-
-  const inst = new DeviceDetail(props);
-  inst.props = props;
-  inst.state = { selectedMdn: '12345' };
-
-  // Call function for each preference type to execute every branch
-  ['shareNameIDBtn','blockSpecificServicesBtn','blockCallsAndMessagesBtn','manageCallFilterBtn','other']
-    .forEach((key) => {
-      const node = inst.renderPreferenceLink(key, 0);
-      if (node && node.props?.children?.props?.children?.props?.onClick) {
-        node.props.children.props.children.props.onClick();
-      }
-    });
-
-  expect(true).toBe(true);
-});

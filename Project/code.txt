@@ -1,75 +1,15 @@
-describe("Submission.jsx – optOut & transactionType coverage", () => {
+test("when manageTouchlessScanFFlag is false, no redirect to /success", () => {
+  // Set the flag to FALSE
+  reactGlobals.manageTouchlessScanFFlag = false;
 
-  it("optOut = 'Y' and destinationFlow = 'SCAN_ID' → NOTHANKS", () => {
-    const mockReactGlobals = {
-      destinationFlow: "SCAN_ID",
-      locationCode: "123",
-      ssCluster: "abc",
-      transactionId: "tx1"
-    };
-
-    const mockLocation = {
-      state: { url: "data:image/png;base64,AAAA" }
-    };
-
-    const result = buildReqData("Y", mockLocation, mockReactGlobals);
-
-    expect(result.customerOpted).toBe("N");
-    expect(result.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
+  const { history } = renderWithRouter(<Submission />, {
+    url: "data:image/png;base64,FLAGTEST",
   });
 
-  it("optOut = 'Y' and destinationFlow != 'SCAN_ID' → SMART_LINK_NOTHANKS", () => {
-    const mockReactGlobals = {
-      destinationFlow: "OTHER",
-      locationCode: "123",
-      ssCluster: "abc",
-      transactionId: "tx1"
-    };
+  fireEvent.click(screen.getByText("Submit"));
 
-    const mockLocation = {
-      state: { url: "data:image/png;base64,AAAA" }
-    };
+  expect(postHttpClientRequest).toHaveBeenCalledTimes(1);
 
-    const result = buildReqData("Y", mockLocation, mockReactGlobals);
-
-    expect(result.customerOpted).toBe("N");
-    expect(result.transactionType).toBe("MVO_ID_SMART_LINK_NOTHANKS");
-  });
-
-  it("optOut != 'Y' and destinationFlow = 'SCAN_ID' → TOUCHLESS", () => {
-    const mockReactGlobals = {
-      destinationFlow: "SCAN_ID",
-      locationCode: "123",
-      ssCluster: "abc",
-      transactionId: "tx1"
-    };
-
-    const mockLocation = {
-      state: { url: "data:image/png;base64,AAAA" }
-    };
-
-    const result = buildReqData("N", mockLocation, mockReactGlobals);
-
-    expect(result.customerOpted).toBe("Y");
-    expect(result.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
-  });
-
-  it("optOut != 'Y' and destinationFlow != 'SCAN_ID' → SMART_LINK_TOUCHLESS", () => {
-    const mockReactGlobals = {
-      destinationFlow: "OTHER",
-      locationCode: "123",
-      ssCluster: "abc",
-      transactionId: "tx1"
-    };
-
-    const mockLocation = {
-      state: { url: "data:image/png;base64,AAAA" }
-    };
-
-    const result = buildReqData("N", mockLocation, mockReactGlobals);
-
-    expect(result.customerOpted).toBe("Y");
-    expect(result.transactionType).toBe("MVO_ID_SMART_LINK_TOUCHLESS");
-  });
-
+  // ❗ NO redirect should happen
+  expect(history.location.pathname).not.toBe("/success");
 });

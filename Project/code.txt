@@ -6,36 +6,53 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import Submission from "./Submission";
 import { Router } from "react-router-dom";
 import { createMemoryHistory } from "history";
-import landingData from "../../../../mock/scan/get/landing.json";
-import { postHttpClientRequest } from "../httpClient";
 
+// Mock Page & Typography
+jest.mock("@lib/components/Page", () => (props) => <div>{props.children}</div>);
+jest.mock("@lib/components/Typography", () => ({
+  Title: ({ children }) => <div>{children}</div>,
+}));
+
+// Mock Button
+jest.mock("@vds/buttons", () => ({
+  Button: (props) => <button {...props}>{props.children}</button>,
+}));
+
+// Mock landingData
+jest.mock("../../../../mock/scan/get/landing.json", () => ({
+  content: {
+    submitPage: {
+      reTaketitle: "Retake Title",
+      retake: "Retake",
+      submit: "Submit",
+    },
+  },
+}));
+
+// Mock API
+import { postHttpClientRequest } from "../httpClient";
 jest.mock("../httpClient", () => ({
   postHttpClientRequest: jest.fn(),
 }));
 
-// Mock reactGlobals
-global.reactGlobals = {
-  baseUrl: "https://base/",
-  submitUrl: "submit",
-  locationCode: "LOC123",
-  ssCluster: "CLUSTER1",
-  transactionId: "TID100",
-  destinationFlow: "SCAN_ID",
-  manageTouchlessScanFFlag: true
-};
+// GLOBAL reactGlobals
+beforeEach(() => {
+  global.reactGlobals = {
+    baseUrl: "https://base/",
+    submitUrl: "submit",
+    locationCode: "LOC123",
+    ssCluster: "CLUSTER1",
+    transactionId: "TID100",
+    destinationFlow: "SCAN_ID",
+    manageTouchlessScanFFlag: true,
+  };
+});
 
-// Mock landing text
-landingData.content = {
-  submitPage: {
-    reTaketitle: "Retake Title",
-    retake: "Retake",
-    submit: "Submit"
-  }
-};
-
+// Router wrapper
 const renderWithRouter = (ui, routeState = {}) => {
-  const history = createMemoryHistory();
-  history.location.state = routeState;
+  const history = createMemoryHistory({
+    initialEntries: [{ pathname: "/", state: routeState }],
+  });
 
   return {
     ...render(<Router history={history}>{ui}</Router>),
@@ -44,13 +61,13 @@ const renderWithRouter = (ui, routeState = {}) => {
 };
 
 describe("Submission Component - 100% Coverage", () => {
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test("renders UI with image when imageUrl exists", () => {
-    const { history } = renderWithRouter(<Submission />, { url: "data:image/png;base64,ABC123==" });
+  // UI RENDERING
+  test("renders with image when imageUrl exists", () => {
+    renderWithRouter(<Submission />, { url: "data:image/png;base64,ABC123" });
 
     expect(screen.getByAltText("Screenshot")).toBeInTheDocument();
     expect(screen.getByText("Retake Title")).toBeInTheDocument();
@@ -58,83 +75,101 @@ describe("Submission Component - 100% Coverage", () => {
     expect(screen.getByText("Submit")).toBeInTheDocument();
   });
 
-  test("routeToScanPage: clicking Retake navigates to /scan", () => {
-    const { history } = renderWithRouter(<Submission />, { url: "data:image/png;base64,ABC123==" });
+  // ROUTE TO SCAN PAGE
+  test("clicking Retake navigates to /scan", () => {
+    const { history } = renderWithRouter(<Submission />, {
+      url: "data:image/png;base64,AAA",
+    });
 
     fireEvent.click(screen.getByText("Retake"));
+
     expect(history.location.pathname).toBe("/scan");
   });
 
-  test("submitIdDocument: sends request, pushes to success when manageTouchlessScanFFlag = true", () => {
-    const { history } = renderWithRouter(<Submission />, { url: "data:image/png;base64,ABC123==" });
+  // SUBMIT + SUCCESS REDIRECT
+  test("submit triggers API and navigates to /success", () => {
+    const { history } = renderWithRouter(<Submission />, {
+      url: "data:image/png;base64,XYZ123",
+    });
 
     fireEvent.click(screen.getByText("Submit"));
 
-    // Verify post API called
     expect(postHttpClientRequest).toHaveBeenCalledTimes(1);
-
-    // Verify navigation
     expect(history.location.pathname).toBe("/success");
   });
 
-  test("buildReqData: sets optOut=N + correct idImageFront when imageUrl exists", () => {
-    const { history } = renderWithRouter(<Submission />, { url: "data:image/png;base64,XYZ123" });
+  // buildReqData — WITH IMAGE
+  test("buildReqData creates correct payload when imageUrl exists", () => {
+    renderWithRouter(<Submission />, {
+      url: "data:image/png;base64,IMGDATA",
+    });
 
     fireEvent.click(screen.getByText("Submit"));
 
-    const lastCall = postHttpClientRequest.mock.calls[0][1]; // reqData
+    const req = postHttpClientRequest.mock.calls[0][1];
 
-    expect(lastCall.idImageFront).toBe("XYZ123");
-    expect(lastCall.customerOpted).toBe("Y");
-    expect(lastCall.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
+    expect(req.idImageFront).toBe("IMGDATA");
+    expect(req.customerOpted).toBe("Y");
+    expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
   });
 
-  test("buildReqData: sets optOut=Y + no image when imageUrl missing", () => {
-    const { history } = renderWithRouter(<Submission />, {}); // No URL
+  // buildReqData — NO IMAGE
+  test("buildReqData handles optOut correctly when no imageUrl exists", () => {
+    renderWithRouter(<Submission />, {}); // NO URL
 
     fireEvent.click(screen.getByText("Submit"));
 
-    const lastCall = postHttpClientRequest.mock.calls[0][1];
+    const req = postHttpClientRequest.mock.calls[0][1];
 
-    expect(lastCall.idImageFront).toBe("");
-    expect(lastCall.customerOpted).toBe("N");
-    expect(lastCall.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
+    expect(req.idImageFront).toBe("");
+    expect(req.customerOpted).toBe("N");
+    expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
   });
 
-  test("populateTransactionType: covers all 4 branches", () => {
-    const { history } = renderWithRouter(<Submission />, { url: "data:image/png;base64,AAA" });
+  // populateTransactionType — ALL 4 BRANCHES
+  test("populateTransactionType covers all branches", () => {
+    // --- Case 1: SCAN_ID + OPT-IN ---
+    const { history } = renderWithRouter(<Submission />, {
+      url: "data:image/png;base64,A1",
+    });
 
-    // Case 1: destinationFlow=SCAN_ID, opted in
     reactGlobals.destinationFlow = "SCAN_ID";
     fireEvent.click(screen.getByText("Submit"));
+
     let req = postHttpClientRequest.mock.calls[0][1];
     expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
 
     jest.clearAllMocks();
 
-    // Case 2: destinationFlow != SCAN_ID, opted in
+    // --- Case 2: OTHER_FLOW + OPT-IN ---
+    renderWithRouter(<Submission />, { url: "data:image/png;base64,A2" });
+
     reactGlobals.destinationFlow = "OTHER_FLOW";
     fireEvent.click(screen.getByText("Submit"));
+
     req = postHttpClientRequest.mock.calls[0][1];
     expect(req.transactionType).toBe("MVO_ID_SMART_LINK_TOUCHLESS");
 
     jest.clearAllMocks();
 
-    // Case 3: opted out (no image) + SCAN_ID
-    renderWithRouter(<Submission />, {}); // no URL
+    // --- Case 3: SCAN_ID + OPT-OUT ---
+    renderWithRouter(<Submission />, {}); // NO URL
+
     reactGlobals.destinationFlow = "SCAN_ID";
     fireEvent.click(screen.getByText("Submit"));
+
     req = postHttpClientRequest.mock.calls[0][1];
     expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
 
     jest.clearAllMocks();
 
-    // Case 4: opted out + OTHER_FLOW
-    const { history: h2 } = renderWithRouter(<Submission />, {});
+    // --- Case 4: OTHER_FLOW + OPT-OUT ---
+    renderWithRouter(<Submission />, {}); // NO URL
+
     reactGlobals.destinationFlow = "OTHER_FLOW";
     fireEvent.click(screen.getByText("Submit"));
+
     req = postHttpClientRequest.mock.calls[0][1];
     expect(req.transactionType).toBe("MVO_ID_SMART_LINK_NOTHANKS");
   });
-
 });

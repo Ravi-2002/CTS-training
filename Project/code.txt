@@ -1,72 +1,140 @@
-test("renderPreferenceLink covers every single branch", () => {
-  const Connected = require("./deviceDetail").default;
+import React, { Fragment, useState } from 'react';
+import Page from '@lib/components/Page';
+import { Title } from '@lib/components/Typography';
+import styled from "styled-components";
+import { Button } from '@vds/buttons';
+import { useLocation, useHistory } from 'react-router-dom';
+import callBackend from '../../../lib/services/callBackend';
+import { POST } from '../../../lib/constants';
+import landingData from '../../../../mock/scan/get/landing.json';
+import { postHttpClientRequest } from '../httpClient';
+import * as configvalues from '../../../lib/config/globalConfig.json';
 
-  const DeviceDetail =
-    Connected.WrappedComponent ||
-    Connected.default?.WrappedComponent ||
-    Connected;
 
-  // ---- 1. Build full props to trigger all lines ----
-  const props = {
-    deviceDetailInfoSection: {
-      pageAttributes: {
-        enableSharenameid: "true",
-        enableCallFilter: "true",
-      },
-      sections: [
-        {
-          contents: [{ items: [{}] }],
-          data: [
-            {
-              mtn: "12345",
-              preferences: {
-                shareNameIDBtn: true,
-                blockSpecificServicesBtn: true,
-                blockCallsAndMessagesBtn: true,
-                manageCallFilterBtn: true,
-                someOtherPref: true,
-              },
-              shareNameIDBtnThrottle: true,
-            },
-          ],
-        },
-      ],
-    },
+const BodyWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 50vh;
+  margin: 8vh 20vw;
+  @media (max-width: 768px){
+   margin: 0;
+  }
+`;
+const Content = styled.div`
+  display: flex;
+  flex-direction: column; 
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+`;
+const BtnContainer = styled.div`
+  margin-top: 15px;
+  display: flex; 
+  flex-direction: row; 
+  align-items: flex-start; 
+  gap: 50px;
+    & button {
+    width: 12.5rem;
+      @media (max-width: 768px){
+      width: 9.5rem;
+      }
+    }
+`;
+
+const Submission = () => {
+  const history = useHistory();
+  const location = useLocation();
+  const imageUrl = location.state?.url;
+  const [optOut, setoptOut] = useState("");
+
+
+  const submitIdDocument = async () => { 
+        const reqData = buildReqData();
+        const baseUrl = reactGlobals.baseUrl +  reactGlobals.submitUrl;
+        console.log(reactGlobals.manageTouchlessScanFFlag,'manageTouchlessScanFFlag');
+        postHttpClientRequest(baseUrl, reqData, null);
+        if(reactGlobals.manageTouchlessScanFFlag){
+        history.push('/success');
+        }
+               
   };
 
-  const inst = new DeviceDetail(props);
-  inst.props = props;
-  inst.state = { selectedMdn: "12345" };
+  const buildReqData = () => {
 
-  // ---- 2. Mock getOnClickInfo so each branch executes safely ----
-  inst.getOnClickInfo = jest.fn(() => ({
-    onclick: jest.fn(),
-  }));
+    let modifiedDataUri = imageUrl?.split("base64,"); // remove sub string "data:image/png;base64," from image data
+    const idImageFront = imageUrl ? modifiedDataUri?.[1] : "";
 
-  // ---- 3. Iterate over every conditional path ----
-  const keysToTest = [
-    "shareNameIDBtn",
-    "blockSpecificServicesBtn",
-    "blockCallsAndMessagesBtn",
-    "manageCallFilterBtn",
-    "someOtherPref", // hits the final ELSE
-  ];
+    if (!imageUrl) {
+      setoptOut("Y");
+    } else {
+      setoptOut("N");
+    }
 
-  keysToTest.forEach((key) => {
-    const node = inst.renderPreferenceLink(key, 0);
+    let reqData = {
 
-    // trigger the <ListGroupItem onClick> manually
-    const onClick =
-      node.props.children.props.children.props.onClick;
+      idImageFront: idImageFront,
+      customerAction: "",
+      customerOpted: "",
+      transactionType: "",
+      ignoreCache: false,
+      locationCode: reactGlobals.locationCode,
+      mtn: "",
+      ssCluster: reactGlobals.ssCluster,
+      transactionId: reactGlobals.transactionId
 
-    onClick();
-  });
+    }
 
-  // ---- 4. Now cover the NULL return branch ----
-  props.deviceDetailInfoSection.sections[0].data[0].preferences = {}; // no prefs
-  const nullReturn = inst.renderPreferenceLink("nonExistingKey", 0);
-  expect(nullReturn).toBeNull();
+    populateTransactionType(reqData);
+    return reqData;
+  }
 
-  // FINAL ASSERT
-  expect(true).toBe(true);
-});
+  const populateTransactionType = (values) => {
+    if (optOut && optOut === 'Y') {
+      values.customerOpted = 'N';
+      if (reactGlobals.destinationFlow === 'SCAN_ID') {
+        values.transactionType = 'MVO_ID_ADT_AUTH_NOTHANKS';
+      } else {
+        values.transactionType = 'MVO_ID_SMART_LINK_NOTHANKS';
+      }
+    }
+    else {
+      values.customerOpted = 'Y';
+      if (reactGlobals.destinationFlow === 'SCAN_ID') {
+        values.transactionType = 'MVO_ID_ADT_AUTH_TOUCHLESS';
+      } else {
+        values.transactionType = 'MVO_ID_SMART_LINK_TOUCHLESS';
+      }
+    }
+
+  }
+
+  const routeToScanPage = () => {
+    history.replace('/scan');
+  }
+
+  return (
+    <Page nativeTitle="submission">
+      <Fragment>
+        <BodyWrapper>
+          <Content>
+              <img src={imageUrl} alt="Screenshot" />
+            <Title mb="20" size="large" bold={true}>
+              {landingData?.content?.submitPage?.reTaketitle}
+            </Title>
+          </Content>
+          <BtnContainer>
+            <Button use="secondary" onClick={routeToScanPage}>
+              {landingData?.content?.submitPage?.retake}
+            </Button>
+            <Button onClick={submitIdDocument}>
+              {landingData?.content?.submitPage?.submit}
+            </Button>
+          </BtnContainer>
+        </BodyWrapper>
+      </Fragment>
+    </Page >
+  );
+};
+export default Submission;

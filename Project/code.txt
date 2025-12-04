@@ -1,15 +1,39 @@
-test("when manageTouchlessScanFFlag is false, no redirect to /success", () => {
-  // Set the flag to FALSE
-  reactGlobals.manageTouchlessScanFFlag = false;
+import { cleanup } from "@testing-library/react";
 
-  const { history } = renderWithRouter(<Submission />, {
-    url: "data:image/png;base64,FLAGTEST",
-  });
-
+// populateTransactionType — ALL 4 BRANCHES
+test("populateTransactionType covers all branches", () => {
+  // --- Case 1: SCAN_ID + OPT-IN (image present) ---
+  reactGlobals.destinationFlow = "SCAN_ID";
+  renderWithRouter(<Submission />, { url: "data:image/png;base64,A1" });
   fireEvent.click(screen.getByText("Submit"));
+  let req = postHttpClientRequest.mock.calls[0][1];
+  expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
+  jest.clearAllMocks();
+  cleanup();  // <-- REMOVE old component
 
-  expect(postHttpClientRequest).toHaveBeenCalledTimes(1);
+  // --- Case 2: OTHER_FLOW + OPT-IN ---
+  reactGlobals.destinationFlow = "OTHER_FLOW";
+  renderWithRouter(<Submission />, { url: "data:image/png;base64,A2" });
+  fireEvent.click(screen.getByText("Submit"));
+  req = postHttpClientRequest.mock.calls[0][1];
+  expect(req.transactionType).toBe("MVO_ID_SMART_LINK_TOUCHLESS");
+  jest.clearAllMocks();
+  cleanup();
 
-  // ❗ NO redirect should happen
-  expect(history.location.pathname).not.toBe("/success");
+  // --- Case 3: SCAN_ID + OPT-OUT (NO image) ---
+  reactGlobals.destinationFlow = "SCAN_ID";
+  renderWithRouter(<Submission />, {}); // NO URL
+  fireEvent.click(screen.getByText("Submit"));
+  req = postHttpClientRequest.mock.calls[0][1];
+  expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
+  jest.clearAllMocks();
+  cleanup();
+
+  // --- Case 4: OTHER_FLOW + OPT-OUT ---
+  reactGlobals.destinationFlow = "OTHER_FLOW";
+  renderWithRouter(<Submission />, {});
+  fireEvent.click(screen.getByText("Submit"));
+  req = postHttpClientRequest.mock.calls[0][1];
+  expect(req.transactionType).toBe("MVO_ID_SMART_LINK_NOTHANKS");
+  cleanup();
 });

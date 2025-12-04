@@ -1,140 +1,140 @@
-import React, { Fragment, useState } from 'react';
-import Page from '@lib/components/Page';
-import { Title } from '@lib/components/Typography';
-import styled from "styled-components";
-import { Button } from '@vds/buttons';
-import { useLocation, useHistory } from 'react-router-dom';
-import callBackend from '../../../lib/services/callBackend';
-import { POST } from '../../../lib/constants';
-import landingData from '../../../../mock/scan/get/landing.json';
-import { postHttpClientRequest } from '../httpClient';
-import * as configvalues from '../../../lib/config/globalConfig.json';
+/**
+ * @jest-environment jsdom
+ */
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import Submission from "./Submission";
+import { Router } from "react-router-dom";
+import { createMemoryHistory } from "history";
+import landingData from "../../../../mock/scan/get/landing.json";
+import { postHttpClientRequest } from "../httpClient";
 
+jest.mock("../httpClient", () => ({
+  postHttpClientRequest: jest.fn(),
+}));
 
-const BodyWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  height: 50vh;
-  margin: 8vh 20vw;
-  @media (max-width: 768px){
-   margin: 0;
-  }
-`;
-const Content = styled.div`
-  display: flex;
-  flex-direction: column; 
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-`;
-const BtnContainer = styled.div`
-  margin-top: 15px;
-  display: flex; 
-  flex-direction: row; 
-  align-items: flex-start; 
-  gap: 50px;
-    & button {
-    width: 12.5rem;
-      @media (max-width: 768px){
-      width: 9.5rem;
-      }
-    }
-`;
-
-const Submission = () => {
-  const history = useHistory();
-  const location = useLocation();
-  const imageUrl = location.state?.url;
-  const [optOut, setoptOut] = useState("");
-
-
-  const submitIdDocument = async () => { 
-        const reqData = buildReqData();
-        const baseUrl = reactGlobals.baseUrl +  reactGlobals.submitUrl;
-        console.log(reactGlobals.manageTouchlessScanFFlag,'manageTouchlessScanFFlag');
-        postHttpClientRequest(baseUrl, reqData, null);
-        if(reactGlobals.manageTouchlessScanFFlag){
-        history.push('/success');
-        }
-               
-  };
-
-  const buildReqData = () => {
-
-    let modifiedDataUri = imageUrl?.split("base64,"); // remove sub string "data:image/png;base64," from image data
-    const idImageFront = imageUrl ? modifiedDataUri?.[1] : "";
-
-    if (!imageUrl) {
-      setoptOut("Y");
-    } else {
-      setoptOut("N");
-    }
-
-    let reqData = {
-
-      idImageFront: idImageFront,
-      customerAction: "",
-      customerOpted: "",
-      transactionType: "",
-      ignoreCache: false,
-      locationCode: reactGlobals.locationCode,
-      mtn: "",
-      ssCluster: reactGlobals.ssCluster,
-      transactionId: reactGlobals.transactionId
-
-    }
-
-    populateTransactionType(reqData);
-    return reqData;
-  }
-
-  const populateTransactionType = (values) => {
-    if (optOut && optOut === 'Y') {
-      values.customerOpted = 'N';
-      if (reactGlobals.destinationFlow === 'SCAN_ID') {
-        values.transactionType = 'MVO_ID_ADT_AUTH_NOTHANKS';
-      } else {
-        values.transactionType = 'MVO_ID_SMART_LINK_NOTHANKS';
-      }
-    }
-    else {
-      values.customerOpted = 'Y';
-      if (reactGlobals.destinationFlow === 'SCAN_ID') {
-        values.transactionType = 'MVO_ID_ADT_AUTH_TOUCHLESS';
-      } else {
-        values.transactionType = 'MVO_ID_SMART_LINK_TOUCHLESS';
-      }
-    }
-
-  }
-
-  const routeToScanPage = () => {
-    history.replace('/scan');
-  }
-
-  return (
-    <Page nativeTitle="submission">
-      <Fragment>
-        <BodyWrapper>
-          <Content>
-              <img src={imageUrl} alt="Screenshot" />
-            <Title mb="20" size="large" bold={true}>
-              {landingData?.content?.submitPage?.reTaketitle}
-            </Title>
-          </Content>
-          <BtnContainer>
-            <Button use="secondary" onClick={routeToScanPage}>
-              {landingData?.content?.submitPage?.retake}
-            </Button>
-            <Button onClick={submitIdDocument}>
-              {landingData?.content?.submitPage?.submit}
-            </Button>
-          </BtnContainer>
-        </BodyWrapper>
-      </Fragment>
-    </Page >
-  );
+// Mock reactGlobals
+global.reactGlobals = {
+  baseUrl: "https://base/",
+  submitUrl: "submit",
+  locationCode: "LOC123",
+  ssCluster: "CLUSTER1",
+  transactionId: "TID100",
+  destinationFlow: "SCAN_ID",
+  manageTouchlessScanFFlag: true
 };
-export default Submission;
+
+// Mock landing text
+landingData.content = {
+  submitPage: {
+    reTaketitle: "Retake Title",
+    retake: "Retake",
+    submit: "Submit"
+  }
+};
+
+const renderWithRouter = (ui, routeState = {}) => {
+  const history = createMemoryHistory();
+  history.location.state = routeState;
+
+  return {
+    ...render(<Router history={history}>{ui}</Router>),
+    history,
+  };
+};
+
+describe("Submission Component - 100% Coverage", () => {
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("renders UI with image when imageUrl exists", () => {
+    const { history } = renderWithRouter(<Submission />, { url: "data:image/png;base64,ABC123==" });
+
+    expect(screen.getByAltText("Screenshot")).toBeInTheDocument();
+    expect(screen.getByText("Retake Title")).toBeInTheDocument();
+    expect(screen.getByText("Retake")).toBeInTheDocument();
+    expect(screen.getByText("Submit")).toBeInTheDocument();
+  });
+
+  test("routeToScanPage: clicking Retake navigates to /scan", () => {
+    const { history } = renderWithRouter(<Submission />, { url: "data:image/png;base64,ABC123==" });
+
+    fireEvent.click(screen.getByText("Retake"));
+    expect(history.location.pathname).toBe("/scan");
+  });
+
+  test("submitIdDocument: sends request, pushes to success when manageTouchlessScanFFlag = true", () => {
+    const { history } = renderWithRouter(<Submission />, { url: "data:image/png;base64,ABC123==" });
+
+    fireEvent.click(screen.getByText("Submit"));
+
+    // Verify post API called
+    expect(postHttpClientRequest).toHaveBeenCalledTimes(1);
+
+    // Verify navigation
+    expect(history.location.pathname).toBe("/success");
+  });
+
+  test("buildReqData: sets optOut=N + correct idImageFront when imageUrl exists", () => {
+    const { history } = renderWithRouter(<Submission />, { url: "data:image/png;base64,XYZ123" });
+
+    fireEvent.click(screen.getByText("Submit"));
+
+    const lastCall = postHttpClientRequest.mock.calls[0][1]; // reqData
+
+    expect(lastCall.idImageFront).toBe("XYZ123");
+    expect(lastCall.customerOpted).toBe("Y");
+    expect(lastCall.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
+  });
+
+  test("buildReqData: sets optOut=Y + no image when imageUrl missing", () => {
+    const { history } = renderWithRouter(<Submission />, {}); // No URL
+
+    fireEvent.click(screen.getByText("Submit"));
+
+    const lastCall = postHttpClientRequest.mock.calls[0][1];
+
+    expect(lastCall.idImageFront).toBe("");
+    expect(lastCall.customerOpted).toBe("N");
+    expect(lastCall.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
+  });
+
+  test("populateTransactionType: covers all 4 branches", () => {
+    const { history } = renderWithRouter(<Submission />, { url: "data:image/png;base64,AAA" });
+
+    // Case 1: destinationFlow=SCAN_ID, opted in
+    reactGlobals.destinationFlow = "SCAN_ID";
+    fireEvent.click(screen.getByText("Submit"));
+    let req = postHttpClientRequest.mock.calls[0][1];
+    expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
+
+    jest.clearAllMocks();
+
+    // Case 2: destinationFlow != SCAN_ID, opted in
+    reactGlobals.destinationFlow = "OTHER_FLOW";
+    fireEvent.click(screen.getByText("Submit"));
+    req = postHttpClientRequest.mock.calls[0][1];
+    expect(req.transactionType).toBe("MVO_ID_SMART_LINK_TOUCHLESS");
+
+    jest.clearAllMocks();
+
+    // Case 3: opted out (no image) + SCAN_ID
+    renderWithRouter(<Submission />, {}); // no URL
+    reactGlobals.destinationFlow = "SCAN_ID";
+    fireEvent.click(screen.getByText("Submit"));
+    req = postHttpClientRequest.mock.calls[0][1];
+    expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
+
+    jest.clearAllMocks();
+
+    // Case 4: opted out + OTHER_FLOW
+    const { history: h2 } = renderWithRouter(<Submission />, {});
+    reactGlobals.destinationFlow = "OTHER_FLOW";
+    fireEvent.click(screen.getByText("Submit"));
+    req = postHttpClientRequest.mock.calls[0][1];
+    expect(req.transactionType).toBe("MVO_ID_SMART_LINK_NOTHANKS");
+  });
+
+});

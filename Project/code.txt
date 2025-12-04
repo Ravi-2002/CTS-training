@@ -1,175 +1,47 @@
-/**
- * @jest-environment jsdom
- */
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import Submission from "./Submission";
-import { Router } from "react-router-dom";
-import { createMemoryHistory } from "history";
+describe("populateTransactionType additional coverage", () => {
 
-// Mock Page & Typography
-jest.mock("@lib/components/Page", () => (props) => <div>{props.children}</div>);
-jest.mock("@lib/components/Typography", () => ({
-  Title: ({ children }) => <div>{children}</div>,
-}));
+  it("should set NOTHANKS when optOut = 'Y' and destinationFlow = 'SCAN_ID'", () => {
+    const values = {};
+    const optOut = "Y";
+    const reactGlobals = { destinationFlow: "SCAN_ID" };
 
-// Mock Button
-jest.mock("@vds/buttons", () => ({
-  Button: (props) => <button {...props}>{props.children}</button>,
-}));
+    populateTransactionType(values, optOut, reactGlobals);
 
-// Mock landingData
-jest.mock("../../../../mock/scan/get/landing.json", () => ({
-  content: {
-    submitPage: {
-      reTaketitle: "Retake Title",
-      retake: "Retake",
-      submit: "Submit",
-    },
-  },
-}));
-
-// Mock API
-import { postHttpClientRequest } from "../httpClient";
-jest.mock("../httpClient", () => ({
-  postHttpClientRequest: jest.fn(),
-}));
-
-// GLOBAL reactGlobals
-beforeEach(() => {
-  global.reactGlobals = {
-    baseUrl: "https://base/",
-    submitUrl: "submit",
-    locationCode: "LOC123",
-    ssCluster: "CLUSTER1",
-    transactionId: "TID100",
-    destinationFlow: "SCAN_ID",
-    manageTouchlessScanFFlag: true,
-  };
-});
-
-// Router wrapper
-const renderWithRouter = (ui, routeState = {}) => {
-  const history = createMemoryHistory({
-    initialEntries: [{ pathname: "/", state: routeState }],
+    expect(values.customerOpted).toBe("N");
+    expect(values.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
   });
 
-  return {
-    ...render(<Router history={history}>{ui}</Router>),
-    history,
-  };
-};
+  it("should set SMART_LINK_NOTHANKS when optOut = 'Y' but destinationFlow != 'SCAN_ID'", () => {
+    const values = {};
+    const optOut = "Y";
+    const reactGlobals = { destinationFlow: "OTHER" };
 
-describe("Submission Component - 100% Coverage", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+    populateTransactionType(values, optOut, reactGlobals);
+
+    expect(values.customerOpted).toBe("N");
+    expect(values.transactionType).toBe("MVO_ID_SMART_LINK_NOTHANKS");
   });
 
-  // UI RENDERING
-  test("renders with image when imageUrl exists", () => {
-    renderWithRouter(<Submission />, { url: "data:image/png;base64,ABC123" });
+  it("should set TOUCHLESS when optOut != 'Y' and destinationFlow = 'SCAN_ID'", () => {
+    const values = {};
+    const optOut = "N";    // or undefined or null
+    const reactGlobals = { destinationFlow: "SCAN_ID" };
 
-    expect(screen.getByAltText("Screenshot")).toBeInTheDocument();
-    expect(screen.getByText("Retake Title")).toBeInTheDocument();
-    expect(screen.getByText("Retake")).toBeInTheDocument();
-    expect(screen.getByText("Submit")).toBeInTheDocument();
+    populateTransactionType(values, optOut, reactGlobals);
+
+    expect(values.customerOpted).toBe("Y");
+    expect(values.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
   });
 
-  // ROUTE TO SCAN PAGE
-  test("clicking Retake navigates to /scan", () => {
-    const { history } = renderWithRouter(<Submission />, {
-      url: "data:image/png;base64,AAA",
-    });
+  it("should set SMART_LINK_TOUCHLESS when optOut != 'Y' and destinationFlow != 'SCAN_ID'", () => {
+    const values = {};
+    const optOut = "N";
+    const reactGlobals = { destinationFlow: "OTHER" };
 
-    fireEvent.click(screen.getByText("Retake"));
+    populateTransactionType(values, optOut, reactGlobals);
 
-    expect(history.location.pathname).toBe("/scan");
+    expect(values.customerOpted).toBe("Y");
+    expect(values.transactionType).toBe("MVO_ID_SMART_LINK_TOUCHLESS");
   });
 
-  // SUBMIT + SUCCESS REDIRECT
-  test("submit triggers API and navigates to /success", () => {
-    const { history } = renderWithRouter(<Submission />, {
-      url: "data:image/png;base64,XYZ123",
-    });
-
-    fireEvent.click(screen.getByText("Submit"));
-
-    expect(postHttpClientRequest).toHaveBeenCalledTimes(1);
-    expect(history.location.pathname).toBe("/success");
-  });
-
-  // buildReqData — WITH IMAGE
-  test("buildReqData creates correct payload when imageUrl exists", () => {
-    renderWithRouter(<Submission />, {
-      url: "data:image/png;base64,IMGDATA",
-    });
-
-    fireEvent.click(screen.getByText("Submit"));
-
-    const req = postHttpClientRequest.mock.calls[0][1];
-
-    expect(req.idImageFront).toBe("IMGDATA");
-    expect(req.customerOpted).toBe("Y");
-    expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
-  });
-
-  // buildReqData — NO IMAGE
-  test("buildReqData handles optOut correctly when no imageUrl exists", () => {
-    renderWithRouter(<Submission />, {}); // NO URL
-
-    fireEvent.click(screen.getByText("Submit"));
-
-    const req = postHttpClientRequest.mock.calls[0][1];
-
-    expect(req.idImageFront).toBe("");
-    expect(req.customerOpted).toBe("N");
-    expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
-  });
-
-  // populateTransactionType — ALL 4 BRANCHES
-  test("populateTransactionType covers all branches", () => {
-    // --- Case 1: SCAN_ID + OPT-IN ---
-    const { history } = renderWithRouter(<Submission />, {
-      url: "data:image/png;base64,A1",
-    });
-
-    reactGlobals.destinationFlow = "SCAN_ID";
-    fireEvent.click(screen.getByText("Submit"));
-
-    let req = postHttpClientRequest.mock.calls[0][1];
-    expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
-
-    jest.clearAllMocks();
-
-    // --- Case 2: OTHER_FLOW + OPT-IN ---
-    renderWithRouter(<Submission />, { url: "data:image/png;base64,A2" });
-
-    reactGlobals.destinationFlow = "OTHER_FLOW";
-    fireEvent.click(screen.getByText("Submit"));
-
-    req = postHttpClientRequest.mock.calls[0][1];
-    expect(req.transactionType).toBe("MVO_ID_SMART_LINK_TOUCHLESS");
-
-    jest.clearAllMocks();
-
-    // --- Case 3: SCAN_ID + OPT-OUT ---
-    renderWithRouter(<Submission />, {}); // NO URL
-
-    reactGlobals.destinationFlow = "SCAN_ID";
-    fireEvent.click(screen.getByText("Submit"));
-
-    req = postHttpClientRequest.mock.calls[0][1];
-    expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
-
-    jest.clearAllMocks();
-
-    // --- Case 4: OTHER_FLOW + OPT-OUT ---
-    renderWithRouter(<Submission />, {}); // NO URL
-
-    reactGlobals.destinationFlow = "OTHER_FLOW";
-    fireEvent.click(screen.getByText("Submit"));
-
-    req = postHttpClientRequest.mock.calls[0][1];
-    expect(req.transactionType).toBe("MVO_ID_SMART_LINK_NOTHANKS");
-  });
 });

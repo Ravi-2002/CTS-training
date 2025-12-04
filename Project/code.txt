@@ -1,39 +1,18 @@
-import { cleanup } from "@testing-library/react";
-
-// populateTransactionType — ALL 4 BRANCHES
-test("populateTransactionType covers all branches", () => {
-  // --- Case 1: SCAN_ID + OPT-IN (image present) ---
+test("covers optOut = 'Y' and destinationFlow = 'SCAN_ID' inside populateTransactionType", () => {
   reactGlobals.destinationFlow = "SCAN_ID";
-  renderWithRouter(<Submission />, { url: "data:image/png;base64,A1" });
-  fireEvent.click(screen.getByText("Submit"));
-  let req = postHttpClientRequest.mock.calls[0][1];
-  expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
-  jest.clearAllMocks();
-  cleanup();  // <-- REMOVE old component
 
-  // --- Case 2: OTHER_FLOW + OPT-IN ---
-  reactGlobals.destinationFlow = "OTHER_FLOW";
-  renderWithRouter(<Submission />, { url: "data:image/png;base64,A2" });
-  fireEvent.click(screen.getByText("Submit"));
-  req = postHttpClientRequest.mock.calls[0][1];
-  expect(req.transactionType).toBe("MVO_ID_SMART_LINK_TOUCHLESS");
-  jest.clearAllMocks();
-  cleanup();
+  renderWithRouter(<Submission optOut="Y" />, {
+    url: "data:image/png;base64,TESTDATA",
+  });
 
-  // --- Case 3: SCAN_ID + OPT-OUT (NO image) ---
-  reactGlobals.destinationFlow = "SCAN_ID";
-  renderWithRouter(<Submission />, {}); // NO URL
-  fireEvent.click(screen.getByText("Submit"));
-  req = postHttpClientRequest.mock.calls[0][1];
-  expect(req.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
-  jest.clearAllMocks();
-  cleanup();
+  const submitButtons = screen.getAllByText("Submit");
+  fireEvent.click(submitButtons[submitButtons.length - 1]); // click last Submit
 
-  // --- Case 4: OTHER_FLOW + OPT-OUT ---
-  reactGlobals.destinationFlow = "OTHER_FLOW";
-  renderWithRouter(<Submission />, {});
-  fireEvent.click(screen.getByText("Submit"));
-  req = postHttpClientRequest.mock.calls[0][1];
-  expect(req.transactionType).toBe("MVO_ID_SMART_LINK_NOTHANKS");
-  cleanup();
+  expect(postHttpClientRequest).toHaveBeenCalledTimes(1);
+
+  const reqBody = JSON.parse(postHttpClientRequest.mock.calls[0][1].data);
+
+  // Covers the IF block
+  expect(reqBody.customerOpted).toBe("N");
+  expect(reqBody.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
 });

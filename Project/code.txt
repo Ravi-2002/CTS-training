@@ -1,47 +1,75 @@
-describe("populateTransactionType additional coverage", () => {
+describe("Submission.jsx – optOut & transactionType coverage", () => {
 
-  it("should set NOTHANKS when optOut = 'Y' and destinationFlow = 'SCAN_ID'", () => {
-    const values = {};
-    const optOut = "Y";
-    const reactGlobals = { destinationFlow: "SCAN_ID" };
+  it("optOut = 'Y' and destinationFlow = 'SCAN_ID' → NOTHANKS", () => {
+    const mockReactGlobals = {
+      destinationFlow: "SCAN_ID",
+      locationCode: "123",
+      ssCluster: "abc",
+      transactionId: "tx1"
+    };
 
-    populateTransactionType(values, optOut, reactGlobals);
+    const mockLocation = {
+      state: { url: "data:image/png;base64,AAAA" }
+    };
 
-    expect(values.customerOpted).toBe("N");
-    expect(values.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
+    const result = buildReqData("Y", mockLocation, mockReactGlobals);
+
+    expect(result.customerOpted).toBe("N");
+    expect(result.transactionType).toBe("MVO_ID_ADT_AUTH_NOTHANKS");
   });
 
-  it("should set SMART_LINK_NOTHANKS when optOut = 'Y' but destinationFlow != 'SCAN_ID'", () => {
-    const values = {};
-    const optOut = "Y";
-    const reactGlobals = { destinationFlow: "OTHER" };
+  it("optOut = 'Y' and destinationFlow != 'SCAN_ID' → SMART_LINK_NOTHANKS", () => {
+    const mockReactGlobals = {
+      destinationFlow: "OTHER",
+      locationCode: "123",
+      ssCluster: "abc",
+      transactionId: "tx1"
+    };
 
-    populateTransactionType(values, optOut, reactGlobals);
+    const mockLocation = {
+      state: { url: "data:image/png;base64,AAAA" }
+    };
 
-    expect(values.customerOpted).toBe("N");
-    expect(values.transactionType).toBe("MVO_ID_SMART_LINK_NOTHANKS");
+    const result = buildReqData("Y", mockLocation, mockReactGlobals);
+
+    expect(result.customerOpted).toBe("N");
+    expect(result.transactionType).toBe("MVO_ID_SMART_LINK_NOTHANKS");
   });
 
-  it("should set TOUCHLESS when optOut != 'Y' and destinationFlow = 'SCAN_ID'", () => {
-    const values = {};
-    const optOut = "N";    // or undefined or null
-    const reactGlobals = { destinationFlow: "SCAN_ID" };
+  it("optOut != 'Y' and destinationFlow = 'SCAN_ID' → TOUCHLESS", () => {
+    const mockReactGlobals = {
+      destinationFlow: "SCAN_ID",
+      locationCode: "123",
+      ssCluster: "abc",
+      transactionId: "tx1"
+    };
 
-    populateTransactionType(values, optOut, reactGlobals);
+    const mockLocation = {
+      state: { url: "data:image/png;base64,AAAA" }
+    };
 
-    expect(values.customerOpted).toBe("Y");
-    expect(values.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
+    const result = buildReqData("N", mockLocation, mockReactGlobals);
+
+    expect(result.customerOpted).toBe("Y");
+    expect(result.transactionType).toBe("MVO_ID_ADT_AUTH_TOUCHLESS");
   });
 
-  it("should set SMART_LINK_TOUCHLESS when optOut != 'Y' and destinationFlow != 'SCAN_ID'", () => {
-    const values = {};
-    const optOut = "N";
-    const reactGlobals = { destinationFlow: "OTHER" };
+  it("optOut != 'Y' and destinationFlow != 'SCAN_ID' → SMART_LINK_TOUCHLESS", () => {
+    const mockReactGlobals = {
+      destinationFlow: "OTHER",
+      locationCode: "123",
+      ssCluster: "abc",
+      transactionId: "tx1"
+    };
 
-    populateTransactionType(values, optOut, reactGlobals);
+    const mockLocation = {
+      state: { url: "data:image/png;base64,AAAA" }
+    };
 
-    expect(values.customerOpted).toBe("Y");
-    expect(values.transactionType).toBe("MVO_ID_SMART_LINK_TOUCHLESS");
+    const result = buildReqData("N", mockLocation, mockReactGlobals);
+
+    expect(result.customerOpted).toBe("Y");
+    expect(result.transactionType).toBe("MVO_ID_SMART_LINK_TOUCHLESS");
   });
 
 });

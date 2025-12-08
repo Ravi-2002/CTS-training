@@ -1,139 +1,175 @@
-import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Title, Body } from "@vds/typography";
-import { Button, TextLink } from "@vds/buttons";
-import { ButtonIcon} from "@vds/button-icons";
-import { Icon } from "@vds/icons";
-import { Loader } from "@vds/loaders";
-import styled from "styled-components";
+/**
+ * @jest-environment jsdom
+ */
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import configureMockStore from "redux-mock-store";
+import thunk from "redux-thunk";
+import { Provider } from "react-redux";
+import BlockCallsList from "./BlockCallsList";
 import {
   getCallsMessages,
-  postaddBlockCallMsg,
   postDeleteBlockCallMsg,
 } from "../actions/fetchCallsMessages";
-import { Line } from "@vds/lines";
-import { ListGroup } from "@vds/lists";
-import { nativeSetTitle } from "../../../../shared/utilities/native";
-import common from "../../../../shared/utilities/util";
 
-const BlockCallsList = ({ history }) => {
-  useEffect(() => {
-    nativeSetTitle('Block Calls & Messages',false);
-  },[]);
-  const dispatch = useDispatch();
-  const [blockedList, setBlockedList] = useState([]);
-  const mdn = localStorage.getItem('mdn');
-  const {
+jest.mock("../actions/fetchCallsMessages", () => ({
+  getCallsMessages: jest.fn(() => ({ type: "GET_CALLS" })),
+  postDeleteBlockCallMsg: jest.fn((payload) => ({ type: "DELETE_CALL", payload }))
+}));
+
+jest.mock("../../../../shared/utilities/native", () => ({
+  nativeSetTitle: jest.fn()
+}));
+
+jest.mock("../../../../shared/utilities/util", () => ({
+  mtnFormat: jest.fn(() => "123-456-7890"),
+  getContentFromSection: jest.fn((content) => content.sections[0]),
+  getItemValue: jest.fn((items, key) => key)
+}));
+
+const mockStore = configureMockStore([thunk]);
+
+const getMockState = ({
+  blockedNumbers = [{ phoneNumber: "11111" }, { phoneNumber: "22222" }],
+  addBlockCallMsg = null,
+  deleteBlockCallMsg = null,
+  isFetching = false
+} = {}) => ({
+  Detail: {
     blockedNumbers,
     addBlockCallMsg,
     deleteBlockCallMsg,
     isFetching,
-  } = useSelector((state) => state.Detail,
-);
-  const Content = useSelector((state)=>state.Detail.callsMessages)
-  console.log(blockedNumbers,'ContentContentContentContent')
-  console.log(Content,'ContentContentContentContent')
-  const mtn = Content.sections[0].sections[0].data.mtn;
-  let pageContent;
-    if (Content && Content?.sections[0]) {
-      pageContent = common.getContentFromSection(Content, 'devicesBlocksMainSection');
-      pageContent = pageContent.sections[0];
+    callsMessages: {
+      sections: [
+        {
+          sections: [
+            {
+              data: { mtn: "9998887777" }
+            }
+          ],
+          contents: [
+            {
+              items: [{}, {}]
+            }
+          ]
+        }
+      ]
     }
-  let pageItems = pageContent && pageContent.contents && pageContent.contents[0].items;
-  useEffect(() => {
-    dispatch(getCallsMessages(mdn));
-  }, [dispatch]);
-console.log(addBlockCallMsg,'addBlockCallMsg')
-  useEffect(() => {
-    if (addBlockCallMsg?.blockedPhoneNumbers) {
-      setBlockedList(addBlockCallMsg.blockedPhoneNumbers);
-    }
-    else if(blockedNumbers){
-      setBlockedList(blockedNumbers)
-    }
-  }, [addBlockCallMsg,blockedNumbers]);
+  }
+});
 
-  useEffect(() => {
-    if (deleteBlockCallMsg?.blockedPhoneNumbers) {
-      setBlockedList(deleteBlockCallMsg.blockedPhoneNumbers);
-    }
-  }, [deleteBlockCallMsg]);
+const mockHistory = { push: jest.fn() };
 
-  
+const setup = (stateOverrides = {}) => {
+  const store = mockStore(getMockState(stateOverrides));
+  return render(
+    <Provider store={store}>
+      <BlockCallsList history={mockHistory} />
+    </Provider>
+  );
+};
 
-  const handleRemove = (num) => {
-    let payload = {
-      mtn: mdn,
-      blockNumber: num,
-      oldPhoneNumber: num,
+describe("BlockCallsList Component", () => {
+  beforeEach(() => {
+    localStorage.setItem("mdn", "9998887777");
+    jest.clearAllMocks();
+  });
+
+  test("renders title, MTN and calls getCallsMessages()", () => {
+    setup();
+
+    expect(screen.getByText("callsandMessageTitle")).toBeInTheDocument();
+    expect(screen.getByText("123-456-7890")).toBeInTheDocument();
+
+    expect(getCallsMessages).toHaveBeenCalledWith("9998887777");
+  });
+
+  test("renders blocked list from blockedNumbers", () => {
+    setup();
+
+    expect(screen.getByText("11111")).toBeInTheDocument();
+    expect(screen.getByText("22222")).toBeInTheDocument();
+  });
+
+  test("uses addBlockCallMsg when present", () => {
+    setup({
+      addBlockCallMsg: {
+        blockedPhoneNumbers: [{ phoneNumber: "77777" }]
+      }
+    });
+
+    expect(screen.getByText("77777")).toBeInTheDocument();
+  });
+
+  test("uses deleteBlockCallMsg when present", () => {
+    setup({
+      deleteBlockCallMsg: {
+        blockedPhoneNumbers: [{ phoneNumber: "33333" }]
+      }
+    });
+
+    expect(screen.getByText("33333")).toBeInTheDocument();
+  });
+
+  test("remove button triggers postDeleteBlockCallMsg()", () => {
+    setup();
+
+    const btn = screen.getAllByRole("button")[1]; // Remove button
+    fireEvent.click(btn);
+
+    expect(postDeleteBlockCallMsg).toHaveBeenCalledWith({
+      mtn: "9998887777",
+      blockNumber: "11111",
+      oldPhoneNumber: "11111",
       memo: "",
       expiredPhoneNumber: "",
       blockedNumbers: [],
       applyAll: false,
       onlyMemo: false
-    }
-    dispatch(postDeleteBlockCallMsg(payload));
-  };
+    });
+  });
 
-  return (
-    <PageWrapper>
-      <Loader active={isFetching} fullscreen />
-      <Title size="large" bold>{common.getItemValue(pageItems,"callsandMessageTitle")}</Title>
-      <MdnWrapper>
-      <Body size='large'>{common.mtnFormat(mtn)}</Body>
-      </MdnWrapper>
-      <TextWrapper>
-        <Body bold size='large'>You are blocking {blockedList.length} of 5 numbers.</Body>
-      </TextWrapper>
-      {blockedList.map((item, idx) => (
-          <ListGroupWrapper key={idx}>
-          <ListGroup>
-            <RemoveWrapper>
-              <Body size="large">{item.phoneNumber}</Body>
-              <ButtonIcon
-                kind="ghost"
-                size="small"
-                onClick={() => handleRemove(item.phoneNumber)}
-                renderIcon={(props) => <Icon name="close" {...props} />}
-              />
-            </RemoveWrapper>
-            <Line type="secondary" surface="light" />
-          </ListGroup>
-        </ListGroupWrapper>
-      ))}
-      
-    <LimitationWrapper>
-      <Body>
-      {common.getItemValue(pageItems,"FAQText")}{" "}
-        <TextLink
-          type="standAlone"
-          surface="light"
-          onClick={() => history.push("/viewlimitation")}
-        >
-          {common.getItemValue(pageItems,"ViewLimitationHeader")}
-        </TextLink>
-      </Body>
-      </LimitationWrapper>
-          <ButtonWrapper>
-            <Button disabled={blockedList.length>=5} 
-                onClick={() => 
-                history.push({
-                  pathname: "/callsandMessages",
-                  state: { allowInput: true, mtn: mdn },
-                })}>
-              Add a number
-            </Button>
-          </ButtonWrapper>
-    </PageWrapper>
-  );
-};
+  test("Add Number button enabled when <5 list", () => {
+    setup();
+    const btn = screen.getByText("Add a number");
+    expect(btn).not.toBeDisabled();
+  });
 
-const PageWrapper = styled.div` padding: 20px; `;
-const MdnWrapper = styled.div` padding-top: 7px; padding-bottom:7px`;
-const LimitationWrapper = styled.div` padding-top: 7px; padding-bottom:7px; display: flex; justify-content: center;`;
-const ButtonWrapper = styled.div` display: flex; justify-content: center; padding: 20px 0; `;
-const TextWrapper = styled.div` margin-bottom: 1rem; display: flex; justify-content: center; padding-top:30px; padding-bottom:20px `;
-const ListGroupWrapper = styled.div` padding-bottom: 10px; `;
-const RemoveWrapper = styled.div` display: flex; justify-content: space-between; align-items: center; `;
+  test("Add Number button disabled when >=5 numbers", () => {
+    const five = [
+      { phoneNumber: "1" },
+      { phoneNumber: "2" },
+      { phoneNumber: "3" },
+      { phoneNumber: "4" },
+      { phoneNumber: "5" }
+    ];
 
-export default BlockCallsList;
+    setup({ blockedNumbers: five });
+
+    expect(screen.getByText("Add a number")).toBeDisabled();
+  });
+
+  test("Add number navigates to history.push", () => {
+    setup();
+
+    fireEvent.click(screen.getByText("Add a number"));
+
+    expect(mockHistory.push).toHaveBeenCalledWith({
+      pathname: "/callsandMessages",
+      state: { allowInput: true, mtn: "9998887777" },
+    });
+  });
+
+  test("FAQ link navigates correctly", () => {
+    setup();
+
+    fireEvent.click(screen.getByText("ViewLimitationHeader"));
+    expect(mockHistory.push).toHaveBeenCalledWith("/viewlimitation");
+  });
+
+  test("loader shows when isFetching=true", () => {
+    setup({ isFetching: true });
+    expect(document.querySelector("[data-active='true']")).not.toBeNull();
+  });
+});

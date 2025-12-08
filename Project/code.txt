@@ -1,78 +1,82 @@
-it("renders all alert messages including powerCycle and blockAgainSuccess", async () => {
-  const { rerender } = render(
-    <Provider store={store}>
-      <BlockCallsMessages
-        selectedAccordian="CM"
-        selectedDevice={{ encryptedMtn: "mockMtn" }}
-        blockedNumbers={[]}
-        callsMessagesData={{ remainingBlockCount: 1 }}
-        addBlockCallMsgRes={{
-          blockedPhoneNumbers: [],
-          remainingBlockCount: 0,
-          successMsg: "Added successfully",
-          failureMsg: "Failed to add",
-          hasSuccessMsg: true,
-          hasFailureMsg: true,
-          powerCycle: true,
-        }}
-        deleteBlockCallMsgRes={{
-          blockedPhoneNumbers: [],
-          remainingBlockCount: 0,
-          successMsg: "Deleted successfully",
-          hasSuccessMsg: true,
-        }}
-        blockAgainResponse={{
-          successMsg: "Blocked again successfully",
-          failureMsg: "Block again failed",
-        }}
-      />
-    </Provider>
-  );
+import React from "react";
+import { render } from "@testing-library/react";
+import BlockCallsMessages from "../BlockCallsMessages"; // adjust path
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
 
-  // Alerts for addSuccess + failSuccess + powerCycle
-  expect(await screen.findByText(/Added successfully/i)).toBeInTheDocument();
-  expect(await screen.findByText(/Failed to add/i)).toBeInTheDocument();
-  expect(await screen.findByText(/In order to complete your service change/i)).toBeInTheDocument();
+const mockStore = configureStore([]);
+let store;
 
-  // Simulate blockAgainSuccess = true
-  rerender(
-    <Provider store={store}>
-      <BlockCallsMessages
-        selectedAccordian="CM"
-        selectedDevice={{ encryptedMtn: "mockMtn" }}
-        blockedNumbers={[]}
-        callsMessagesData={{ remainingBlockCount: 1 }}
-        addBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 0 }}
-        deleteBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 0 }}
-        blockAgainResponse={{
-          successMsg: "Blocked again successfully",
-          failureMsg: "Block again failed",
-        }}
-        state={{ blockAgainSuccess: true }}
-      />
-    </Provider>
-  );
+describe("BlockCallsMessages handleInput tests", () => {
+  beforeEach(() => {
+    store = mockStore({
+      Detail: {
+        callsMsgs: {
+          callsMessages: {},
+          blockedNumbers: [],
+          expiredNumbers: [],
+          getCMError: {},
+          blockAgainResponse: {},
+          addBlockCallMsg: {},
+          editBlockCallMsg: {},
+          deleteBlockCallMsg: {},
+          editAllBlockCallMsg: {},
+          isFetching: false,
+        },
+        devices: [],
+      },
+    });
+  });
 
-  expect(screen.getByText(/Blocked again successfully/i)).toBeInTheDocument();
+  it("updates state for valid 10-digit number", () => {
+    const wrapper = render(
+      <Provider store={store}>
+        <BlockCallsMessages selectedDevice={{ encryptedMtn: "mockMtn" }} />
+      </Provider>
+    );
 
-  // Simulate blockAgainSuccess = false
-  rerender(
-    <Provider store={store}>
-      <BlockCallsMessages
-        selectedAccordian="CM"
-        selectedDevice={{ encryptedMtn: "mockMtn" }}
-        blockedNumbers={[]}
-        callsMessagesData={{ remainingBlockCount: 1 }}
-        addBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 0 }}
-        deleteBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 0 }}
-        blockAgainResponse={{
-          successMsg: "Blocked again successfully",
-          failureMsg: "Block again failed",
-        }}
-        state={{ blockAgainSuccess: false }}
-      />
-    </Provider>
-  );
+    const instance = wrapper.container.firstChild._reactInternals.return.stateNode;
 
-  expect(screen.getByText(/Block again failed/i)).toBeInTheDocument();
+    // simulate handleInput with valid 10-digit number
+    instance.setState({ newNumber: "123.456.7890" });
+    const event = { target: { value: "123.456.7890" } };
+
+    instance.handleInput(event, "number");
+
+    expect(instance.state.newNumber).toBe("123.456.7890");
+    expect(instance.state.addnumberValid).toBe(true);
+  });
+
+  it("marks addnumberValid false for invalid number", () => {
+    const wrapper = render(
+      <Provider store={store}>
+        <BlockCallsMessages selectedDevice={{ encryptedMtn: "mockMtn" }} />
+      </Provider>
+    );
+
+    const instance = wrapper.container.firstChild._reactInternals.return.stateNode;
+
+    // invalid number <10 digits
+    instance.setState({ newNumber: "123.45" });
+    const event = { target: { value: "123.45" } };
+
+    instance.handleInput(event, "number");
+
+    expect(instance.state.addnumberValid).toBe(false);
+  });
+
+  it("updates applyAllFlag for checkbox input", () => {
+    const wrapper = render(
+      <Provider store={store}>
+        <BlockCallsMessages selectedDevice={{ encryptedMtn: "mockMtn" }} />
+      </Provider>
+    );
+
+    const instance = wrapper.container.firstChild._reactInternals.return.stateNode;
+    const event = { target: { checked: true } };
+
+    instance.handleInput(event, "checkbox");
+
+    expect(instance.state.applyAllFlag).toBe(true);
+  });
 });

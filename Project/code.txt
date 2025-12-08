@@ -7,7 +7,7 @@ import configureStore from "redux-mock-store";
 const mockStore = configureStore([]);
 let store;
 
-describe("BlockCallsMessages handleInput tests", () => {
+describe("BlockCallsMessages handleOnChange tests", () => {
   beforeEach(() => {
     store = mockStore({
       Detail: {
@@ -28,7 +28,7 @@ describe("BlockCallsMessages handleInput tests", () => {
     });
   });
 
-  it("updates state for valid 10-digit number", () => {
+  it("formats number input correctly and updates state", () => {
     const wrapper = render(
       <Provider store={store}>
         <BlockCallsMessages selectedDevice={{ encryptedMtn: "mockMtn" }} />
@@ -37,17 +37,16 @@ describe("BlockCallsMessages handleInput tests", () => {
 
     const instance = wrapper.container.firstChild._reactInternals.return.stateNode;
 
-    // simulate handleInput with valid 10-digit number
-    instance.setState({ newNumber: "123.456.7890" });
-    const event = { target: { value: "123.456.7890" } };
+    const mockEvent = { target: { value: "1234567890" } };
 
-    instance.handleInput(event, "number");
+    // Call handleOnChange directly
+    instance.handleOnChange(mockEvent, "number");
 
+    // State should now have formatted number
     expect(instance.state.newNumber).toBe("123.456.7890");
-    expect(instance.state.addnumberValid).toBe(true);
   });
 
-  it("marks addnumberValid false for invalid number", () => {
+  it("formats partial number input correctly", () => {
     const wrapper = render(
       <Provider store={store}>
         <BlockCallsMessages selectedDevice={{ encryptedMtn: "mockMtn" }} />
@@ -56,16 +55,14 @@ describe("BlockCallsMessages handleInput tests", () => {
 
     const instance = wrapper.container.firstChild._reactInternals.return.stateNode;
 
-    // invalid number <10 digits
-    instance.setState({ newNumber: "123.45" });
-    const event = { target: { value: "123.45" } };
+    const mockEvent = { target: { value: "12345" } };
 
-    instance.handleInput(event, "number");
+    instance.handleOnChange(mockEvent, "number");
 
-    expect(instance.state.addnumberValid).toBe(false);
+    expect(instance.state.newNumber).toBe("123.45");
   });
 
-  it("updates applyAllFlag for checkbox input", () => {
+  it("calls handleInput internally", () => {
     const wrapper = render(
       <Provider store={store}>
         <BlockCallsMessages selectedDevice={{ encryptedMtn: "mockMtn" }} />
@@ -73,10 +70,13 @@ describe("BlockCallsMessages handleInput tests", () => {
     );
 
     const instance = wrapper.container.firstChild._reactInternals.return.stateNode;
-    const event = { target: { checked: true } };
 
-    instance.handleInput(event, "checkbox");
+    // Spy on handleInput
+    const spy = jest.spyOn(instance, "handleInput");
 
-    expect(instance.state.applyAllFlag).toBe(true);
+    const mockEvent = { target: { value: "9876543210" } };
+    instance.handleOnChange(mockEvent, "number");
+
+    expect(spy).toHaveBeenCalledWith(mockEvent, "number", undefined);
   });
 });

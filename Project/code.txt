@@ -1,14 +1,81 @@
-it('renders Body section when AEMFlag is true', () => {
-  // Arrange
-  localStorage.setItem('AEMFlag', 'true');
-  localStorage.setItem('viewLimitationMsg', '<strong>Test Msg</strong>');
+import React, { useEffect } from "react";
 
-  render(
-    <MemoryRouter>
-      <ViewLimitations />
-    </MemoryRouter>
+import { withRouter } from "react-router-dom";
+import { Button } from "@vds/buttons";
+import { Body, Title } from "@vds/typography";
+import { nativeSetTitle } from "../../../../shared/utilities/native";
+import styled from "styled-components";
+import { Line } from "@vds/lines";
+import { useSelector } from "react-redux";
+import common from "../../../../shared/utilities/util";
+
+const ViewLimitations = (props) => {
+
+  const handleDone = () => {
+    props.history.goBack(); // Go back to previous page
+  };
+  
+  useEffect(() => {
+    nativeSetTitle('View Limitations',false);
+  },[]);
+  let pageItems = useSelector((state)=>state?.Detail?.callsMessages?.sections?.[0]?.sections?.[0].contents[0]?.items);
+  const AEMFFlag = useSelector((state)=>state?.Detail?.callsMessages?.blocksAEMFFlag);
+  return (
+    <PageContent>
+      <br></br>
+      <Title size='large' bold>
+         {common.getItemValue(pageItems,"ViewLimitationTitle")}
+      </Title>
+      <br></br>
+      <Line/>
+        <br></br><br></br>
+        {AEMFFlag?
+        <Body>
+        <p dangerouslySetInnerHTML={{ __html: common.getItemValue(pageItems,"ViewLimitaionMsg") }}/>
+        </Body>:
+        <div><p>
+          Blocking a number for calls and text is easy, but there are a few
+          things you should know beforehand. You can't block numbers that are on
+          your account, emergency numbers that are not 10-digits (911, 411, etc.)
+          or #MIN (to check your used minutes).
+        </p>
+      <br></br>
+        <p>
+          Your blocks expire after 90 days. You can either block it again or
+          subscribe to FamilyBase* to block a number permanently.
+        </p>
+        <br></br>
+        <p>
+          If you change your mind, you can review your blocked numbers and decide
+          to unblock it by tapping the red X.
+        </p>
+        <br></br>
+        <p>
+          *FamilyBase lets you permanently block incoming and outgoing calls for
+          up to 20 US or international numbers.
+        </p>
+        </div>
+        }
+        
+        <ButtonWrapper>
+        <Button  onClick={handleDone}>
+          Done
+        </Button>
+        </ButtonWrapper>
+    </PageContent>
   );
+};
 
-  // Assert
-  expect(screen.getByText('Test Msg')).toBeInTheDocument();
-});
+const PageContent = styled.div`
+  padding-right:10px;
+  padding-left:10px;
+  padding-top:20px;
+`;
+const ButtonWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 100px;
+`;
+
+export default withRouter(ViewLimitations);

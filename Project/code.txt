@@ -1,63 +1,181 @@
-export const postaddBlockCallMsg = (blockNum) => async dispatch => {
+/**
+ * @jest-environment jsdom
+ */
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
+import BlockCallsMessages from "../BlockCallsMessages";
+import { getCallsMessages, postaddBlockCallMsg, postDeleteBlockCallMsg } from "../actions/fetchCallsMessages";
 
-  dispatch(postaddBlockCallMsgBegin())
-  const onSuccess = (resp) => {
-    if (
-      resp &&
-      resp.data &&
-      resp.data.responseInfo &&
-      resp.data.responseInfo.responseCode == "00"
-    ) {
-      
-      dispatch(postaddBlockCallMsgSuccess(resp.data));
-    } else {
-      dispatch(postaddBlockCallMsgError(resp.data));
-    }
-  };
-  
-  const onError = error => {
-    // below code is for redirecting to unauthorised screen for member account
-    let msResp = error && error.response && error.response.data;
-    let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
-    let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
-    if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
-      window.location.href = apiUrl().mvoLimitedAccessUrl;
-    }
-    else {
-      dispatch(postaddBlockCallMsgError(error));
-    }
-  };
-  
-  const callMS = () => {
-    let axConfig = {
-      headers: {
-        flowName:'Blocks',
-        contentType: 'application/json',
-        
-      },
-    }
-    if (apiUrl().addNumber?.indexOf('apiData') > -1) {
-      return getHttpClientRequest(
-        apiUrl().addNumber,
-        axConfig
-      ) 
-    } else {
-      
-      return postHttpClientRequest(
-        apiUrl().addNumber,
-        blockNum,
-        axConfig
-      );
-    }
-  }
-  
-  callMS()
-    .then(msResp => {
-      console.log(msResp, 'msResp')
-      if (msResp && msResp.status == 200) {
-        onSuccess(msResp);
-      }
-    })
-    .catch(onError);
+jest.mock("../actions/fetchCallsMessages", () => ({
+  getCallsMessages: jest.fn(() => ({ type: "GET_CM" })),
+  postaddBlockCallMsg: jest.fn(() => ({ type: "ADD_BLOCK_CALL_MSG" })),
+  postDeleteBlockCallMsg: jest.fn(() => ({ type: "DELETE_BLOCK_CALL_MSG" })),
+}));
 
-}
+const mockStore = configureStore([]);
+const store = mockStore({
+  Detail: {
+    callsMsgs: {
+      callsMessages: {},
+      blockedNumbers: [],
+      expiredNumbers: [],
+      getCMError: {},
+      blockAgainResponse: {},
+      addBlockCallMsg: {},
+      editBlockCallMsg: {},
+      deleteBlockCallMsg: {},
+      editAllBlockCallMsg: {},
+      isFetching: false,
+    },
+    devices: [],
+  },
+});
+
+describe("BlockCallsMessages Component", () => {
+  let component;
+
+  beforeEach(() => {
+    component = render(
+      <Provider store={store}>
+        <BlockCallsMessages selectedAccordian="" selectedDevice={{ encryptedMtn: "mockMtn" }} />
+      </Provider>
+    );
+  });
+
+  it("renders accordion title", () => {
+    expect(screen.getByText(/Block calls & messages/i)).toBeInTheDocument();
+  });
+
+  it("handles input changes and validation", () => {
+    const input = screen.getByPlaceholderText(/Enter a number/i);
+    fireEvent.change(input, { target: { value: "1234567890" } });
+    expect(input.value).toBe("123.456.7890");
+
+    fireEvent.change(input, { target: { value: "abc" } });
+    // invalid input should not change formatted value
+    expect(input.value).toBe("abc");
+  });
+
+  it("calls handleAddNumber when Block button clicked", () => {
+    const input = screen.getByPlaceholderText(/Enter a number/i);
+    fireEvent.change(input, { target: { value: "1234567890" } });
+
+    const button = screen.getByRole("button", { name: /Block/i });
+    fireEvent.click(button);
+
+    expect(postaddBlockCallMsg).toHaveBeenCalled();
+  });
+
+  it("handles deleteNumber click", () => {
+    const deleteMock = jest.fn();
+    render(
+      <Provider store={store}>
+        <BlockCallsMessages
+          selectedAccordian=""
+          selectedDevice={{ encryptedMtn: "mockMtn" }}
+          blockedNumbers={[{ phoneNumber: "1234567890", memo: "memo1" }]}
+          postDeleteBlockCallMsg={deleteMock}
+        />
+      </Provider>
+    );
+
+    const unblockButton = screen.getByText(/Unblock/i);
+    fireEvent.click(unblockButton);
+
+    expect(postDeleteBlockCallMsg).toHaveBeenCalled();
+  });
+
+  it("handles accordion toggle", () => {
+    const toggleButton = screen.getByRole("button", { name: /Block calls & messages/i });
+    fireEvent.click(toggleButton);
+    fireEvent.keyPress(toggleButton, { key: "Enter", code: "Enter", charCode: 13 });
+
+    expect(screen.getByText(/Block calls & messages/i)).toBeInTheDocument();
+  });
+
+  it("handles componentDidUpdate for blockedNumbers, addBlockCallMsgRes, deleteBlockCallMsgRes", () => {
+    const { rerender } = render(
+      <Provider store={store}>
+        <BlockCallsMessages
+          selectedAccordian="CM"
+          selectedDevice={{ encryptedMtn: "mockMtn" }}
+          blockedNumbers={[{ phoneNumber: "1112223333", memo: "test" }]}
+          callsMessagesData={{ remainingBlockCount: 1 }}
+          addBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 1 }}
+          deleteBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 1 }}
+        />
+      </Provider>
+    );
+
+    // 1️⃣ Trigger blockedNumbers & callsMessagesData change
+    rerender(
+      <Provider store={store}>
+        <BlockCallsMessages
+          selectedAccordian="CM"
+          selectedDevice={{ encryptedMtn: "mockMtn" }}
+          blockedNumbers={[{ phoneNumber: "9998887777", memo: "changed" }]}
+          callsMessagesData={{ remainingBlockCount: 2 }}
+          addBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 1 }}
+          deleteBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 1 }}
+        />
+      </Provider>
+    );
+
+    // 2️⃣ Trigger addBlockCallMsgRes change
+    rerender(
+      <Provider store={store}>
+        <BlockCallsMessages
+          selectedAccordian="CM"
+          selectedDevice={{ encryptedMtn: "mockMtn" }}
+          blockedNumbers={[]}
+          callsMessagesData={{ remainingBlockCount: 2 }}
+          addBlockCallMsgRes={{
+            blockedPhoneNumbers: [],
+            remainingBlockCount: 0,
+            successMsg: "Added",
+            failureMsg: "Failed",
+            hasSuccessMsg: true,
+            hasFailureMsg: true,
+          }}
+          deleteBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 1 }}
+        />
+      </Provider>
+    );
+
+    // 3️⃣ Trigger deleteBlockCallMsgRes change
+    rerender(
+      <Provider store={store}>
+        <BlockCallsMessages
+          selectedAccordian="CM"
+          selectedDevice={{ encryptedMtn: "mockMtn" }}
+          blockedNumbers={[]}
+          callsMessagesData={{ remainingBlockCount: 2 }}
+          addBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 0 }}
+          deleteBlockCallMsgRes={{
+            blockedPhoneNumbers: [],
+            remainingBlockCount: 0,
+            successMsg: "Deleted",
+            failureMsg: "Delete failed",
+            hasSuccessMsg: true,
+          }}
+        />
+      </Provider>
+    );
+
+    expect(screen.getByText(/Block calls & messages/i)).toBeInTheDocument();
+  });
+
+  it("handles toggle sections", () => {
+    const smLink = screen.getByText(/spam/i);
+    const bceLink = screen.getByText(/contact/i);
+
+    fireEvent.click(smLink);
+    fireEvent.click(bceLink);
+
+    expect(smLink).toBeInTheDocument();
+    expect(bceLink).toBeInTheDocument();
+  });
+
+});

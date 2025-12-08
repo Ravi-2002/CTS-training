@@ -1,181 +1,78 @@
-/**
- * @jest-environment jsdom
- */
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { Provider } from "react-redux";
-import configureStore from "redux-mock-store";
-import BlockCallsMessages from "../BlockCallsMessages";
-import { getCallsMessages, postaddBlockCallMsg, postDeleteBlockCallMsg } from "../actions/fetchCallsMessages";
+it("renders all alert messages including powerCycle and blockAgainSuccess", async () => {
+  const { rerender } = render(
+    <Provider store={store}>
+      <BlockCallsMessages
+        selectedAccordian="CM"
+        selectedDevice={{ encryptedMtn: "mockMtn" }}
+        blockedNumbers={[]}
+        callsMessagesData={{ remainingBlockCount: 1 }}
+        addBlockCallMsgRes={{
+          blockedPhoneNumbers: [],
+          remainingBlockCount: 0,
+          successMsg: "Added successfully",
+          failureMsg: "Failed to add",
+          hasSuccessMsg: true,
+          hasFailureMsg: true,
+          powerCycle: true,
+        }}
+        deleteBlockCallMsgRes={{
+          blockedPhoneNumbers: [],
+          remainingBlockCount: 0,
+          successMsg: "Deleted successfully",
+          hasSuccessMsg: true,
+        }}
+        blockAgainResponse={{
+          successMsg: "Blocked again successfully",
+          failureMsg: "Block again failed",
+        }}
+      />
+    </Provider>
+  );
 
-jest.mock("../actions/fetchCallsMessages", () => ({
-  getCallsMessages: jest.fn(() => ({ type: "GET_CM" })),
-  postaddBlockCallMsg: jest.fn(() => ({ type: "ADD_BLOCK_CALL_MSG" })),
-  postDeleteBlockCallMsg: jest.fn(() => ({ type: "DELETE_BLOCK_CALL_MSG" })),
-}));
+  // Alerts for addSuccess + failSuccess + powerCycle
+  expect(await screen.findByText(/Added successfully/i)).toBeInTheDocument();
+  expect(await screen.findByText(/Failed to add/i)).toBeInTheDocument();
+  expect(await screen.findByText(/In order to complete your service change/i)).toBeInTheDocument();
 
-const mockStore = configureStore([]);
-const store = mockStore({
-  Detail: {
-    callsMsgs: {
-      callsMessages: {},
-      blockedNumbers: [],
-      expiredNumbers: [],
-      getCMError: {},
-      blockAgainResponse: {},
-      addBlockCallMsg: {},
-      editBlockCallMsg: {},
-      deleteBlockCallMsg: {},
-      editAllBlockCallMsg: {},
-      isFetching: false,
-    },
-    devices: [],
-  },
-});
+  // Simulate blockAgainSuccess = true
+  rerender(
+    <Provider store={store}>
+      <BlockCallsMessages
+        selectedAccordian="CM"
+        selectedDevice={{ encryptedMtn: "mockMtn" }}
+        blockedNumbers={[]}
+        callsMessagesData={{ remainingBlockCount: 1 }}
+        addBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 0 }}
+        deleteBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 0 }}
+        blockAgainResponse={{
+          successMsg: "Blocked again successfully",
+          failureMsg: "Block again failed",
+        }}
+        state={{ blockAgainSuccess: true }}
+      />
+    </Provider>
+  );
 
-describe("BlockCallsMessages Component", () => {
-  let component;
+  expect(screen.getByText(/Blocked again successfully/i)).toBeInTheDocument();
 
-  beforeEach(() => {
-    component = render(
-      <Provider store={store}>
-        <BlockCallsMessages selectedAccordian="" selectedDevice={{ encryptedMtn: "mockMtn" }} />
-      </Provider>
-    );
-  });
+  // Simulate blockAgainSuccess = false
+  rerender(
+    <Provider store={store}>
+      <BlockCallsMessages
+        selectedAccordian="CM"
+        selectedDevice={{ encryptedMtn: "mockMtn" }}
+        blockedNumbers={[]}
+        callsMessagesData={{ remainingBlockCount: 1 }}
+        addBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 0 }}
+        deleteBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 0 }}
+        blockAgainResponse={{
+          successMsg: "Blocked again successfully",
+          failureMsg: "Block again failed",
+        }}
+        state={{ blockAgainSuccess: false }}
+      />
+    </Provider>
+  );
 
-  it("renders accordion title", () => {
-    expect(screen.getByText(/Block calls & messages/i)).toBeInTheDocument();
-  });
-
-  it("handles input changes and validation", () => {
-    const input = screen.getByPlaceholderText(/Enter a number/i);
-    fireEvent.change(input, { target: { value: "1234567890" } });
-    expect(input.value).toBe("123.456.7890");
-
-    fireEvent.change(input, { target: { value: "abc" } });
-    // invalid input should not change formatted value
-    expect(input.value).toBe("abc");
-  });
-
-  it("calls handleAddNumber when Block button clicked", () => {
-    const input = screen.getByPlaceholderText(/Enter a number/i);
-    fireEvent.change(input, { target: { value: "1234567890" } });
-
-    const button = screen.getByRole("button", { name: /Block/i });
-    fireEvent.click(button);
-
-    expect(postaddBlockCallMsg).toHaveBeenCalled();
-  });
-
-  it("handles deleteNumber click", () => {
-    const deleteMock = jest.fn();
-    render(
-      <Provider store={store}>
-        <BlockCallsMessages
-          selectedAccordian=""
-          selectedDevice={{ encryptedMtn: "mockMtn" }}
-          blockedNumbers={[{ phoneNumber: "1234567890", memo: "memo1" }]}
-          postDeleteBlockCallMsg={deleteMock}
-        />
-      </Provider>
-    );
-
-    const unblockButton = screen.getByText(/Unblock/i);
-    fireEvent.click(unblockButton);
-
-    expect(postDeleteBlockCallMsg).toHaveBeenCalled();
-  });
-
-  it("handles accordion toggle", () => {
-    const toggleButton = screen.getByRole("button", { name: /Block calls & messages/i });
-    fireEvent.click(toggleButton);
-    fireEvent.keyPress(toggleButton, { key: "Enter", code: "Enter", charCode: 13 });
-
-    expect(screen.getByText(/Block calls & messages/i)).toBeInTheDocument();
-  });
-
-  it("handles componentDidUpdate for blockedNumbers, addBlockCallMsgRes, deleteBlockCallMsgRes", () => {
-    const { rerender } = render(
-      <Provider store={store}>
-        <BlockCallsMessages
-          selectedAccordian="CM"
-          selectedDevice={{ encryptedMtn: "mockMtn" }}
-          blockedNumbers={[{ phoneNumber: "1112223333", memo: "test" }]}
-          callsMessagesData={{ remainingBlockCount: 1 }}
-          addBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 1 }}
-          deleteBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 1 }}
-        />
-      </Provider>
-    );
-
-    // 1️⃣ Trigger blockedNumbers & callsMessagesData change
-    rerender(
-      <Provider store={store}>
-        <BlockCallsMessages
-          selectedAccordian="CM"
-          selectedDevice={{ encryptedMtn: "mockMtn" }}
-          blockedNumbers={[{ phoneNumber: "9998887777", memo: "changed" }]}
-          callsMessagesData={{ remainingBlockCount: 2 }}
-          addBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 1 }}
-          deleteBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 1 }}
-        />
-      </Provider>
-    );
-
-    // 2️⃣ Trigger addBlockCallMsgRes change
-    rerender(
-      <Provider store={store}>
-        <BlockCallsMessages
-          selectedAccordian="CM"
-          selectedDevice={{ encryptedMtn: "mockMtn" }}
-          blockedNumbers={[]}
-          callsMessagesData={{ remainingBlockCount: 2 }}
-          addBlockCallMsgRes={{
-            blockedPhoneNumbers: [],
-            remainingBlockCount: 0,
-            successMsg: "Added",
-            failureMsg: "Failed",
-            hasSuccessMsg: true,
-            hasFailureMsg: true,
-          }}
-          deleteBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 1 }}
-        />
-      </Provider>
-    );
-
-    // 3️⃣ Trigger deleteBlockCallMsgRes change
-    rerender(
-      <Provider store={store}>
-        <BlockCallsMessages
-          selectedAccordian="CM"
-          selectedDevice={{ encryptedMtn: "mockMtn" }}
-          blockedNumbers={[]}
-          callsMessagesData={{ remainingBlockCount: 2 }}
-          addBlockCallMsgRes={{ blockedPhoneNumbers: [], remainingBlockCount: 0 }}
-          deleteBlockCallMsgRes={{
-            blockedPhoneNumbers: [],
-            remainingBlockCount: 0,
-            successMsg: "Deleted",
-            failureMsg: "Delete failed",
-            hasSuccessMsg: true,
-          }}
-        />
-      </Provider>
-    );
-
-    expect(screen.getByText(/Block calls & messages/i)).toBeInTheDocument();
-  });
-
-  it("handles toggle sections", () => {
-    const smLink = screen.getByText(/spam/i);
-    const bceLink = screen.getByText(/contact/i);
-
-    fireEvent.click(smLink);
-    fireEvent.click(bceLink);
-
-    expect(smLink).toBeInTheDocument();
-    expect(bceLink).toBeInTheDocument();
-  });
-
+  expect(screen.getByText(/Block again failed/i)).toBeInTheDocument();
 });

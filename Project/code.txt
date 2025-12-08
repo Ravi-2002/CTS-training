@@ -225,4 +225,20 @@ describe("BlockCallsMessages Tests - FULL COVERAGE", () => {
     setup();
     fireEvent.click(screen.getByText("Block calls & messages"));
     fireEvent.click(screen.getByText("Contact Experience"));
-    expect(screen.getByText("C1")).toBe
+    expect(screen.getByText("C1")).toBeInTheDocument();
+  });
+
+  test("Video and FAQ links", () => {
+    delete window.location;
+    window.location = { href: "" };
+
+    setup();
+    fireEvent.click(screen.getByText("Block calls & messages"));
+
+    fireEvent.click(screen.getByText("Video Link"));
+    expect(window.location.href).toBe("/video");
+
+    fireEvent.click(screen.getByText("FAQ Link"));
+    expect(window.location.href).toBe("/faq");
+  });
+});

@@ -1,56 +1,14 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { Router } from 'react-router-dom';
-import { createMemoryHistory } from 'history';
-import ViewLimitations from '../ViewLimitation';
-import '@testing-library/jest-dom';
+it('renders Body section when AEMFlag is true', () => {
+  // Arrange
+  localStorage.setItem('AEMFlag', 'true');
+  localStorage.setItem('viewLimitationMsg', '<strong>Test Msg</strong>');
 
-import { nativeSetTitle } from '../../../../../shared/utilities/native';
-jest.mock('../../../../../shared/utilities/native', () => ({
-  nativeSetTitle: jest.fn()
-}));
+  render(
+    <MemoryRouter>
+      <ViewLimitations />
+    </MemoryRouter>
+  );
 
-
-describe('ViewLimitations Component', () => {
-  it('renders all text content and Done button', () => {
-    const history = createMemoryHistory();
-    render(
-      <Router history={history}>
-        <ViewLimitations />
-      </Router>
-    );
-
-    expect(screen.getByText(/What you need to know about call and text blocking/i)).toBeInTheDocument();
-    expect(screen.getByText(/Blocking a number for calls and text is easy/i)).toBeInTheDocument();
-    expect(screen.getByText(/Your blocks expire after 90 days/i)).toBeInTheDocument();
-    expect(screen.getByText(/you can review your blocked numbers/i)).toBeInTheDocument();
-    expect(screen.getByText(/FamilyBase lets you permanently block/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Done/i })).toBeInTheDocument();
-  });
-
-  it('sets the native title on mount', () => {
-    const history = createMemoryHistory();
-    render(
-      <Router history={history}>
-        <ViewLimitations />
-      </Router>
-    );
-
-    expect(nativeSetTitle).toHaveBeenCalledWith('Block Calls & Messages');
-  });
-
-  it('goes back in history on Done button click', () => {
-    const history = createMemoryHistory();
-    history.push('/viewlimitation');
-    const spy = jest.spyOn(history, 'goBack');
-
-    render(
-      <Router history={history}>
-        <ViewLimitations />
-      </Router>
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: /Done/i }));
-    expect(spy).toHaveBeenCalled();
-  });
+  // Assert
+  expect(screen.getByText('Test Msg')).toBeInTheDocument();
 });

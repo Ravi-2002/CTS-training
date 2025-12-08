@@ -1,469 +1,63 @@
-/**
- * @jest-environment jsdom
- */
-import React from "react";
-import { render, fireEvent, screen, waitFor } from "@testing-library/react";
-import configureStore from "redux-mock-store";
-import thunk from "redux-thunk";
-import { Provider } from "react-redux";
-import BlockCallsMessages from "../BlockCallsMessages"; // adjust path if needed
+export const postaddBlockCallMsg = (blockNum) => async dispatch => {
 
-// ----------------------- MOCKS -----------------------
-jest.mock("../actions/fetchCallsMessages", () => ({
-  getCallsMessages: jest.fn(() => Promise.resolve()),
-  postaddBlockCallMsg: jest.fn(() => Promise.resolve()),
-  postDeleteBlockCallMsg: jest.fn(() => Promise.resolve())
-}));
-
-// simple UI component mocks so we don't render heavy UI internals
-jest.mock("../../alert", () => (props) => <div data-testid="alert">{props.Message}</div>);
-jest.mock("@vds/inputs", () => ({ Input: (props) => <input {...props} /> }));
-jest.mock("@vds/typography", () => ({ Body: (p) => <div {...p}>{p.children}</div>, Title: (p) => <div {...p}>{p.children}</div> }));
-jest.mock("@vds/buttons", () => ({ Button: (p) => <button {...p}>{p.children}</button>, TextLink: (p) => <a {...p}>{p.children}</a> }));
-jest.mock("@vds/grids", () => ({ Col: (p) => <div {...p}>{p.children}</div>, Grid: (p) => <div {...p}>{p.children}</div>, Row: (p) => <div {...p}>{p.children}</div> }));
-jest.mock("@vds/loaders", () => ({ Loader: (p) => (p.active ? <div data-testid="loader" /> : null) }));
-
-// mock utilities and formatting
-jest.mock("../../../../shared/utilities/commonExp", () => ({
-  mobileNumberFormat: jest.fn((n) => `FORMATTED(${n})`)
-}));
-
-jest.mock("../../../../shared/utilities/util", () => ({
-  getContentFromSection: jest.fn(() => ({
-    sections: [
-      {
-        contents: [
-          {
-            items: {
-              headerText: "Header Text",
-              textfield1Default: "Enter number",
-              textfield1Error: "Invalid phone",
-              currNumbersHeader: "Current numbers",
-              spamLink: "Report spam",
-              spamLinkMsg1: "spam msg 1",
-              spamLinkMsg2: "spam msg 2",
-              contactLink: "Contact experience",
-              contactLinkMsg1: "contact msg 1",
-              contactLinkMsg2: "contact msg 2",
-              videoLink: "Video Link",
-              faqsLink: "FAQ Link"
-            }
-          }
-        ],
-        actions: [
-          { actionKey: "videoLink", actionValue: "/video" },
-          { actionKey: "faqsLink", actionValue: "/faq" }
-        ]
+  dispatch(postaddBlockCallMsgBegin())
+  const onSuccess = (resp) => {
+    if (
+      resp &&
+      resp.data &&
+      resp.data.responseInfo &&
+      resp.data.responseInfo.responseCode == "00"
+    ) {
+      
+      dispatch(postaddBlockCallMsgSuccess(resp.data));
+    } else {
+      dispatch(postaddBlockCallMsgError(resp.data));
+    }
+  };
+  
+  const onError = error => {
+    // below code is for redirecting to unauthorised screen for member account
+    let msResp = error && error.response && error.response.data;
+    let responseCode = msResp && msResp.responseInfo && msResp.responseInfo.responseCode;
+    let responseMessage = msResp && msResp.responseInfo && msResp.responseInfo.responseMessage;
+    if (responseCode == "401" && responseMessage.includes("mobileSecure")) {
+      window.location.href = apiUrl().mvoLimitedAccessUrl;
+    }
+    else {
+      dispatch(postaddBlockCallMsgError(error));
+    }
+  };
+  
+  const callMS = () => {
+    let axConfig = {
+      headers: {
+        flowName:'Blocks',
+        contentType: 'application/json',
+        
+      },
+    }
+    if (apiUrl().addNumber?.indexOf('apiData') > -1) {
+      return getHttpClientRequest(
+        apiUrl().addNumber,
+        axConfig
+      ) 
+    } else {
+      
+      return postHttpClientRequest(
+        apiUrl().addNumber,
+        blockNum,
+        axConfig
+      );
+    }
+  }
+  
+  callMS()
+    .then(msResp => {
+      console.log(msResp, 'msResp')
+      if (msResp && msResp.status == 200) {
+        onSuccess(msResp);
       }
-    ]
-  })),
-  getItemValue: jest.fn((items, key) => items && items[key]),
-  getActionKey: jest.fn((items, key) => key),
-  getActionByKey: jest.fn((actions, key) => actions && actions.find(a => a.actionKey === key))
-}));
+    })
+    .catch(onError);
 
-// reactGlobals used in component
-global.reactGlobals = { isCsr: false };
-
-// ----------------------- TEST HELPERS -----------------------
-const middlewares = [thunk];
-const mockStore = configureStore(middlewares);
-
-function renderWithStore(store) {
-  return render(
-    <Provider store={store}>
-      <BlockCallsMessages selectedDevice={{ encryptedMtn: "ENC_MT" }} selectedAccordian="" selectAccordian={jest.fn()} />
-    </Provider>
-  );
 }
-
-// ----------------------- TESTS -----------------------
-describe("BlockCallsMessages component - full behaviour", () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-    // reset CSR flag default
-    global.reactGlobals.isCsr = false;
-  });
-
-  test("renders and toggles accordion - shows header", () => {
-    const initialState = {
-      Detail: {
-        callsMsgs: {
-          callsMessages: { sections: [{}], remainingBlockCount: 5, blocksAEMFFlag: false },
-          blockedNumbers: [],
-          expiredNumbers: [],
-          getCMError: {},
-          blockAgainResponse: {},
-          addBlockCallMsg: {},
-          editBlockCallMsg: {},
-          deleteBlockCallMsg: {},
-          editAllBlockCallMsg: {},
-          isFetching: false
-        },
-        devices: []
-      }
-    };
-    const store = mockStore(initialState);
-    renderWithStore(store);
-
-    // header present
-    const header = screen.getByText("Block calls & messages");
-    expect(header).toBeInTheDocument();
-
-    // click opens (component calls handleCallsMessages)
-    fireEvent.click(header);
-
-    // after clicking, the Title from mocked common should appear
-    expect(screen.getByText("Header Text")).toBeInTheDocument();
-  });
-
-  test("input formatting & validation: shows error for invalid and enables Block for valid", async () => {
-    const state = {
-      Detail: {
-        callsMsgs: {
-          callsMessages: { sections: [{}], remainingBlockCount: 5, blocksAEMFFlag: false },
-          blockedNumbers: [],
-          expiredNumbers: [],
-          getCMError: {},
-          blockAgainResponse: {},
-          addBlockCallMsg: {},
-          editBlockCallMsg: {},
-          deleteBlockCallMsg: {},
-          editAllBlockCallMsg: {},
-          isFetching: false
-        },
-        devices: []
-      }
-    };
-    const store = mockStore(state);
-    renderWithStore(store);
-
-    fireEvent.click(screen.getByText("Block calls & messages"));
-
-    const input = screen.getByPlaceholderText("Enter number");
-    // type short invalid value
-    fireEvent.change(input, { target: { value: "12" } });
-    // component formats into '12' (no dots) and sets addnumberValid false -> error message shown after render
-    expect(await screen.findByText("Invalid phone")).toBeInTheDocument();
-
-    // now type valid 10 digits, component formats as xxx.xxx.xxxx
-    fireEvent.change(input, { target: { value: "1234567890" } });
-
-    // Block button should be present and not disabled (reactGlobals.isCsr false)
-    const btn = screen.getByText("Block");
-    expect(btn).toBeInTheDocument();
-    // It could be enabled depending on state; ensure it's not disabled because we provided valid number and remainingBlockCount > 0
-    expect(btn).not.toBeDisabled();
-  });
-
-  test("handleAddNumber success path sets success alert and powerCycle handling", async () => {
-    // Create store where addBlockCallMsg already contains success data (so when .then reads props, statusCode==='00')
-    const stateSuccess = {
-      Detail: {
-        callsMsgs: {
-          callsMessages: { sections: [{}], remainingBlockCount: 4, blocksAEMFFlag: false },
-          blockedNumbers: [],
-          expiredNumbers: [],
-          getCMError: {},
-          blockAgainResponse: {},
-          addBlockCallMsg: {
-            statusCode: "00",
-            powerCycle: true,
-            blockedPhoneNumbers: [{ phoneNumber: "9998887777", memo: "m" }],
-            expiredBlockedPhoneNumbers: [],
-            remainingBlockCount: 4,
-            hasSuccessMsg: true,
-            hasFailureMsg: false,
-            successMsg: "Added successfully"
-          },
-          editBlockCallMsg: {},
-          deleteBlockCallMsg: {},
-          editAllBlockCallMsg: {},
-          isFetching: false
-        },
-        devices: []
-      }
-    };
-
-    const store = mockStore(stateSuccess);
-    renderWithStore(store);
-
-    // open
-    fireEvent.click(screen.getByText("Block calls & messages"));
-
-    // input valid number
-    const input = screen.getByPlaceholderText("Enter number");
-    fireEvent.change(input, { target: { value: "1234567890" } });
-
-    // click block -> postaddBlockCallMsg mock resolves, and component will read addBlockCallMsg from props (we already set success)
-    fireEvent.click(screen.getByText("Block"));
-
-    // success alert should appear (our Alert mock renders the Message)
-    expect(await screen.findByText("Added successfully")).toBeInTheDocument();
-
-    // powerCycle alert message appears as a long string; check that the powerCycle alert content fragment exists
-    expect(screen.getByTestId("alert")).toBeTruthy();
-  });
-
-  test("handleAddNumber failure branch sets error trackingId", async () => {
-    // store with failure (statusCode !== "00")
-    const stateFail = {
-      Detail: {
-        callsMsgs: {
-          callsMessages: { sections: [{}], remainingBlockCount: 5, blocksAEMFFlag: false },
-          blockedNumbers: [],
-          expiredNumbers: [],
-          getCMError: {},
-          blockAgainResponse: {},
-          addBlockCallMsg: {
-            statusCode: "01",
-            hasFailureMsg: true,
-            failureMsg: "Add failed"
-          },
-          editBlockCallMsg: {},
-          deleteBlockCallMsg: {},
-          editAllBlockCallMsg: {},
-          isFetching: false
-        },
-        devices: []
-      }
-    };
-    const store = mockStore(stateFail);
-    renderWithStore(store);
-
-    fireEvent.click(screen.getByText("Block calls & messages"));
-
-    // enter valid number and click block
-    fireEvent.change(screen.getByPlaceholderText("Enter number"), { target: { value: "1234567890" } });
-    fireEvent.click(screen.getByText("Block"));
-
-    // failure alert should display failureMsg
-    expect(await screen.findByText("Add failed")).toBeInTheDocument();
-  });
-
-  test("blocked numbers render and Unblock click triggers delete flow and shows delete success", async () => {
-    // initial store with a blocked number and delete response set to success in props
-    const stateWithBlocked = {
-      Detail: {
-        callsMsgs: {
-          callsMessages: { sections: [{}], remainingBlockCount: 5, blocksAEMFFlag: false },
-          blockedNumbers: [{ phoneNumber: "7776665555", memo: "m" }],
-          expiredNumbers: [],
-          getCMError: {},
-          blockAgainResponse: {},
-          addBlockCallMsg: {},
-          editBlockCallMsg: {},
-          deleteBlockCallMsg: {
-            statusCode: "00",
-            blockedPhoneNumbers: [],
-            expiredBlockedPhoneNumbers: [],
-            remainingBlockCount: 5,
-            hasSuccessMsg: true,
-            successMsg: "Deleted"
-          },
-          editAllBlockCallMsg: {},
-          isFetching: false
-        },
-        devices: []
-      }
-    };
-
-    const store = mockStore(stateWithBlocked);
-    renderWithStore(store);
-
-    fireEvent.click(screen.getByText("Block calls & messages"));
-
-    // blocked number formatted text should appear (mock returns FORMATTED(...)
-    expect(screen.getByText(/FORMATTED\(7776665555\)/)).toBeInTheDocument();
-
-    // Unblock link should be present and clickable
-    const unblockAnchor = screen.getByText("Unblock");
-    expect(unblockAnchor).toBeInTheDocument();
-
-    fireEvent.click(unblockAnchor);
-
-    // After clicking Unblock, the deleteBlockCallMsg in props (we provided success) should show success alert
-    expect(await screen.findByText("Deleted")).toBeInTheDocument();
-  });
-
-  test("toggles: Report spam and Contact experience expand/collapse", async () => {
-    const state = {
-      Detail: {
-        callsMsgs: {
-          callsMessages: { sections: [{}], remainingBlockCount: 5, blocksAEMFFlag: false },
-          blockedNumbers: [],
-          expiredNumbers: [],
-          getCMError: {},
-          blockAgainResponse: {},
-          addBlockCallMsg: {},
-          editBlockCallMsg: {},
-          deleteBlockCallMsg: {},
-          editAllBlockCallMsg: {},
-          isFetching: false
-        },
-        devices: []
-      }
-    };
-    const store = mockStore(state);
-    renderWithStore(store);
-
-    fireEvent.click(screen.getByText("Block calls & messages"));
-
-    // spam link toggle
-    const spamLink = screen.getByText("Report spam");
-    fireEvent.click(spamLink);
-    expect(await screen.findByText("spam msg 1")).toBeInTheDocument();
-
-    // contact link toggle
-    const contactLink = screen.getByText("Contact experience");
-    fireEvent.click(contactLink);
-    expect(await screen.findByText("contact msg 1")).toBeInTheDocument();
-  });
-
-  test("Video and FAQ link flows set window.location.href when blocksAEMFFlag false", () => {
-    const state = {
-      Detail: {
-        callsMsgs: {
-          callsMessages: { sections: [{}], remainingBlockCount: 5, blocksAEMFFlag: false },
-          blockedNumbers: [],
-          expiredNumbers: [],
-          getCMError: {},
-          blockAgainResponse: {},
-          addBlockCallMsg: {},
-          editBlockCallMsg: {},
-          deleteBlockCallMsg: {},
-          editAllBlockCallMsg: {},
-          isFetching: false
-        },
-        devices: []
-      }
-    };
-    const store = mockStore(state);
-
-    // stub window.location
-    const originalLocation = window.location;
-    delete window.location;
-    window.location = { href: "" };
-
-    renderWithStore(store);
-    fireEvent.click(screen.getByText("Block calls & messages"));
-
-    // Video link uses common.actions -> actionValue "/video"
-    const videoLink = screen.getByText("Video Link");
-    fireEvent.click(videoLink);
-    expect(window.location.href).toBe("/video");
-
-    const faqLink = screen.getByText("FAQ Link");
-    fireEvent.click(faqLink);
-    expect(window.location.href).toBe("/faq");
-
-    // restore
-    window.location = originalLocation;
-  });
-
-  test("blocksAEMFFlag true uses external URLs", () => {
-    const state = {
-      Detail: {
-        callsMsgs: {
-          callsMessages: { sections: [{}], remainingBlockCount: 5, blocksAEMFFlag: true },
-          blockedNumbers: [],
-          expiredNumbers: [],
-          getCMError: {},
-          blockAgainResponse: {},
-          addBlockCallMsg: {},
-          editBlockCallMsg: {},
-          deleteBlockCallMsg: {},
-          editAllBlockCallMsg: {},
-          isFetching: false
-        },
-        devices: []
-      }
-    };
-    const store = mockStore(state);
-
-    // stub window.location
-    const originalLocation = window.location;
-    delete window.location;
-    window.location = { href: "" };
-
-    renderWithStore(store);
-    fireEvent.click(screen.getByText("Block calls & messages"));
-
-    // there are two TextLink anchors when blocksAEMFFlag true; click the "Video: How to block services"
-    const extVideo = screen.getByText("Video: How to block services");
-    fireEvent.click(extVideo);
-    expect(window.location.href).toBe("https://www.verizonwireless.com/support/how-to-add-blocks-video/");
-
-    const extFaq = screen.getByText("Block and unblock services FAQ");
-    fireEvent.click(extFaq);
-    expect(window.location.href).toBe("https://www.verizonwireless.com/support/block-unblock-services-faqs/");
-
-    window.location = originalLocation;
-  });
-
-  test("remainingBlockCount==0 shows info alert and disables Block button", () => {
-    const state = {
-      Detail: {
-        callsMsgs: {
-          callsMessages: { sections: [{}], remainingBlockCount: 0, blocksAEMFFlag: false },
-          blockedNumbers: [],
-          expiredNumbers: [],
-          getCMError: {},
-          blockAgainResponse: {},
-          addBlockCallMsg: {},
-          editBlockCallMsg: {},
-          deleteBlockCallMsg: {},
-          editAllBlockCallMsg: {},
-          isFetching: false
-        },
-        devices: []
-      }
-    };
-    const store = mockStore(state);
-    renderWithStore(store);
-
-    fireEvent.click(screen.getByText("Block calls & messages"));
-
-    // info alert text exists in the Alert mock (we check part of the message)
-    expect(screen.getByTestId("alert")).toBeInTheDocument();
-
-    // Block button should be disabled because remainingBlockCount === 0
-    const btn = screen.getByText("Block");
-    expect(btn).toBeDisabled();
-  });
-
-  test("reactGlobals.isCsr disables actions and adds btn-disabled class", () => {
-    global.reactGlobals.isCsr = true;
-
-    const state = {
-      Detail: {
-        callsMsgs: {
-          callsMessages: { sections: [{}], remainingBlockCount: 5, blocksAEMFFlag: false },
-          blockedNumbers: [{ phoneNumber: "1112223333", memo: "m" }],
-          expiredNumbers: [],
-          getCMError: {},
-          blockAgainResponse: {},
-          addBlockCallMsg: {},
-          editBlockCallMsg: {},
-          deleteBlockCallMsg: {},
-          editAllBlockCallMsg: {},
-          isFetching: false
-        },
-        devices: []
-      }
-    };
-    const store = mockStore(state);
-    renderWithStore(store);
-
-    fireEvent.click(screen.getByText("Block calls & messages"));
-
-    // Block button disabled because reactGlobals.isCsr true
-    const btn = screen.getByText("Block");
-    expect(btn).toBeDisabled();
-
-    // Unblock link should render with btn-disabled class on <a> due to className in component - our TextLink mock is <a>, check attribute
-    const unblock = screen.getByText("Unblock");
-    // The component sets className prop; our mock preserves it so attribute should exist
-    expect(unblock.closest("a")?.className).toContain("btn-disabled");
-  });
-});

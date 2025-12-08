@@ -1,81 +1,111 @@
-import React, { useEffect } from "react";
+import React from "react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { Router } from "react-router-dom";
+import { createMemoryHistory } from "history";
+import ViewLimitations from "../ViewLimitation";
+import "@testing-library/jest-dom";
+import { Provider } from "react-redux";
+import configureStore from "redux-mock-store";
 
-import { withRouter } from "react-router-dom";
-import { Button } from "@vds/buttons";
-import { Body, Title } from "@vds/typography";
-import { nativeSetTitle } from "../../../../shared/utilities/native";
-import styled from "styled-components";
-import { Line } from "@vds/lines";
-import { useSelector } from "react-redux";
-import common from "../../../../shared/utilities/util";
+// Mock native title setter
+import { nativeSetTitle } from "../../../../../shared/utilities/native";
+jest.mock("../../../../../shared/utilities/native", () => ({
+  nativeSetTitle: jest.fn(),
+}));
 
-const ViewLimitations = (props) => {
+// Mock common.getItemValue
+jest.mock("../../../../../shared/utilities/util", () => ({
+  __esModule: true,
+  default: {
+    getItemValue: (items, key) => {
+      const found = items?.find((i) => i.key === key);
+      return found ? found.value : "";
+    },
+  },
+}));
 
-  const handleDone = () => {
-    props.history.goBack(); // Go back to previous page
-  };
-  
-  useEffect(() => {
-    nativeSetTitle('View Limitations',false);
-  },[]);
-  let pageItems = useSelector((state)=>state?.Detail?.callsMessages?.sections?.[0]?.sections?.[0].contents[0]?.items);
-  const AEMFFlag = useSelector((state)=>state?.Detail?.callsMessages?.blocksAEMFFlag);
-  return (
-    <PageContent>
-      <br></br>
-      <Title size='large' bold>
-         {common.getItemValue(pageItems,"ViewLimitationTitle")}
-      </Title>
-      <br></br>
-      <Line/>
-        <br></br><br></br>
-        {AEMFFlag?
-        <Body>
-        <p dangerouslySetInnerHTML={{ __html: common.getItemValue(pageItems,"ViewLimitaionMsg") }}/>
-        </Body>:
-        <div><p>
-          Blocking a number for calls and text is easy, but there are a few
-          things you should know beforehand. You can't block numbers that are on
-          your account, emergency numbers that are not 10-digits (911, 411, etc.)
-          or #MIN (to check your used minutes).
-        </p>
-      <br></br>
-        <p>
-          Your blocks expire after 90 days. You can either block it again or
-          subscribe to FamilyBase* to block a number permanently.
-        </p>
-        <br></br>
-        <p>
-          If you change your mind, you can review your blocked numbers and decide
-          to unblock it by tapping the red X.
-        </p>
-        <br></br>
-        <p>
-          *FamilyBase lets you permanently block incoming and outgoing calls for
-          up to 20 US or international numbers.
-        </p>
-        </div>
-        }
-        
-        <ButtonWrapper>
-        <Button  onClick={handleDone}>
-          Done
-        </Button>
-        </ButtonWrapper>
-    </PageContent>
+const mockStore = configureStore([]);
+
+const buildStore = (flag) =>
+  mockStore({
+    Detail: {
+      callsMessages: {
+        blocksAEMFFlag: flag,
+        sections: [
+          {
+            sections: [
+              {
+                contents: [
+                  {
+                    items: [
+                      {
+                        key: "ViewLimitationTitle",
+                        value: "Test Title",
+                      },
+                      {
+                        key: "ViewLimitaionMsg",
+                        value: "<span>Test HTML Message</span>",
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    },
+  });
+
+const RenderWithProviders = (store, history) => {
+  return render(
+    <Provider store={store}>
+      <Router history={history}>
+        <ViewLimitations />
+      </Router>
+    </Provider>
   );
 };
 
-const PageContent = styled.div`
-  padding-right:10px;
-  padding-left:10px;
-  padding-top:20px;
-`;
-const ButtonWrapper = styled.div`
-  display: flex;
-  justify-content: center;
-  margin-top: auto;
-  padding-top: 100px;
-`;
+describe("ViewLimitations FULL COVERAGE", () => {
+  it("covers AEMFFlag = true (Body branch)", () => {
+    const history = createMemoryHistory();
+    const store = buildStore(true);
 
-export default withRouter(ViewLimitations);
+    RenderWithProviders(store, history);
+
+    // useEffect coverage
+    expect(nativeSetTitle).toHaveBeenCalledWith("View Limitations", false);
+
+    // Title coverage
+    expect(screen.getByText("Test Title")).toBeInTheDocument();
+
+    // Body + HTML message branch
+    expect(screen.getByText("Test HTML Message")).toBeInTheDocument();
+  });
+
+  it("covers AEMFFlag = false (default text branch)", () => {
+    const history = createMemoryHistory();
+    const store = buildStore(false);
+
+    RenderWithProviders(store, history);
+
+    expect(
+      screen.getByText(/Blocking a number for calls and text is easy/i)
+    ).toBeInTheDocument();
+  });
+
+  it("covers goBack() on Done button click", () => {
+    const history = createMemoryHistory();
+    history.push("/view-limitations");
+
+    const spy = jest.spyOn(history, "goBack");
+
+    const store = buildStore(false);
+    RenderWithProviders(store, history);
+
+    fireEvent.click(screen.getByRole("button", { name: /Done/i }));
+
+    expect(spy).toHaveBeenCalled();
+  });
+});

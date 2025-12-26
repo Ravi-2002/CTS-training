@@ -1,48 +1,54 @@
-import React from "react";
-import { render } from "@testing-library/react";
-import { BlockCallsMessages } from "../BlockCallsMessages"; // unconnected
+@Service
+public class WebAuthUserService
+        implements PublicKeyCredentialUserEntityRepository {
 
-describe("BlockCallsMessages handleInput/handleOnChange coverage", () => {
-  let instance;
-  const mockProps = {
-    selectedDevice: { encryptedMtn: "123" },
-    selectedAccordian: "",
-    blockedNumbers: [],
-    expiredNumbers: [],
-    callsMessagesData: {},
-    getCallsMessages: jest.fn(),
-    postaddBlockCallMsg: jest.fn(),
-    postDeleteBlockCallMsg: jest.fn(),
-  };
+    @Autowired
+    private UserRepository userRepository;
 
-  beforeEach(() => {
-    const { container } = render(<BlockCallsMessages {...mockProps} />);
-    instance = container.firstChild._reactInternals.child.stateNode;
-  });
+    // 🔹 FIND BY USERNAME (email)
+    @Override
+    public PublicKeyCredentialUserEntity findByUsername(String username) {
 
-  it("handleOnChange for valid number sets newNumber and addnumberValid=true", () => {
-    const event = { target: { value: "1234567890" } };
-    instance.handleOnChange(event, "number");
-    expect(instance.state.newNumber).toBe("123.456.7890");
-    expect(instance.state.addnumberValid).toBe(true);
-  });
+        return userRepository.findByEmail(username)
+                .map(user ->
+                        PublicKeyCredentialUserEntity.builder()
+                                .id(user.getUserHandle())
+                                .name(user.getEmail())
+                                .displayName(user.getEmail())
+                                .build()
+                )
+                .orElse(null);
+    }
 
-  it("handleOnChange for incomplete number sets addnumberValid=false", () => {
-    const event = { target: { value: "12345" } };
-    instance.handleOnChange(event, "number");
-    expect(instance.state.addnumberValid).toBe(false);
-  });
+    // 🔹 FIND BY USER HANDLE
+    @Override
+    public PublicKeyCredentialUserEntity findById(byte[] userHandle) {
 
-  it("handleOnChange for non-number input leaves newNumber but addnumberValid=false", () => {
-    const event = { target: { value: "abc" } };
-    instance.handleOnChange(event, "number");
-    expect(instance.state.newNumber).toBe("a.b.c");
-    expect(instance.state.addnumberValid).toBe(false);
-  });
+        List<User> users = userRepository.findAll();
 
-  it("handleInput checkbox updates applyAllFlag", () => {
-    const event = { target: { checked: true } };
-    instance.handleInput(event, "checkbox");
-    expect(instance.state.applyAllFlag).toBe(true);
-  });
-});
+        return users.stream()
+                .filter(user ->
+                        Arrays.equals(user.getUserHandle(), userHandle)
+                )
+                .findFirst()
+                .map(user ->
+                        PublicKeyCredentialUserEntity.builder()
+                                .id(user.getUserHandle())
+                                .name(user.getEmail())
+                                .displayName(user.getEmail())
+                                .build()
+                )
+                .orElse(null);
+    }
+
+    // 🔹 REQUIRED METHOD — THIS WAS MISSING
+    @Override
+    public void save(PublicKeyCredentialUserEntity entity) {
+
+        User user = new User();
+        user.setEmail(entity.getName());
+        user.setUserHandle(entity.getId());
+
+        userRepository.save(user);
+    }
+}
